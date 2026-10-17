@@ -32,5 +32,7 @@ def home(request: Request, db: Session = Depends(get_db), user=Depends(current_u
 
 APP = AppManifest(
     key="home", label="Home", routers=[router],
-    nav=[NavNode("home", "Home", "/", icon="home", description="Overview and recent activity")],
+    nav=[NavNode("home", "Home", "/", icon="home", description="Overview and recent activity"),
+         # Help pages render under this node; the Help menu and F1 lead to them.
+         NavNode("help", "Help", "/help", hidden=True)],
 )

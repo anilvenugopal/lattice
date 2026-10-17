@@ -37,6 +37,8 @@ class AppManifest:
     stylesheets: list[str] = field(default_factory=list)
     # Icons the app adds, used as icon("{key}:name"). Values are SVG path markup.
     icons: dict[str, str] = field(default_factory=dict)
+    # Folder of Markdown help topics with index.md and an optional help.toml page map.
+    help: Path | None = None
     # Slot name -> template in the app's own folder ("{key}/…").
     slots: dict[str, str] = field(default_factory=dict)
     # Started with the host, cancelled at shutdown.

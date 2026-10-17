@@ -20,6 +20,9 @@ dependencies = [
     "bcrypt",
     "httpx",
     "pyjwt[crypto]",
+    "markdown-it-py>=4.2.0",
+    "mdit-py-plugins>=0.6.1",
+    "pygments>=2.21.0",
 ]
 
 [project.scripts]

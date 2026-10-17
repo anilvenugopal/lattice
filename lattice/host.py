@@ -22,6 +22,8 @@ from starlette.exceptions import HTTPException
 
 from lattice.components import tiles
 from lattice.components.grid import router as grid_router
+from lattice.components.help import content as help_content
+from lattice.components.help import router as help_router
 from lattice.components.manifest import AppManifest
 from lattice.components.search import providers as search_providers
 from lattice.components.search import router as search_router
@@ -34,7 +36,10 @@ from lattice.platform import account, admin, home
 
 APP_KEY = re.compile(r"^[a-z][a-z0-9_]*$")
 # Paths the kernel and components own; no app may use them as its key.
-RESERVED_KEYS = {"home", "admin", "account", "auth", "static", "health", "docs", "host"}
+RESERVED_KEYS = {"home", "admin", "account", "auth", "static", "health", "docs", "host",
+                 "help", "lattice"}
+# Lattice's own help (user guide and developer documentation), registered as "lattice".
+CORE_HELP = Path(__file__).parent / "help"
 # Core pages a host may replace by placing a template of the same name in its templates/.
 HOST_OVERRIDABLE = {"auth/login.html", "base/error.html", "pages/home.html"}
 
@@ -106,8 +111,22 @@ def _register(app: AppManifest, platform: bool) -> None:
         search_providers.register_provider(provider)
 
 
+def _load_help(ordered: list[tuple[AppManifest, str]], platform: list[AppManifest]) -> None:
+    """Lattice's help first (it owns the platform pages), then each app's help folder."""
+    sources = [("lattice", "Lattice", CORE_HELP, "")]
+    sources += [(a.key, a.label, a.help, a.key) for a, _ in ordered
+                if a.help and a not in platform]
+    for key, label, root, nav_app in sources:
+        owned = {n.key for n in nav.NODES if n.app == nav_app}
+        try:
+            help_content.register(help_content.load_help(key, label, root, owned))
+        except help_content.HelpError as exc:
+            raise AppError(str(exc)) from exc
+
+
 def _reset_registries() -> None:
     nav.reset()
+    help_content.reset()
     icons.reset()
     slots.reset()
     grid_router.REGISTRY.clear()
@@ -142,6 +161,7 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
               [(a, a.prefix) for a in platform_last]
     for app, _mount in ordered:
         _register(app, platform=app in platform_first + platform_last)
+    _load_help(ordered, platform_first + platform_last)
     icons.set_host_icons(icons_override or {})
     for slot_name, template in (slot_templates or {}).items():
         slots.add(slot_name, template)
@@ -174,7 +194,8 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
         web.mount("/static/host", StaticFiles(directory=host_static))
     web.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
     web.add_middleware(AuthMiddleware)
-    for router in (auth_routes.router, grid_router.router, search_router.router):
+    for router in (auth_routes.router, grid_router.router, search_router.router,
+                   help_router.router):
         web.include_router(router)
     for app, mount in ordered:
         for router in app.routers:

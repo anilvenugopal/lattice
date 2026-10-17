@@ -1,0 +1,14 @@
+{# The help center: every app's help, then Lattice's own. #}
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header %}
+{% block main %}
+<div class="page">
+  {{ page_header("Help", "Guides for every app in " ~ settings.app_name ~ ", and the Lattice documentation.") }}
+  {# Apps in the host's order, then Lattice's own help. #}
+  <ul class="help-cards help-cards--wide">
+    {% for app in (apps | rejectattr("key", "equalto", "lattice") | list) + (apps | selectattr("key", "equalto", "lattice") | list) %}
+    <li><a class="help-card" href="{{ app.home.url }}"><strong>{{ app.label }}</strong>{% if app.home.summary %}<span>{{ app.home.summary }}</span>{% endif %}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

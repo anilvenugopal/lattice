@@ -1,0 +1,59 @@
+{# A help topic (components/help): section tree | content | "On this page". #}
+{% extends "base/shell.html" %}
+{% block head_extra %}
+{% if 'class="mermaid"' in topic.html %}
+<script defer src="/static/js/vendor/mermaid.min.js"></script>{# mermaid 11.4.1 #}
+<script defer src="/static/js/help.js"></script>
+{% endif %}
+{% endblock %}
+{% macro branch(section) -%}
+<ul class="help-tree">
+  {% for t in app_help.children(section, user) %}
+  <li>
+    <a class="help-tree__link{% if t.slug == topic.slug %} is-active{% endif %}" href="{{ t.url }}">{{ t.title }}</a>
+    {% if app_help.children(t.slug, user) %}{{ branch(t.slug) }}{% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{%- endmacro %}
+{% block main %}
+<div class="help">
+  <aside class="help__nav" aria-label="{{ app_help.label }} help topics">
+    <a class="help__app{% if not topic.slug %} is-active{% endif %}" href="{{ app_help.home.url }}">{{ app_help.label }}</a>
+    {{ branch("") }}
+    <a class="help__all" href="/help">{{ icon('chevron-left', 14) }} All help</a>
+  </aside>
+
+  <article class="help__main">
+    <header class="help__head">
+      <h1 class="help__title">{{ topic.title }}</h1>
+      {% if topic.summary %}<p class="help__summary">{{ topic.summary }}</p>{% endif %}
+    </header>
+    <div class="help-content">{{ topic.html | safe }}</div>
+
+    {% set sections = app_help.children(topic.slug, user) %}
+    {% if sections %}
+    <ul class="help-cards">
+      {% for t in sections %}
+      <li><a class="help-card" href="{{ t.url }}"><strong>{{ t.title }}</strong>{% if t.summary %}<span>{{ t.summary }}</span>{% endif %}</a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <nav class="help__pager" aria-label="Previous and next topic">
+      {% if previous %}<a class="help__prev" href="{{ previous.url }}"><small>Previous</small>{{ previous.title }}</a>{% else %}<span></span>{% endif %}
+      {% if following %}<a class="help__next" href="{{ following.url }}"><small>Next</small>{{ following.title }}</a>{% endif %}
+    </nav>
+    <p class="help__updated">Updated {{ time_tag(topic.updated, "date") }}</p>
+  </article>
+
+  {% if topic.toc %}
+  <nav class="help__toc" aria-label="On this page">
+    <div class="help__toc-title">On this page</div>
+    {% for level, anchor, text in topic.toc %}
+    <a class="help__toc-link help__toc-link--h{{ level }}" href="#{{ anchor }}">{{ text }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
+</div>
+{% endblock %}

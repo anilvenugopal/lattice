@@ -1,0 +1,10 @@
+# Which help topic opens for each demo page (F1 and "Help for this page").
+# Pages not listed open the demo's help home.
+[pages]
+"work.items"    = "work-queue"
+"work.new"      = "work-queue#create-an-item"
+"work.detail"   = "work-queue#the-detail-page"
+"jobs"          = "jobs"
+"inbox.inbox"   = "inbox"
+"inbox.starred" = "inbox#folders"
+"inbox.archive" = "inbox#folders"

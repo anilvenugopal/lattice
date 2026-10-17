@@ -85,14 +85,15 @@ def add_app_icons(app_key: str, icons: dict[str, str]) -> None:
     _APPS[app_key] = dict(icons)
 
 
-def _body(name: str) -> str:
+def _body(name: str | None) -> str:
+    name = name or ""
     if ":" in name:
         app_key, _, short = name.partition(":")
         return _APPS.get(app_key, {}).get(short, "")
     return _HOST.get(name) or PATHS.get(name, "")
 
 
-def icon(name: str, size: int = 16, cls: str = "") -> Markup:
+def icon(name: str | None, size: int = 16, cls: str = "") -> Markup:
     body = _body(name)
     return Markup(
         f'<svg class="icon {cls}" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" '

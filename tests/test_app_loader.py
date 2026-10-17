@@ -53,7 +53,7 @@ def test_app_routes_mount_under_its_key_and_nav_follows_app_order(db, users):
 
     notes = _app(routers=[router], nav=[nav.NavNode("notes", "Notes", "/notes/hello", icon="mail")])
     web = create_app(apps=[notes])
-    assert [n.key for n in nav.NODES if n.parent is None] == \
+    assert [n.key for n in nav.NODES if n.parent is None and not n.hidden] == \
         ["home", "notes", "admin", "account"]
     # Platform pages (admin, account, home) carry no app key, so no data-app.
     assert nav.BY_KEY["notes"].app == "notes" and nav.BY_KEY["admin.users"].app == ""

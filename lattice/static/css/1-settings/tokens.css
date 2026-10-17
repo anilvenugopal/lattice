@@ -120,6 +120,9 @@
   --palette-w: 1080px;
   --palette-nav-w: 190px;
   --palette-preview-w: 400px;
+  --help-nav-w: 240px;
+  --help-toc-w: 200px;
+  --help-content-w: 780px;
   --avatar-gradient: linear-gradient(135deg, var(--brand), var(--brand-alt));
   --tooltip-bg: var(--surface-inverse);
   --tooltip-fg: var(--text-inverse);

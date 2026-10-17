@@ -73,8 +73,8 @@ def nav_context(user, active_key: str) -> dict:
     sidebar_keys = {n.key for n in sidebar}
     active_item = next((n.key for n in reversed(chain) if n.key in sidebar_keys), None)
     return {
-        "rail": [n for n in visible if n.parent is None and not n.bottom],
-        "rail_bottom": [n for n in visible if n.parent is None and n.bottom],
+        "rail": [n for n in visible if n.parent is None and not n.bottom and not n.hidden],
+        "rail_bottom": [n for n in visible if n.parent is None and n.bottom and not n.hidden],
         "section": section,
         "sidebar": sidebar,
         "active_key": active_key,

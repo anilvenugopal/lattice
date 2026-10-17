@@ -1,0 +1,77 @@
+/* Layer 4 — components. Help pages (templates/help, components/help): layout, reading
+   typography for rendered Markdown, callouts, code highlighting and diagrams. */
+.help { display: grid; grid-template-columns: var(--help-nav-w) minmax(0, 1fr) var(--help-toc-w);
+  gap: var(--sp-8); align-items: start; max-width: 1360px; padding: var(--sp-5) var(--sp-6) var(--sp-10); }
+.help__nav, .help__toc { position: sticky; top: var(--sp-5); max-height: calc(100vh - var(--topbar-h) - var(--statusbar-h) - var(--sp-10)); overflow: auto; }
+.help__app { display: block; margin-bottom: var(--sp-2); padding: 6px var(--sp-2); font-weight: var(--fw-semibold); color: var(--text); border-radius: var(--r-md); }
+.help__app.is-active, .help__app:hover { background: var(--surface-hover); text-decoration: none; }
+.help-tree { margin: 0; padding: 0; list-style: none; }
+.help-tree .help-tree { margin-left: var(--sp-3); padding-left: var(--sp-2); border-left: 1px solid var(--border-faint); }
+.help-tree__link { display: block; padding: 5px var(--sp-2); font-size: var(--fs-md); color: var(--text-2); border-radius: var(--r-md); }
+.help-tree__link:hover { color: var(--text); background: var(--surface-hover); text-decoration: none; }
+.help-tree__link.is-active { font-weight: var(--fw-medium); color: var(--brand); background: var(--surface-selected); }
+.help__all { display: flex; align-items: center; gap: var(--sp-1); margin-top: var(--sp-4); padding: 0 var(--sp-2); font-size: var(--fs-sm); color: var(--text-3); }
+
+.help__main { min-width: 0; max-width: var(--help-content-w); }
+.help__head { margin-bottom: var(--sp-5); padding-bottom: var(--sp-4); border-bottom: 1px solid var(--border); }
+.help__title { font-size: var(--fs-2xl); line-height: var(--lh-tight); }
+.help__summary { margin: var(--sp-2) 0 0; font-size: var(--fs-lg); color: var(--text-2); }
+.help__pager { display: flex; justify-content: space-between; gap: var(--sp-4); margin-top: var(--sp-8); padding-top: var(--sp-4); border-top: 1px solid var(--border); }
+.help__prev, .help__next { display: flex; flex-direction: column; padding: var(--sp-3) var(--sp-4); color: var(--text);
+  border: 1px solid var(--border); border-radius: var(--r-lg); }
+.help__next { margin-left: auto; text-align: right; }
+.help__prev:hover, .help__next:hover { border-color: var(--brand); text-decoration: none; }
+.help__prev small, .help__next small { font-size: var(--fs-xs); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+.help__updated { margin-top: var(--sp-4); font-size: var(--fs-sm); color: var(--text-3); }
+
+.help__toc-title { margin-bottom: var(--sp-2); font-size: var(--fs-xs); font-weight: var(--fw-semibold); letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-3); }
+.help__toc-link { display: block; padding: 3px 0; font-size: var(--fs-sm); color: var(--text-2); }
+.help__toc-link--h3 { padding-left: var(--sp-3); }
+
+.help-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--sp-3); margin: var(--sp-6) 0 0; padding: 0; list-style: none; }
+.help-cards--wide { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); margin-top: 0; }
+.help-card { display: flex; flex-direction: column; gap: var(--sp-1); height: 100%; padding: var(--sp-4); color: var(--text);
+  background: var(--surface-panel); border: 1px solid var(--border); border-radius: var(--r-lg); }
+.help-card:hover { border-color: var(--brand); box-shadow: var(--shadow-md); text-decoration: none; }
+.help-card span { font-size: var(--fs-md); color: var(--text-2); }
+
+/* Rendered Markdown */
+.help-content { font-size: var(--fs-base); line-height: var(--lh-loose); }
+.help-content h2 { margin: var(--sp-8) 0 var(--sp-3); font-size: var(--fs-xl); scroll-margin-top: var(--sp-5); }
+.help-content h3 { margin: var(--sp-6) 0 var(--sp-2); font-size: var(--fs-lg); scroll-margin-top: var(--sp-5); }
+.help-content h4 { margin: var(--sp-5) 0 var(--sp-2); font-size: var(--fs-base); }
+.help-content p, .help-content ul, .help-content ol, .help-content table, .help-content pre { margin: 0 0 var(--sp-4); }
+.help-content ul, .help-content ol { padding-left: var(--sp-6); }
+.help-content li { margin-bottom: var(--sp-1); }
+.help-content li > ul, .help-content li > ol { margin: var(--sp-1) 0 0; }
+.help-content img { max-width: 100%; border: 1px solid var(--border); border-radius: var(--r-md); }
+.help-content hr { margin: var(--sp-6) 0; border: none; border-top: 1px solid var(--border); }
+.help-content table { width: 100%; border-collapse: collapse; font-size: var(--fs-md); }
+.help-content th { text-align: left; font-weight: var(--fw-semibold); background: var(--surface-recessed); }
+.help-content th, .help-content td { padding: var(--sp-2) var(--sp-3); vertical-align: top; border: 1px solid var(--border); }
+.help-content code { font-size: 0.88em; }
+.help-content .task-list-item { list-style: none; margin-left: calc(-1 * var(--sp-5)); }
+.help-content blockquote { margin: 0 0 var(--sp-4); padding: var(--sp-2) var(--sp-4); color: var(--text-2); border-left: 3px solid var(--border-strong); }
+.help-content blockquote.callout { color: var(--text); background: var(--tone-bg); border-left-color: var(--tone-fg); border-radius: 0 var(--r-md) var(--r-md) 0; }
+.help-content blockquote.callout::before { content: attr(data-label); display: block; margin-bottom: var(--sp-1);
+  font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--tone-fg); }
+.help-content blockquote p:last-child { margin-bottom: 0; }
+
+.help-content pre.code { overflow: auto; padding: var(--sp-3) var(--sp-4); font-size: var(--fs-sm); line-height: var(--lh-base);
+  background: var(--surface-recessed); border: 1px solid var(--border); border-radius: var(--r-md); }
+.help-content pre.code code { padding: 0; background: none; font-size: inherit; }
+.help-content pre.mermaid { display: flex; justify-content: center; padding: var(--sp-4); background: var(--surface-panel);
+  border: 1px solid var(--border); border-radius: var(--r-md); }
+
+/* Code colours (pygments classes), from the semantic tones so they follow the theme. */
+.help-content pre.code :is(.k, .kn, .kd, .kc, .kr, .kt, .ow) { color: var(--tone-accent-fg); }
+.help-content pre.code :is(.s, .s1, .s2, .sa, .sb, .sh, .si, .sx, .dl) { color: var(--tone-success-fg); }
+.help-content pre.code :is(.sd, .c, .c1, .cm, .ch, .cp, .cs) { color: var(--text-3); font-style: italic; }
+.help-content pre.code :is(.nf, .nc, .fm, .nn, .nt) { color: var(--tone-info-fg); }
+.help-content pre.code :is(.mi, .mf, .mh, .il, .na, .nd) { color: var(--tone-warning-fg); }
+.help-content pre.code :is(.nb, .bp, .ne) { color: var(--tone-danger-fg); }
+.help-content pre.code .err { color: inherit; }
+
+@media (max-width: 1200px) { .help { grid-template-columns: var(--help-nav-w) minmax(0, 1fr); } .help__toc { display: none; } }
+@media (max-width: 800px) { .help { grid-template-columns: 1fr; } .help__nav { position: static; max-height: none; } }

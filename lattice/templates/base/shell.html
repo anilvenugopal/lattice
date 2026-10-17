@@ -12,6 +12,7 @@
 <head>
   <title>{% block title %}{{ crumb or title or nav.title }}{% endblock %} · {{ settings.app_name }}</title>
   {% include "base/head.html" %}
+  {% block head_extra %}{% endblock %}
 </head>
 <body>
 <div class="shell" x-data="shell({ theme: {{ theme|js }}, themes: {{ theme_values|js }} })" @keydown.window="onKey($event)">
