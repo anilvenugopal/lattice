@@ -9,6 +9,7 @@ Folder layout (see the developer documentation, "Writing help"):
       jobs/retrying.md     slug "jobs/retrying"
       images/…             images and other files linked from topics
       help.toml            optional: [pages] "nav key" = "slug" or "slug#heading"
+                           ("index" is the help home)
 
 Every topic starts with front matter:
 
@@ -191,8 +192,7 @@ def _rewrite_links(tokens, file_rel: str, app: str, slugs: set[str], where: str)
             if attr == "src" or not path.endswith(".md"):
                 child.attrSet(attr, f"/help/{app}/_assets/{resolved}")
                 continue
-            slug = resolved[:-3]
-            slug = "" if slug in ("index", ".") else slug.removesuffix("/index")
+            slug = _home_slug(resolved[:-3])
             if slug not in slugs:
                 raise HelpError(f"{where}: link to {target!r} points to no topic")
             child.attrSet("href", f"/help/{app}/{slug}".rstrip("/") + (f"#{anchor}" if anchor else ""))
@@ -214,14 +214,19 @@ def _callouts(tokens) -> None:
             inline.children = inline.children[2:]
 
 
+def _plain(inline) -> str:
+    """The text of an inline token as a reader sees it, without Markdown syntax."""
+    return "".join(" " if c.type in ("softbreak", "hardbreak") else c.content
+                   for c in inline.children or [])
+
+
 def _toc_and_text(tokens) -> tuple[list[tuple[int, str, str]], str]:
     toc, words = [], []
     for i, token in enumerate(tokens):
         if token.type == "heading_open" and token.tag in ("h2", "h3"):
-            toc.append((int(token.tag[1]), token.attrGet("id") or "", tokens[i + 1].content))
+            toc.append((int(token.tag[1]), token.attrGet("id") or "", _plain(tokens[i + 1])))
         if token.type == "inline":
-            words.append("".join(" " if c.type in ("softbreak", "hardbreak") else c.content
-                                 for c in token.children or []))
+            words.append(_plain(token))
         elif token.type == "fence" and token.info != "mermaid":
             words.append(token.content)
     return toc, "\n".join(words)
@@ -229,9 +234,13 @@ def _toc_and_text(tokens) -> tuple[list[tuple[int, str, str]], str]:
 
 # ── Loading ──────────────────────────────────────────────────────────────────
 
+def _home_slug(rel: str) -> str:
+    """"index" is the help home (""); "jobs/index" is the section "jobs"."""
+    return "" if rel in ("index", ".") else rel.removesuffix("/index")
+
+
 def _slug_for(path: Path, root: Path) -> str:
-    rel = path.relative_to(root).with_suffix("").as_posix()
-    return "" if rel == "index" else rel.removesuffix("/index")
+    return _home_slug(path.relative_to(root).with_suffix("").as_posix())
 
 
 def load_help(key: str, label: str, root: Path, owned_nav_keys: set[str]) -> AppHelp:
@@ -281,11 +290,13 @@ def _load_page_map(key: str, root: Path, topics: dict[str, Topic],
         if nav_key not in owned_nav_keys:
             raise HelpError(f"{where}: {nav_key!r} is not a page of this app")
         slug, _, anchor = str(target).partition("#")
+        slug = _home_slug(slug)
         topic = topics.get(slug)
         if topic is None:
             raise HelpError(f"{where}: {nav_key!r} maps to {target!r}, which is no topic")
         if anchor and anchor not in {a for _, a, _ in topic.toc}:
             raise HelpError(f"{where}: {target!r} has no heading #{anchor}")
+        pages[nav_key] = slug + (f"#{anchor}" if anchor else "")
     return dict(pages)
 
 

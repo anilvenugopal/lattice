@@ -28,14 +28,14 @@ def topic(title, body="", extra=""):
 BASIC = {
     "index.md": topic("Notes", "Start with [writing](writing.md) or [sections](more/index.md).",
                       "summary: Notes help home.\n"),
-    "writing.md": topic("Writing notes", "## Save a note\n\nPress save.\n\n## Share\n\nUse share.",
+    "writing.md": topic("Writing notes", "## Save a note\n\nPress save.\n\n## `Share`\n\nUse share.",
                         "order: 2\nkeywords: compose draft\n"),
     "more/index.md": topic("More", "A section.", "order: 5\n"),
     "more/advanced.md": topic("Advanced", "![diagram](../images/d.png) Back to [home](../index.md).",
                               "order: 1\n"),
     "secret.md": topic("Admin only", "Hidden.", "roles: [admin]\norder: 9\n"),
     "images/d.png": "PNGDATA",
-    "help.toml": '[pages]\n"notes" = "writing#save-a-note"\n',
+    "help.toml": '[pages]\n"notes" = "writing#save-a-note"\n"notes.other" = "index"\n',
 }
 
 
