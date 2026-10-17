@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lattice-demo"
+version = "0.1.0"
+description = "Lattice demo app: Work Queue, Jobs and Inbox examples of the standard grid."
+requires-python = ">=3.12"
+dependencies = ["lattice"]
+
+[tool.uv.sources]
+lattice = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["lattice_demo"]

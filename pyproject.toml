@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "lattice"
 version = "0.1.0"
@@ -19,20 +23,59 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest", "ruff", "cryptography"]
+# The demo app and host are installed for development and tests only; the
+# lattice package itself never depends on an app.
+dev = ["pytest", "ruff", "cryptography", "import-linter", "lattice-demo", "lattice-demo-host"]
 
 [tool.uv]
-package = false
 default-groups = ["dev"]
+
+[tool.uv.workspace]
+members = ["apps/*", "hosts/*"]
+
+[tool.uv.sources]
+lattice-demo = { workspace = true }
+lattice-demo-host = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["lattice"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint.isort]
+known-first-party = ["lattice", "lattice_demo", "demo_host"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 ignore = ["E501", "B008"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "apps/demo/tests"]
+addopts = "--import-mode=importlib"
 filterwarnings = ["ignore::DeprecationWarning"]
+
+# Import contracts (ADR 0002), checked by tests/test_import_contracts.py.
+[tool.importlinter]
+root_packages = ["lattice", "lattice_demo", "demo_host"]
+
+[[tool.importlinter.contracts]]
+name = "Lattice layers: each imports only the layers below it"
+type = "layers"
+layers = [
+    "lattice.api | lattice.testing",
+    "lattice.host",
+    "lattice.platform",
+    "lattice.components",
+    "lattice.kernel",
+]
+
+[[tool.importlinter.contracts]]
+name = "Apps import only lattice.api"
+type = "forbidden"
+source_modules = ["lattice_demo"]
+forbidden_modules = [
+    "lattice.kernel", "lattice.components", "lattice.platform", "lattice.host", "lattice.testing",
+]
+allow_indirect_imports = true

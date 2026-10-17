@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from fastapi import APIRouter
+from sqlalchemy.orm import Session
 
 from lattice.components.grid import GridSpec
 from lattice.components.search.providers import SearchProvider
@@ -24,8 +26,12 @@ class AppManifest:
     grids: list[GridSpec] = field(default_factory=list)
     search: list[SearchProvider] = field(default_factory=list)
     tiles: list[HomeTile] = field(default_factory=list)
+    # Folder holding templates/{key}/…; searched before core templates.
+    templates: Path | None = None
     # Started with the host, cancelled at shutdown.
     background: Callable[[], Awaitable[None]] | None = None
+    # Development data for `lattice seed`; receives a session and commits.
+    seed: Callable[[Session], None] | None = None
 
     @property
     def prefix(self) -> str:

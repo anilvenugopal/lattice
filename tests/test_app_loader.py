@@ -9,18 +9,10 @@ from sqlalchemy import select
 
 from lattice.components.grid import Column, GridSpec
 from lattice.components.manifest import AppManifest
-from lattice.features import APP as DEMO
 from lattice.host import AppError, create_app
 from lattice.kernel import nav
 from lattice.kernel.models import User
-from tests.conftest import login
-
-
-@pytest.fixture(autouse=True)
-def restore_demo_host():
-    """Registries are per process (one host per process); put the demo host back."""
-    yield
-    create_app(apps=[DEMO])
+from lattice.testing import login
 
 
 def _users_query(db, user):
@@ -60,9 +52,9 @@ def test_app_routes_mount_under_its_key_and_nav_follows_app_order(db, users):
         return {"ok": True}
 
     notes = _app(routers=[router], nav=[nav.NavNode("notes", "Notes", "/notes/hello", icon="mail")])
-    web = create_app(apps=[notes, DEMO])
+    web = create_app(apps=[notes])
     assert [n.key for n in nav.NODES if n.parent is None] == \
-        ["home", "notes", "work", "jobs", "inbox", "admin", "account"]
+        ["home", "notes", "admin", "account"]
     assert nav.BY_KEY["notes"].app == "notes" and nav.BY_KEY["admin.users"].app == "admin"
     with TestClient(web) as c:
         assert login(c, "viewer@test.io").status_code == 303

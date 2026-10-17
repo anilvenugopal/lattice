@@ -1,9 +1,11 @@
-"""Development data: three users (admin, editor, viewer) and example rows.
+"""Demo data: example work items, jobs and messages for the development users.
 
-    uv run python -m scripts.seed           # skips if users already exist
-    uv run python -m scripts.seed --reset   # deletes example rows first
+`seed(db)` is the app's AppManifest.seed. Run on its own with:
 
-Never run against production. Create real admins with scripts.create_user.
+    uv run python -m lattice_demo.seed           # skips if users already exist
+    uv run python -m lattice_demo.seed --reset   # deletes example rows first
+
+Never run against production.
 """
 
 from __future__ import annotations
@@ -14,12 +16,16 @@ from datetime import timedelta
 
 from sqlalchemy import delete, select
 
-from lattice.features import inbox, jobs, work_items
-from lattice.kernel.config import settings
-from lattice.kernel.db import SessionLocal
-from lattice.kernel.dev_seed import DEV_USERS
-from lattice.kernel.models import Job, Message, User, WorkItem, utcnow
-from lattice.kernel.services import users as users_service
+from lattice.api import (
+    DEV_USERS,
+    SessionLocal,
+    User,
+    settings,
+    users,
+    utcnow,
+)
+from lattice_demo import inbox, jobs, work_items
+from lattice_demo.models import Job, Message, WorkItem
 
 
 def keys(options) -> list[str]:
@@ -48,11 +54,11 @@ BODY = ("Hi,\n\nFollowing up on our conversation earlier this week. I have attac
 
 
 def seed_users(db) -> list[User]:
-    return [users_service.create(db, email, name, password=password, roles=roles)
+    return [users.create(db, email, name, password=password, roles=roles)
             for email, name, password, roles in DEV_USERS]
 
 
-def seed_examples(db, users: list[User]) -> None:
+def seed_examples(db, people: list[User]) -> None:
     rng = random.Random(7)
     now = utcnow()
     for i in range(1, 241):
@@ -62,7 +68,7 @@ def seed_examples(db, users: list[User]) -> None:
             account=rng.choice(ACCOUNTS),
             status=rng.choices(keys(work_items.STATUSES), [3, 4, 4, 1])[0],
             priority=rng.choices(keys(work_items.PRIORITIES), [2, 5, 2, 1])[0],
-            owner_id=rng.choice([None, *[u.id for u in users]]),
+            owner_id=rng.choice([None, *[u.id for u in people]]),
             amount=round(rng.uniform(5_000, 2_500_000), -2),
             description="Submitted by broker. Review the schedule of values and loss history before quoting.",
             received_at=received, updated_at=min(now, received + timedelta(hours=rng.randint(0, 48))),
@@ -74,7 +80,7 @@ def seed_examples(db, users: list[User]) -> None:
         status = rng.choices(keys(jobs.STATUSES), [1, 1, 12, 3, 1])[0]
         started = created + timedelta(seconds=rng.randint(1, 120))
         db.add(Job(
-            name=name, job_type=kind, status=status, submitted_by=rng.choice(users).id,
+            name=name, job_type=kind, status=status, submitted_by=rng.choice(people).id,
             created_at=created, attempts=rng.choice([1, 1, 1, 2]),
             started_at=None if status == "queued" else started,
             finished_at=started + timedelta(seconds=rng.randint(20, 1800))
@@ -83,7 +89,7 @@ def seed_examples(db, users: list[User]) -> None:
             error="ConnectionError: upstream returned 503 Service Unavailable after 3 retries"
             if status == "failed" else "",
         ))
-    for user in users:
+    for user in people:
         for i in range(60):
             sender, addr = rng.choice(SENDERS)
             db.add(Message(
@@ -95,6 +101,12 @@ def seed_examples(db, users: list[User]) -> None:
                 is_starred=rng.random() < 0.12,
                 received_at=now - timedelta(minutes=rng.randint(1, 60 * 24 * 30)),
             ))
+
+
+def seed(db) -> None:
+    """Example rows owned by the users that exist (the development users)."""
+    seed_examples(db, list(db.scalars(select(User).order_by(User.id))))
+    db.commit()
 
 
 def main() -> None:
@@ -112,9 +124,8 @@ def main() -> None:
         if db.scalar(select(User).limit(1)):
             print("Users exist; skipping. Use --reset to recreate the example data.")
             return
-        users = seed_users(db)
-        seed_examples(db, users)
-        db.commit()
+        seed_users(db)
+        seed(db)
     print(f"Seeded. Sign in as {DEV_USERS[0][0]} / {DEV_USERS[0][2]}")
 
 

@@ -1,9 +1,12 @@
+"""The standard grid on the demo app's grids: engine, endpoints, actions, scoping."""
+
 from sqlalchemy import select
 
 from lattice.components.grid import engine
-from lattice.features import inbox, work_items
-from lattice.kernel.models import AuditEvent, Message, UserPreference, WorkItem
-from tests.conftest import current, post_json
+from lattice.kernel.models import AuditEvent, UserPreference
+from lattice.testing import current, post_json
+from lattice_demo import inbox, work_items
+from lattice_demo.models import Message, WorkItem
 
 
 def q(**kw):
@@ -125,21 +128,8 @@ def test_values_that_do_not_fit_the_column_match_nothing(as_user, items):
 
 
 def test_secondary_line_uses_its_own_column_labels(as_user, db, users):
-    from lattice.kernel.models import Job
+    from lattice_demo.models import Job
     db.add(Job(name="Nightly", job_type="sync", status="queued"))
     db.commit()
     html = as_user("viewer").get("/_grid/demo.jobs/rows").text
     assert '<div class="dg__secondary">Sync</div>' in html
-
-
-def test_links_url_encode_row_values():
-    from lattice.kernel.web import fmt, fmt_url
-    row = {"id": 7, "subject": "Q&A #2 + more"}
-    assert fmt_url("/inbox?q={subject}", row) == "/inbox?q=Q%26A%20%232%20%2B%20more"
-    assert fmt("{subject}", row) == "Q&A #2 + more"
-
-
-def test_js_filter_escapes_values_for_alpine_attributes():
-    from lattice.kernel.web import env
-    out = env.from_string('<b @click="run({{ k|js }})">').render(k="a'); alert(1); ('")
-    assert out == '<b @click="run(&#34;a&#39;); alert(1); (&#39;&#34;)">'

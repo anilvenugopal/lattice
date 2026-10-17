@@ -4,9 +4,11 @@ Work Queue (table grid, bulk actions, detail pages), Jobs (polling grid with
 state-dependent actions) and Inbox (split list and reading pane).
 """
 
-from lattice.components.manifest import AppManifest
-from lattice.features import inbox, jobs, work_items
-from lattice.kernel.nav import NavNode
+from pathlib import Path
+
+from lattice.api import AppManifest, NavNode
+from lattice_demo import inbox, jobs, work_items
+from lattice_demo.seed import seed
 
 APP = AppManifest(
     key="demo",
@@ -15,6 +17,8 @@ APP = AppManifest(
     grids=[work_items.GRID, jobs.GRID, inbox.GRID],
     tiles=[*work_items.TILES, *jobs.TILES, *inbox.TILES],
     background=jobs.background,
+    seed=seed,
+    templates=Path(__file__).parent / "templates",
     nav=[
         NavNode("work", "Work Queue", "/demo/work", icon="queue",
                 keywords="submissions cases requests tickets",

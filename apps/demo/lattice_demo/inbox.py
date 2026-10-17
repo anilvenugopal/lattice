@@ -10,21 +10,21 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import Session
 
-from lattice.components.grid import (
+from lattice.api import (
     Action,
     ActionContext,
     ActionResult,
     Column,
     Filter,
     GridSpec,
+    HomeTile,
     Palette,
     View,
+    csrf_protect,
+    get_db,
     render_grid_page,
 )
-from lattice.components.tiles import HomeTile
-from lattice.kernel.auth.csrf import csrf_protect
-from lattice.kernel.db import get_db
-from lattice.kernel.models import Message
+from lattice_demo.models import Message
 
 
 def query(db: Session, user):
@@ -80,7 +80,7 @@ def panel(db: Session, user, row: dict) -> dict:
     if refresh:
         msg.is_read = True
         db.commit()
-    return {"template": "features/message_panel.html", "message": msg, "refresh_grid": refresh}
+    return {"template": "demo/message_panel.html", "message": msg, "refresh_grid": refresh}
 
 
 LABELS = [("finance", "Finance"), ("ops", "Operations"), ("customer", "Customer"),
@@ -94,7 +94,7 @@ GRID = GridSpec(
     columns=[
         Column("is_starred", "", kind="star", star_action="star", sortable=False, width="34px",
                required=True),
-        Column("sender_name", "Message", kind="template", template="features/message_cell.html",
+        Column("sender_name", "Message", kind="template", template="demo/message_cell.html",
                required=True),
         Column("received_at", "Received", kind="ago", width="110px", align="right"),
     ],

@@ -10,6 +10,7 @@ from urllib.parse import quote
 from fastapi import Request, Response
 from fastapi.templating import Jinja2Templates
 from itsdangerous import BadSignature, URLSafeTimedSerializer
+from jinja2 import FileSystemLoader
 from markupsafe import Markup, escape
 
 from lattice.kernel.auth.cookies import set_cookie
@@ -20,8 +21,14 @@ from lattice.kernel.icons import icon
 from lattice.kernel.nav import nav_context
 from lattice.kernel.services import preferences
 
-templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
+CORE_TEMPLATES = Path(__file__).parent.parent / "templates"
+templates = Jinja2Templates(directory=CORE_TEMPLATES)
 env = templates.env
+
+
+def set_template_dirs(app_dirs: list[Path]) -> None:
+    """Search the apps' template folders, then core. Called by create_app."""
+    env.loader = FileSystemLoader([*app_dirs, CORE_TEMPLATES])
 
 
 def _iso(value) -> str:

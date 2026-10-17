@@ -29,7 +29,7 @@ from lattice.kernel import nav
 from lattice.kernel.auth import routes as auth_routes
 from lattice.kernel.auth.middleware import AuthMiddleware, is_htmx
 from lattice.kernel.config import settings
-from lattice.kernel.web import render
+from lattice.kernel.web import render, set_template_dirs
 from lattice.platform import account, admin, home
 
 APP_KEY = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -93,6 +93,7 @@ def create_app(apps: list[AppManifest]) -> FastAPI:
               [(a, a.prefix) for a in platform_last]
     for app, _mount in ordered:
         _register(app)
+    set_template_dirs([a.templates for a, _ in ordered if a.templates])
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):

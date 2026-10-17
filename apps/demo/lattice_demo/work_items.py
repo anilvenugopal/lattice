@@ -13,26 +13,30 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session, aliased
 
-from lattice.components.grid import (
+from lattice.api import (
+    ADMINS,
+    EDITORS,
     Action,
     ActionContext,
     Column,
     Field,
     Filter,
     GridSpec,
+    HomeTile,
     Palette,
+    User,
     View,
+    audit,
+    csrf_protect,
+    current_user,
+    get_db,
     render_grid_page,
+    render_page,
+    require_roles,
+    users,
+    utcnow,
 )
-from lattice.components.tiles import HomeTile
-from lattice.features.common import user_options
-from lattice.kernel.auth.csrf import csrf_protect
-from lattice.kernel.auth.deps import current_user, require_roles
-from lattice.kernel.auth.roles import ADMINS, EDITORS
-from lattice.kernel.db import get_db
-from lattice.kernel.models import User, WorkItem, utcnow
-from lattice.kernel.services import audit
-from lattice.kernel.web import render_page
+from lattice_demo.models import WorkItem
 
 STATUSES = [("new", "New"), ("in_review", "In review"), ("approved", "Approved"),
             ("declined", "Declined")]
@@ -79,7 +83,7 @@ def remove(ctx: ActionContext) -> str:
 
 
 def panel(db: Session, user, row: dict) -> dict:
-    return {"template": "features/work_item_panel.html",
+    return {"template": "demo/work_item_panel.html",
             "item": db.get(WorkItem, row["id"]),
             "events": audit.history(db, "demo.work_items", row["id"], limit=5)}
 
@@ -106,7 +110,7 @@ GRID = GridSpec(
     filters=[
         Filter("status", "Status", STATUSES),
         Filter("priority", "Priority", PRIORITIES),
-        Filter("owner_id", "Owner", user_options),
+        Filter("owner_id", "Owner", users.options),
     ],
     views=[
         View("open", "Open", where={"status": OPEN}),
@@ -120,7 +124,7 @@ GRID = GridSpec(
         Action("open", "Open", scope="single", href="/demo/work/{id}", icon="external"),
         Action("assign", "Assign", handler=assign, icon="assign", roles=EDITORS,
                fields=[Field("owner_id", "Owner", kind="select",
-                             options=lambda db, u: [("", "Unassigned"), *user_options(db)])]),
+                             options=lambda db, u: [("", "Unassigned"), *users.options(db)])]),
         Action("status", "Set status", handler=set_status, icon="flag", roles=EDITORS,
                fields=[Field("status", "Status", kind="select", options=STATUSES,
                              required=True)]),
@@ -157,7 +161,7 @@ def work_list(request: Request, db: Session = Depends(get_db)):
 
 def _form_ctx(db: Session, item: WorkItem | None, errors: dict | None = None) -> dict:
     return {"item": item, "errors": errors or {}, "statuses": STATUSES,
-            "priorities": PRIORITIES, "owners": user_options(db)}
+            "priorities": PRIORITIES, "owners": users.options(db)}
 
 
 def _read_form(form) -> tuple[dict, dict]:
@@ -180,14 +184,14 @@ def _read_form(form) -> tuple[dict, dict]:
 
 @router.get("/work/new", dependencies=[Depends(require_roles(*EDITORS))])
 def new_form(request: Request, db: Session = Depends(get_db)):
-    return render_page(request, "features/work_item_form.html", "work.new", **_form_ctx(db, None))
+    return render_page(request, "demo/work_item_form.html", "work.new", **_form_ctx(db, None))
 
 
 @router.post("/work/new", dependencies=[Depends(require_roles(*EDITORS))])
 async def create(request: Request, db: Session = Depends(get_db), user=Depends(current_user)):
     data, errors = _read_form(await request.form())
     if errors:
-        return render_page(request, "features/work_item_form.html", "work.new",
+        return render_page(request, "demo/work_item_form.html", "work.new",
                            status_code=400, **_form_ctx(db, None, errors), values=data)
     # The ref comes from the id, so it is set after the insert assigns one.
     item = WorkItem(ref=f"new-{uuid4().hex}", **data)
@@ -210,7 +214,7 @@ def _get(db: Session, item_id: int) -> WorkItem:
 def detail(item_id: int, request: Request, db: Session = Depends(get_db)):
     item = _get(db, item_id)
     owner = db.get(User, item.owner_id) if item.owner_id else None
-    return render_page(request, "features/work_item_detail.html", "work.detail",
+    return render_page(request, "demo/work_item_detail.html", "work.detail",
                        item=item, owner=owner, events=audit.history(db, "demo.work_items", item.id),
                        spec=GRID, can_edit=request.state.user.has_any(EDITORS),
                        crumb=item.ref)
@@ -219,7 +223,7 @@ def detail(item_id: int, request: Request, db: Session = Depends(get_db)):
 @router.get("/work/{item_id}/edit", dependencies=[Depends(require_roles(*EDITORS))])
 def edit_form(item_id: int, request: Request, db: Session = Depends(get_db)):
     item = _get(db, item_id)
-    return render_page(request, "features/work_item_form.html", "work.detail",
+    return render_page(request, "demo/work_item_form.html", "work.detail",
                        **_form_ctx(db, item), crumb=item.ref)
 
 
@@ -229,7 +233,7 @@ async def save(item_id: int, request: Request, db: Session = Depends(get_db),
     item = _get(db, item_id)
     data, errors = _read_form(await request.form())
     if errors:
-        return render_page(request, "features/work_item_form.html", "work.detail",
+        return render_page(request, "demo/work_item_form.html", "work.detail",
                            status_code=400, **_form_ctx(db, item, errors), values=data,
                            crumb=item.ref)
     changed = {k: v for k, v in data.items() if getattr(item, k) != v}

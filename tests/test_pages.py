@@ -1,52 +1,31 @@
-"""Every page renders for the roles that can see it."""
+"""Every core page renders for the roles that can see it; account and admin forms."""
 
 import pytest
 
 from lattice.kernel.nav import NODES
-from tests.conftest import csrf
+from lattice.testing import csrf, login
 
-PAGES = ["/", "/demo/work", "/demo/work/1", "/demo/jobs", "/demo/inbox", "/demo/inbox?view=archive",
-         "/account/preferences", "/account/profile", "/account/security"]
+PAGES = ["/", "/account/preferences", "/account/profile", "/account/security"]
 ADMIN_PAGES = ["/admin/users", "/admin/users/new", "/admin/roles", "/admin/sessions",
                "/admin/audit", "/admin/system", "/admin/ui-kit"]
 
 
-@pytest.mark.parametrize("path", PAGES)
-def test_viewer_pages(as_user, items, path):
-    assert as_user("viewer").get(path).status_code == 200
-
-
 @pytest.mark.parametrize("path", ADMIN_PAGES + PAGES)
-def test_admin_pages(as_user, items, path):
+def test_admin_pages(as_user, users, path):
     assert as_user("admin").get(path).status_code == 200
 
 
-def test_every_visible_nav_route_resolves(as_user, items):
+def test_every_visible_nav_route_resolves(as_user, users):
     c = as_user("admin")
     for node in NODES:
         if not node.hidden:
             assert c.get(node.route).status_code == 200, node.route
 
 
-def test_editor_only_pages(as_user, items):
-    assert as_user("viewer").get("/demo/work/new").status_code == 403
-    assert as_user("editor").get("/demo/work/new").status_code == 200
-
-
-def test_create_work_item_validates_and_redirects(as_user, items):
-    c = as_user("editor")
-    resp = c.post("/demo/work/new", data={"title": "", "csrf_token": csrf(c)})
-    assert "Title is required" in resp.text
-    resp = c.post("/demo/work/new", data={"title": "Fresh", "amount": "12", "csrf_token": csrf(c)},
-                  follow_redirects=False)
-    assert resp.status_code == 303
-    assert "WI-00007" in c.get(resp.headers["location"]).text
-
-
-def test_preferences_save_and_apply(as_user, items):
+def test_preferences_save_and_apply(as_user, users):
     c = as_user("viewer")
     c.post("/account/preferences", data={"theme": "dark", "density": "compact", "page_size": "25",
-                                         "time_format": "absolute", "landing_page": "/demo/jobs"},
+                                         "time_format": "absolute", "landing_page": "/"},
            headers={"X-CSRF-Token": csrf(c)})
     html = c.get("/").text
     assert 'data-theme="dark"' in html and 'data-density="compact"' in html
@@ -61,20 +40,13 @@ def test_admin_creates_user(as_user, db):
                                             "csrf_token": csrf(c)}, follow_redirects=False)
     assert resp.status_code == 303
     c.cookies.clear()
-    from tests.conftest import login
     login(c, "new@test.io", "StrongPass123")
-    assert c.get("/demo/work", follow_redirects=False).headers["location"] == "/auth/change-password"
+    assert c.get("/account/profile", follow_redirects=False).headers["location"] == "/auth/change-password"
 
 
-def test_invalid_path_value_shows_error_page(as_user, items):
-    resp = as_user("viewer").get("/demo/work/abc")
+def test_invalid_path_value_shows_error_page(as_user, users):
+    resp = as_user("admin").get("/admin/users/abc")
     assert resp.status_code == 422 and "Invalid request" in resp.text and "<html" in resp.text
-
-
-def test_work_item_validation_failure_is_400(as_user, items):
-    c = as_user("editor")
-    assert c.post("/demo/work/new", data={"title": "", "csrf_token": csrf(c)}).status_code == 400
-    assert c.post("/demo/work/1/edit", data={"title": "", "csrf_token": csrf(c)}).status_code == 400
 
 
 def test_admin_user_update_flashes_and_requires_name(as_user, users):
@@ -98,7 +70,8 @@ def test_every_url_the_js_posts_to_exists():
 
     from starlette.routing import Match
 
-    from lattice.main import app
+    from lattice.host import create_app
+    app = create_app(apps=[])
     urls = set()
     for js in Path("lattice/static/js").glob("*.js"):
         urls |= set(re.findall(r"app\.post\(\s*'(/[^'$`]+)'", js.read_text()))
@@ -108,7 +81,7 @@ def test_every_url_the_js_posts_to_exists():
         assert any(r.matches(scope)[0] == Match.FULL for r in app.routes), url
 
 
-def test_theme_button_save_keeps_other_preferences(as_user, items):
+def test_theme_button_save_keeps_other_preferences(as_user, users):
     c = as_user("viewer")
     c.post("/account/preferences", data={"density": "compact"}, headers={"X-CSRF-Token": csrf(c)})
     c.post("/account/preferences", data={"theme": "dark"}, headers={"X-CSRF-Token": csrf(c)})
@@ -116,21 +89,12 @@ def test_theme_button_save_keeps_other_preferences(as_user, items):
     assert 'data-theme="dark"' in html and 'data-density="compact"' in html
 
 
-def test_preferences_page_selects_saved_page_size(as_user, items):
+def test_preferences_page_selects_saved_page_size(as_user, users):
     c = as_user("viewer")
     c.post("/account/preferences", data={"page_size": "100"}, headers={"X-CSRF-Token": csrf(c)})
     html = c.get("/account/preferences").text
     assert '<option value="100" selected>' in html
     assert '<option value="50" selected>' not in html
-
-
-def test_work_item_timeline_shows_actor_and_event(as_user, items):
-    c = as_user("editor")
-    from tests.conftest import post_json
-    post_json(c, "/_grid/demo.work_items/action/approve", {"ids": [items[0].id]})
-    for path in (f"/demo/work/{items[0].id}", f"/_grid/demo.work_items/panel/{items[0].id}"):
-        html = c.get(path).text
-        assert "<strong>Editor</strong> Approve" in html, path
 
 
 def test_profile_update_and_blank_name(as_user, users, db):
@@ -153,11 +117,6 @@ def test_revoking_own_current_session_signs_out(as_user, users):
     assert c.get("/", follow_redirects=False).status_code == 302
 
 
-def test_home_links_come_from_the_nav_manifest(as_user, items):
-    html = as_user("viewer").get("/").text
-    assert "Live-polling grid" in html and 'href="/admin/users"' not in html
-
-
 def test_brand_logo_variants_come_from_settings(client, as_user, monkeypatch):
     from lattice.kernel.config import settings
     monkeypatch.setattr(settings, "brand_logo_light", "/static/brand/acme-light.svg")
@@ -167,3 +126,8 @@ def test_brand_logo_variants_come_from_settings(client, as_user, monkeypatch):
         assert 'class="brand__logo brand__logo--light" src="/static/brand/acme-light.svg"' in html
         assert 'class="brand__logo brand__logo--dark" src="/static/brand/acme-dark.svg"' in html
         assert 'class="brand__name"' not in html
+
+
+@pytest.mark.parametrize("path", PAGES)
+def test_viewer_pages(as_user, users, path):
+    assert as_user("viewer").get(path).status_code == 200

@@ -3,6 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 from lattice.kernel import db as app_db
 from lattice.kernel import models  # noqa: F401  registers tables on Base.metadata
+from lattice_demo import models as demo_models  # noqa: F401  until per-app migrations (step 2)
 
 config = context.config
 if config.config_file_name:

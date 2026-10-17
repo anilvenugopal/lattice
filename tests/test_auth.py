@@ -2,17 +2,17 @@ from sqlalchemy import select
 
 from lattice.kernel.auth.sessions import COOKIE_NAME as SESSION_COOKIE
 from lattice.kernel.models import AuditEvent, UserSession
-from tests.conftest import PASSWORD, csrf, login, make_user
+from lattice.testing import PASSWORD, csrf, login, make_user
 
 
 def test_anonymous_request_redirects_to_login_with_next(client, users):
-    resp = client.get("/demo/work?view=mine", follow_redirects=False)
+    resp = client.get("/account/profile?tab=1", follow_redirects=False)
     assert resp.status_code == 302
-    assert resp.headers["location"] == "/auth/login?next=/demo/work%3Fview%3Dmine"
+    assert resp.headers["location"] == "/auth/login?next=/account/profile%3Ftab%3D1"
 
 
 def test_htmx_request_gets_hx_redirect(client, users):
-    resp = client.get("/demo/work", headers={"HX-Request": "true"}, follow_redirects=False)
+    resp = client.get("/account/profile", headers={"HX-Request": "true"}, follow_redirects=False)
     assert resp.status_code == 200
     assert resp.headers["HX-Redirect"].startswith("/auth/login")
 
@@ -57,7 +57,7 @@ def test_inactive_and_sso_only_users_cannot_use_password(client, db):
 def test_must_change_password_gate(client, db):
     make_user(db, "new@test.io", must_change_password=True)
     login(client, "new@test.io")
-    assert client.get("/demo/work", follow_redirects=False).headers["location"] == "/auth/change-password"
+    assert client.get("/account/profile", follow_redirects=False).headers["location"] == "/auth/change-password"
     resp = client.post("/auth/change-password", data={
         "current": PASSWORD, "new": "short", "confirm": "short", "csrf_token": csrf(client)})
     assert resp.status_code == 400
@@ -65,7 +65,7 @@ def test_must_change_password_gate(client, db):
         "current": PASSWORD, "new": "BrandNewPass99", "confirm": "BrandNewPass99",
         "csrf_token": csrf(client)}, follow_redirects=False)
     assert resp.status_code == 303
-    assert client.get("/demo/work").status_code == 200
+    assert client.get("/account/profile").status_code == 200
 
 
 def test_user_without_role_sees_pending_page(client, db):
@@ -84,7 +84,7 @@ def test_viewer_cannot_open_administration(as_user):
 
 def test_revoking_sessions_on_deactivate(as_user, users, client):
     c = as_user("admin")
-    from tests.conftest import post_json
+    from lattice.testing import post_json
     resp = post_json(c, "/_grid/users/action/deactivate", {"ids": [users["editor"].id]})
     assert resp.status_code == 200 and "Deactivated 1" in resp.json()["message"]
     c.cookies.clear()

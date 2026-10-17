@@ -17,7 +17,7 @@ from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
-from lattice.components.grid import (
+from lattice.api import (
     Action,
     ActionContext,
     ActionResult,
@@ -25,16 +25,18 @@ from lattice.components.grid import (
     Field,
     Filter,
     GridSpec,
+    HomeTile,
     Palette,
+    SessionLocal,
+    User,
     View,
+    csrf_protect,
+    get_db,
     render_grid_page,
+    settings,
+    utcnow,
 )
-from lattice.components.tiles import HomeTile
-from lattice.kernel import db as app_db
-from lattice.kernel.auth.csrf import csrf_protect
-from lattice.kernel.config import settings
-from lattice.kernel.db import get_db
-from lattice.kernel.models import Job, User, utcnow
+from lattice_demo.models import Job
 
 STATUSES = [("queued", "Queued"), ("running", "Running"), ("succeeded", "Succeeded"),
             ("failed", "Failed"), ("cancelled", "Cancelled")]
@@ -81,7 +83,7 @@ def panel(db: Session, user, row: dict) -> dict:
     duration = None
     if row["started_at"]:
         duration = (row["finished_at"] or utcnow()) - row["started_at"]
-    return {"template": "features/job_panel.html", "duration": duration}
+    return {"template": "demo/job_panel.html", "duration": duration}
 
 
 GRID = GridSpec(
@@ -149,7 +151,7 @@ async def background() -> None:
         return
 
     def tick():
-        with app_db.SessionLocal() as db:
+        with SessionLocal() as db:
             simulate(db)
 
     while True:

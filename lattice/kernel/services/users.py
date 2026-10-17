@@ -17,6 +17,13 @@ def by_email(db: Session, email: str) -> User | None:
     return db.scalar(select(User).where(func.lower(User.email) == normalize_email(email)))
 
 
+def options(db: Session, _user=None) -> list[tuple[str, str]]:
+    """Active users as (id, name) choices for selects and filters."""
+    rows = db.execute(select(User.id, User.display_name).where(User.is_active.is_(True))
+                      .order_by(User.display_name)).all()
+    return [(str(r.id), r.display_name) for r in rows]
+
+
 def role_codes(db: Session) -> set[str]:
     return set(db.scalars(select(Role.code)))
 
