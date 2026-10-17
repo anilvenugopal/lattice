@@ -28,6 +28,7 @@
         secondaryColor: token('--surface-recessed'),
         tertiaryColor: token('--surface-panel'),
         lineColor: token('--text-3'),
+        edgeLabelBackground: token('--surface-panel'),
         textColor: token('--text'),
         noteBkgColor: token('--tone-warning-bg'),
         noteTextColor: token('--tone-warning-fg'),

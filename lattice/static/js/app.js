@@ -124,6 +124,9 @@ function shell(opts) {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'j' || e.key === 'J' || e.key === 'k' || e.key === 'K')) {
         e.preventDefault();
         this.paletteOpen ? this.closePalette() : this.openPalette();
+      } else if (e.key === 'F1') {
+        e.preventDefault();
+        window.location = '/help/for/' + encodeURIComponent(document.body.dataset.navKey || '');
       } else if (e.key === '?' && !app.isTyping(e)) {
         this.shortcutsOpen = !this.shortcutsOpen;
       }

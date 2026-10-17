@@ -33,7 +33,7 @@ def search(request: Request, q: str = "", provider: str = "", db: Session = Depe
                   filters=[(p, counts[p.key]) for p in providers], groups=groups)
 
 
-@router.get("/_search/preview/{provider}/{item_id}")
+@router.get("/_search/preview/{provider}/{item_id:path}")
 def search_preview(provider: str, item_id: str, request: Request, db: Session = Depends(get_db),
                    user=Depends(current_user)):
     return search_providers.provider_for(user, provider).preview(request, db, item_id)

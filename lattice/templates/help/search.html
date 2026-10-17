@@ -1,0 +1,23 @@
+{# Help search results (GET /help/search?q=). #}
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, empty_state %}
+{% block main %}
+<div class="page page--narrow">
+  {{ page_header("Search help") }}
+  <form class="help-search" action="/help/search" role="search">
+    {{ icon('search', 16) }}<input class="help-search__input" type="search" name="q" value="{{ q }}" placeholder="Search help" aria-label="Search help" autofocus>
+  </form>
+  {% if q and not hits %}
+    {{ empty_state("No help matches “" ~ q ~ "”", "Try fewer or different words.", "search") }}
+  {% endif %}
+  <ol class="help-results">
+    {% for hit in hits %}
+    <li class="help-result">
+      <a class="help-result__title" href="{{ hit.topic.url }}">{{ hit.topic.title }}</a>
+      <span class="help-result__app">{{ labels[hit.topic.app] }}{% if hit.topic.summary %} · {{ hit.topic.summary }}{% endif %}</span>
+      <p class="help-result__snippet">{{ hit.snippet }}</p>
+    </li>
+    {% endfor %}
+  </ol>
+</div>
+{% endblock %}

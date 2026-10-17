@@ -4,6 +4,9 @@
 {% block main %}
 <div class="page">
   {{ page_header("Help", "Guides for every app in " ~ settings.app_name ~ ", and the Lattice documentation.") }}
+  <form class="help-search help-search--wide" action="/help/search" role="search">
+    {{ icon('search', 16) }}<input class="help-search__input" type="search" name="q" placeholder="Search all help" aria-label="Search all help">
+  </form>
   {# Apps in the host's order, then Lattice's own help. #}
   <ul class="help-cards help-cards--wide">
     {% for app in (apps | rejectattr("key", "equalto", "lattice") | list) + (apps | selectattr("key", "equalto", "lattice") | list) %}

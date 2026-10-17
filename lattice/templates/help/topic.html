@@ -25,6 +25,9 @@
   </aside>
 
   <article class="help__main">
+    <form class="help-search" action="/help/search" role="search">
+      {{ icon('search', 16) }}<input class="help-search__input" type="search" name="q" placeholder="Search help" aria-label="Search help">
+    </form>
     <header class="help__head">
       <h1 class="help__title">{{ topic.title }}</h1>
       {% if topic.summary %}<p class="help__summary">{{ topic.summary }}</p>{% endif %}

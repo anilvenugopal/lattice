@@ -23,7 +23,9 @@ from starlette.exceptions import HTTPException
 from lattice.components import tiles
 from lattice.components.grid import router as grid_router
 from lattice.components.help import content as help_content
+from lattice.components.help import provider as help_provider
 from lattice.components.help import router as help_router
+from lattice.components.help import search as help_search
 from lattice.components.manifest import AppManifest
 from lattice.components.search import providers as search_providers
 from lattice.components.search import router as search_router
@@ -122,6 +124,8 @@ def _load_help(ordered: list[tuple[AppManifest, str]], platform: list[AppManifes
             help_content.register(help_content.load_help(key, label, root, owned))
         except help_content.HelpError as exc:
             raise AppError(str(exc)) from exc
+    help_search.build([t for app in help_content.HELP.values() for t in app.topics.values()])
+    search_providers.register_provider(help_provider.PROVIDER)
 
 
 def _reset_registries() -> None:

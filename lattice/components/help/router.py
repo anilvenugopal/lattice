@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 
+from lattice.components.help import search as help_search
 from lattice.components.help.content import HELP, AppHelp, Topic, target_for
 from lattice.kernel.auth.deps import current_user
 from lattice.kernel.nav import BY_KEY
@@ -17,6 +18,13 @@ router = APIRouter(prefix="/help")
 def center(request: Request, user=Depends(current_user)):
     apps = [a for a in HELP.values() if a.home.visible_to(user)]
     return render_page(request, "help/center.html", "help", apps=apps)
+
+
+@router.get("/search")
+def search(request: Request, q: str = "", user=Depends(current_user)):
+    hits = help_search.search(q.strip(), user, limit=50) if q.strip() else []
+    return render_page(request, "help/search.html", "help", q=q.strip(), hits=hits,
+                       labels={k: a.label for k, a in HELP.items()}, title="Search help")
 
 
 @router.get("/for/{nav_key}")
@@ -51,6 +59,6 @@ def topic(app_key: str, request: Request, slug: str = "", user=Depends(current_u
     if page is None or not page.visible_to(user):
         raise HTTPException(404, detail="There is no help topic at this address.")
     previous, following = app.neighbours(page, user)
-    return render_page(request, "help/topic.html", "help", crumb=app.label, app_help=app,
+    return render_page(request, "help/topic.html", "help", crumb=f"{app.label} help", app_help=app,
                        topic=page, previous=previous, following=following,
                        title=page.title, user=user)

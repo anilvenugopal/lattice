@@ -34,6 +34,7 @@ Items move through these statuses:
 
 ```mermaid
 stateDiagram-v2
+    state "In review" as In_review
     [*] --> New
     New --> In_review: Set status
     New --> Approved: Approve

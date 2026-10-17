@@ -1,0 +1,11 @@
+{# Ctrl+J preview of a help topic. #}
+<div class="panel">
+  <header class="panel__head">
+    <div class="panel__title">{{ topic.title }}</div>
+    <a class="btn btn--sm btn--primary" href="{{ topic.url }}">Open</a>
+  </header>
+  <div class="panel__body">
+    <p class="u-muted u-small">{{ app_help.label }} help</p>
+    <div class="help-content">{{ topic.html | safe }}</div>
+  </div>
+</div>
