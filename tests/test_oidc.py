@@ -12,10 +12,10 @@ from sqlalchemy import select
 from app.auth import oidc
 from app.config import settings
 from app.models import User
-from tests.conftest import make_user
+from tests.conftest import csrf, make_user
 
 ISSUER = "https://idp.test"
-CLIENT_ID = "ui-shell"
+CLIENT_ID = "lattice"
 
 
 @pytest.fixture
@@ -126,7 +126,7 @@ def test_login_page_shows_sso_button(client, idp):
 
 def test_sso_logout_redirects_to_provider_end_session(client, db, idp):
     sign_in(client, idp, {"sub": "u-9", "email": "x9@corp.io"})
-    token = client.cookies["csrf_token"]
+    token = csrf(client)
     resp = client.post("/auth/logout", data={"csrf_token": token}, follow_redirects=False)
     assert resp.headers["location"].startswith(f"{ISSUER}/logout?")
     assert client.get("/", follow_redirects=False).status_code == 302

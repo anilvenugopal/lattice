@@ -8,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    app_name: str = "UI Shell"
+    app_name: str = "Lattice"
     app_env: str = "development"
     # Logo shown in the top bar and on sign-in pages: one file for light mode, one for dark.
     brand_logo_light: str = "/static/brand/logo-light.svg"

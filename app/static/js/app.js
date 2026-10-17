@@ -7,7 +7,7 @@
 
 Object.assign(window.app, (function () {
   function csrf() {
-    const m = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+    const m = document.cookie.match(/(?:^|;\s*)lattice_csrf=([^;]+)/);
     return m ? decodeURIComponent(m[1]) : '';
   }
 

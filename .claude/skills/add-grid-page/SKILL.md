@@ -1,6 +1,6 @@
 ---
 name: add-grid-page
-description: Add a new list screen (records, queue, jobs, messages) to this ui-shell app using the standard GridSpec, with nav entry, actions, migration and tests.
+description: Add a new list screen (records, queue, jobs, messages) to this Lattice app using the standard GridSpec, with nav entry, actions, migration and tests.
 ---
 
 # Add a grid page

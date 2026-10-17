@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 
 from alembic import command
 from app import db as app_db
+from app.auth import csrf as csrf_cookie
 from app.models import Message, User, WorkItem
 from app.services import users as users_service
 
@@ -72,9 +73,9 @@ def client(db):
 
 
 def csrf(client) -> str:
-    if "csrf_token" not in client.cookies:
+    if csrf_cookie.COOKIE_NAME not in client.cookies:
         client.get("/auth/login")
-    return client.cookies["csrf_token"]
+    return client.cookies[csrf_cookie.COOKIE_NAME]
 
 
 def login(client, email, password=PASSWORD):

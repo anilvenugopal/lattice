@@ -24,7 +24,7 @@ from app.display import initials
 from app.models import User, UserSession, utcnow
 from app.services import preferences
 
-COOKIE_NAME = "app_session"
+COOKIE_NAME = "lattice_session"
 AUTH_METHOD_LABELS = {"password": "Password", "oidc": "SSO"}
 
 

@@ -1,5 +1,6 @@
 from sqlalchemy import select
 
+from app.auth.sessions import COOKIE_NAME as SESSION_COOKIE
 from app.models import AuditEvent, UserSession
 from tests.conftest import PASSWORD, csrf, login, make_user
 
@@ -22,7 +23,7 @@ def test_password_login_and_logout(client, users, db):
     assert resp.status_code == 303
     assert client.get("/").status_code == 200
 
-    token = client.cookies["app_session"]
+    token = client.cookies[SESSION_COOKIE]
     stored = db.scalars(select(UserSession.id)).all()
     assert token not in stored and len(stored) == 1     # only the hash is stored
 

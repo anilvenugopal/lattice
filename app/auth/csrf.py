@@ -1,6 +1,6 @@
 """CSRF protection, double-submit cookie.
 
-The middleware sets a random `csrf_token` cookie. Every unsafe request must echo it
+The middleware sets a random `lattice_csrf` cookie. Every unsafe request must echo it
 in the `X-CSRF-Token` header (HTMX and `app.post()` send it automatically, see
 static/js/app.js) or in a `csrf_token` form field (`{{ csrf_field() }}`).
 """
@@ -12,7 +12,7 @@ import secrets
 
 from fastapi import HTTPException, Request
 
-COOKIE_NAME = "csrf_token"
+COOKIE_NAME = "lattice_csrf"
 HEADER_NAME = "X-CSRF-Token"
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}
 

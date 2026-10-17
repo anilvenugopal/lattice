@@ -61,7 +61,7 @@ role or deactivate themselves.
 
 ## Sessions
 
-Server-side rows in `user_session`; the cookie (`app_session`, HttpOnly,
+Server-side rows in `user_session`; the cookie (`lattice_session`, HttpOnly,
 SameSite=Lax) carries a random token and the table stores its
 SHA-256. Idle timeout `SESSION_IDLE_MINUTES` (480), absolute `SESSION_MAX_HOURS`
 (24). Users see and end their sessions under Account › Security; admins under
@@ -82,7 +82,7 @@ does not reveal which accounts exist.
 
 ## CSRF
 
-Double-submit cookie (`csrf_token`). HTMX and `app.post()` send `X-CSRF-Token`;
+Double-submit cookie (`lattice_csrf`; the form field is `csrf_token`). HTMX and `app.post()` send `X-CSRF-Token`;
 plain forms include `{{ csrf_field() }}`. Every router includes
 `Depends(csrf_protect)`.
 

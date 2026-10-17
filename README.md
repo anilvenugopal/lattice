@@ -1,4 +1,4 @@
-# UI Shell
+# Lattice
 
 A starting point for internal web applications: the shell, sign-in and
 administration are done; you add feature modules. Built for agentic coding — the

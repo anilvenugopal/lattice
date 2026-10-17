@@ -1,4 +1,4 @@
-# UI Shell — Agent Instructions
+# Lattice — Agent Instructions
 
 This repo is a template for internal web applications. It supplies the shell
 (navigation, Ctrl+J search, sign-in, users, roles, preferences, theme, audit) and
