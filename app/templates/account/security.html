@@ -1,0 +1,23 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, pref_row, session_table %}
+{% block main %}
+<div class="page page--narrow">
+  {{ page_header("Security") }}
+  <div class="stack-lg">
+    {% call card("Password") %}
+      {% if current_user.has_password %}
+        {% call pref_row("Password is set", "Changing it signs out your other sessions.") %}<a class="btn" href="/auth/change-password">Change password</a>{% endcall %}
+      {% else %}
+        {% call pref_row("No password", "You sign in with single sign-on. You can add a password as a fallback.") %}<a class="btn" href="/auth/change-password">Set password</a>{% endcall %}
+      {% endif %}
+    {% endcall %}
+    {% call card("Active sessions", flush=True) %}
+      {{ session_table(sessions, current_user.session_id, revoke=True) }}
+    {% endcall %}
+    {% if sessions | length > 1 %}
+    <div class="form-actions"><button class="btn btn--danger-ghost" hx-post="/account/sessions/revoke-others"
+      hx-confirm="Sign out every other session?">Sign out all other sessions</button></div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

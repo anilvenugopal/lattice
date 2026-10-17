@@ -1,0 +1,10 @@
+{# The standard list screen: page header + one grid filling the rest of the page. #}
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header %}
+{% from "components/grid.html" import data_grid %}
+{% block main %}
+<div class="page page--fill">
+  {{ page_header(title, subtitle) }}
+  {{ data_grid(grid) }}
+</div>
+{% endblock %}

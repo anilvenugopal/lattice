@@ -1,0 +1,25 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, field, prop_list, badge %}
+{% block main %}
+<div class="page page--narrow">
+  {{ page_header("Profile") }}
+  <div class="stack-lg">
+    {% call card("Your details") %}
+      <form hx-post="/account/profile" class="stack">
+        {{ field("display_name", "Display name", profile.display_name, required=True) }}
+        {{ field("email", "Email", profile.email, hint="Your email is your sign-in name. An administrator can change it.", attrs="disabled") }}
+        <div class="form-actions"><button class="btn btn--primary" type="submit">Save</button></div>
+      </form>
+    {% endcall %}
+    {% call card("Access") %}
+      {% set roles %}{% for r in current_user.roles %}{{ badge(r, 'accent') }} {% endfor %}{% endset %}
+      {{ prop_list([
+        ("Roles", roles),
+        ("Sign-in methods", profile.sign_in_methods),
+        ("Member since", time_tag(profile.created_at, "date")),
+        ("Last sign-in", time_tag(profile.last_login_at)),
+      ]) }}
+    {% endcall %}
+  </div>
+</div>
+{% endblock %}

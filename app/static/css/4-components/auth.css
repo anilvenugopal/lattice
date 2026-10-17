@@ -1,0 +1,13 @@
+/* Layer 4 — components. Sign-in and other bare-layout cards (templates/auth, base/error.html). */
+.bare__brand { display: flex; justify-content: center; margin-bottom: var(--sp-5); }
+.bare__note { margin-top: var(--sp-4); text-align: center; font-size: var(--fs-sm); line-height: 1.8; color: var(--text-3); }
+
+.auth-card { padding: var(--sp-8) var(--sp-6); background: var(--surface-panel); border: 1px solid var(--border);
+  border-radius: var(--r-xl); box-shadow: var(--shadow-md); }
+.auth-card__title { text-align: center; font-size: var(--fs-xl); }
+.auth-card__sub { margin: var(--sp-1) 0 var(--sp-5); text-align: center; color: var(--text-2); }
+.auth-card__icon, .auth-card__code { display: flex; justify-content: center; margin-bottom: var(--sp-3);
+  font-size: var(--fs-display); font-weight: var(--fw-semibold); color: var(--text-3); }
+.auth-card__or { display: flex; align-items: center; gap: 10px; margin: var(--sp-5) 0; font-size: var(--fs-sm); color: var(--text-3); }
+.auth-card__or::before, .auth-card__or::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.auth-card__alt { display: flex; justify-content: center; gap: var(--sp-3); margin-top: var(--sp-4); }

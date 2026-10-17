@@ -1,0 +1,9 @@
+/* Layer 5 — utilities. Single-purpose helpers, prefixed u-. The only layer that may use !important. */
+[x-cloak] { display: none !important; }
+.u-muted { color: var(--text-3) !important; }
+.u-small { font-size: var(--fs-sm) !important; }
+.u-mono { font-family: var(--font-mono) !important; font-size: 0.92em; }
+.u-num { font-variant-numeric: tabular-nums !important; }
+.u-truncate { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.u-text-right { text-align: right !important; }
+.u-mt-3 { margin-top: var(--sp-3) !important; }

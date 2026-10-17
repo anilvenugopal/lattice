@@ -1,0 +1,42 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, field, checkbox, prop_list, session_table, timeline %}
+{% block main %}
+<div class="page">
+  {{ page_header(target.display_name, target.email, "Active" if target.is_active else "Inactive", "success" if target.is_active else "danger") }}
+  <div class="grid-2">
+    <div class="stack-lg">
+      {% call card("Account") %}
+        <form method="post" action="/admin/users/{{ target.id }}" class="stack">
+          {{ csrf_field() }}
+          {{ field("display_name", "Name", target.display_name, error=errors.display_name, required=True) }}
+          <fieldset class="field"><legend class="field__label">Roles</legend>
+            {% for code, label in roles %}
+              {{ checkbox("roles", label, code in target.role_codes, value=code,
+                          disabled=(code == 'admin' and target.id == current_user.id),
+                          hint=("You cannot remove your own admin role" if code == 'admin' and target.id == current_user.id else "")) }}
+            {% endfor %}
+          </fieldset>
+          {{ checkbox("is_active", "Active", target.is_active, disabled=target.id == current_user.id,
+                      hint="Inactive users cannot sign in and lose their sessions.") }}
+          <div class="form-actions"><button class="btn btn--primary" type="submit">Save changes</button></div>
+        </form>
+      {% endcall %}
+      {% call card("Details") %}
+        {{ prop_list([
+          ("Sign-in", target.sign_in_methods),
+          ("SSO subject", target.oidc_subject),
+          ("Must change password", "Yes" if target.must_change_password else "No"),
+          ("Created", time_tag(target.created_at, "datetime")),
+          ("Last sign-in", time_tag(target.last_login_at)),
+        ]) }}
+      {% endcall %}
+    </div>
+    <div class="stack-lg">
+      {% call card("Active sessions", sessions | length ~ " open", flush=True) %}
+        {{ session_table(sessions) }}
+      {% endcall %}
+      {% call card("Activity") %}{{ timeline(events) }}{% endcall %}
+    </div>
+  </div>
+</div>
+{% endblock %}

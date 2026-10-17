@@ -1,0 +1,79 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, badge, empty_state, prop_list, field, select_field, checkbox, stat, user_chip, alert, progress %}
+{% block main %}
+<div class="page">
+  {% call page_header("UI kit", "Every shared component, rendered. Source: templates/components/macros.html and static/css/4-components/.") %}
+    <button class="btn" onclick="app.toast('Saved.', 'success')">Toast</button>
+    <button class="btn btn--primary" onclick="app.toast('Something needs attention.', 'warning')">Warning toast</button>
+  {% endcall %}
+  <div class="grid-2">
+    <div class="stack-lg">
+      {% call card("Buttons") %}
+        <div class="cluster">
+          <button class="btn btn--primary">Primary</button>
+          <button class="btn">Default</button>
+          <button class="btn btn--ghost">Ghost</button>
+          <button class="btn btn--danger">Danger</button>
+          <button class="btn btn--danger-ghost">Danger ghost</button>
+          <button class="btn btn--link">Link</button>
+          <button class="btn" disabled>Disabled</button>
+        </div>
+        <div class="cluster u-mt-3">
+          <button class="btn btn--sm btn--primary">{{ icon('plus', 14) }}Small</button>
+          <button class="btn btn--sm">{{ icon('download', 14) }}Small</button>
+          <button class="icon-btn" data-tip="Icon button">{{ icon('settings') }}</button>
+          <button class="chip">Filter chip{{ icon('chevron-down', 13) }}</button>
+          <button class="chip is-on">Active chip<span class="chip__count">2</span>{{ icon('chevron-down', 13) }}</button>
+        </div>
+      {% endcall %}
+      {% call card("Badges") %}
+        <div class="cluster">
+          {% for tone in ["neutral", "info", "success", "warning", "danger", "accent"] %}{{ badge(tone | title, tone) }}{% endfor %}
+        </div>
+      {% endcall %}
+      {% call card("Alerts") %}
+        <div class="stack">
+          {{ alert("info", "Informational message.") }}
+          {{ alert("success", "Changes saved.") }}
+          {{ alert("warning", "Check the highlighted fields.") }}
+          {{ alert("danger", "The request failed.") }}
+        </div>
+      {% endcall %}
+      {% call card("Stats") %}
+        <div class="stats">{{ stat("Open", "1,204") }}{{ stat("Mine", "18", tone="accent") }}{{ stat("Failed", "3", tone="danger") }}</div>
+      {% endcall %}
+      {% call card("Property list") %}
+        {{ prop_list([("Reference", "WI-00042"), ("Owner", user_chip("Ada Lovelace")), ("Status", badge("In review", "warning")), ("Amount", 125000 | money), ("Empty", None)], columns=2) }}
+      {% endcall %}
+    </div>
+    <div class="stack-lg">
+      {% call card("Form fields") %}
+        <div class="stack">
+          {{ field("a", "Text field", placeholder="Placeholder", hint="Hint text under the field.") }}
+          {{ field("b", "Required with error", required=True, error="This field is required.") }}
+          {{ select_field("c", "Select", [("1", "One"), ("2", "Two")], blank="Choose…") }}
+          {{ field("d", "Text area", type="textarea") }}
+          {{ checkbox("e", "Checkbox", True, hint="Optional hint") }}
+          <div class="segmented"><label><input type="radio" name="seg" checked><span>Segmented</span></label><label><input type="radio" name="seg"><span>Control</span></label></div>
+        </div>
+      {% endcall %}
+      {% call card("Empty state") %}
+        {% call empty_state("No results", "Try a different search.", "search") %}<button class="btn btn--sm">Clear filters</button>{% endcall %}
+      {% endcall %}
+      {% call card("Typography") %}
+        <h1 class="page-header__title">Page title</h1>
+        <h2 class="card__title">Section title</h2>
+        <p>Body text. <a href="#">A link</a>. <code>inline code</code>. <kbd>Ctrl</kbd> <kbd>J</kbd></p>
+        <p class="u-muted">Muted text for secondary information.</p>
+        <p class="u-mono">Monospace 0123456789</p>
+      {% endcall %}
+      {% call card("Progress and tags") %}
+        <div class="stack">
+          <div>{{ progress(65) }}</div>
+          <span class="tags"><span class="tag">admin</span><span class="tag">editor</span></span>
+        </div>
+      {% endcall %}
+    </div>
+  </div>
+</div>
+{% endblock %}

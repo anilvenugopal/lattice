@@ -1,0 +1,10 @@
+{% extends "base/bare.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block content %}
+<div class="auth-card">
+  <div class="auth-card__code">{{ code }}</div>
+  <h1 class="auth-card__title">{{ title }}</h1>
+  <p class="auth-card__sub">{{ detail }}</p>
+  <a class="btn btn--primary btn--block" href="/">Go to Home</a>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, prop_list, badge %}
+{% block main %}
+<div class="page">
+  {{ page_header("System", "Runtime configuration. Change values in .env and restart.") }}
+  <div class="grid-2">
+    <div class="stack-lg">
+      {% call card("Application") %}
+        {{ prop_list([
+          ("Name", settings.app_name),
+          ("Environment", badge(settings.app_env, "warning" if settings.app_env != "production" else "success")),
+          ("Database", dialect),
+          ("Connection", db_url),
+          ("Session idle timeout", settings.session_idle_minutes ~ " minutes"),
+          ("Session maximum", settings.session_max_hours ~ " hours"),
+        ]) }}
+      {% endcall %}
+      {% call card("Sign-in") %}
+        {{ prop_list([
+          ("Password sign-in", badge("Enabled", "success") if settings.password_login_enabled else badge("Disabled")),
+          ("OIDC", badge("Enabled", "success") if settings.oidc_enabled else badge("Not configured")),
+          ("OIDC issuer", settings.oidc_issuer),
+          ("OIDC client id", settings.oidc_client_id),
+          ("Redirect URI", settings.oidc_redirect_uri),
+          ("Default role for new SSO users", settings.oidc_default_role or "None (admin approves)"),
+        ]) }}
+      {% endcall %}
+      {% call card("Counts") %}{{ prop_list(counts.items()) }}{% endcall %}
+    </div>
+    <div class="stack-lg">
+      {% call card("Registered grids", grids | length ~ " grids", flush=True) %}
+        <table class="table"><thead><tr><th>Key</th><th>Page</th><th>Columns</th><th>Actions</th><th>Roles</th></tr></thead><tbody>
+        {% for g in grids %}<tr><td class="u-mono">{{ g.key }}</td><td><a href="{{ g.path }}">{{ g.path }}</a></td>
+          <td>{{ g.columns | length }}</td><td>{{ g.actions | length }}</td><td>{{ g.roles | join(', ') or 'all' }}</td></tr>{% endfor %}
+        </tbody></table>
+      {% endcall %}
+      {% call card("Navigation manifest", nodes | length ~ " nodes", flush=True) %}
+        <table class="table"><thead><tr><th>Key</th><th>Label</th><th>Route</th><th>Roles</th></tr></thead><tbody>
+        {% for n in nodes %}<tr><td class="u-mono">{{ n.key }}</td><td>{{ n.label }}{% if n.hidden %} {{ badge('hidden') }}{% endif %}</td>
+          <td class="u-mono">{{ n.route }}</td><td>{{ n.roles | join(', ') or 'all' }}</td></tr>{% endfor %}
+        </tbody></table>
+      {% endcall %}
+    </div>
+  </div>
+</div>
+{% endblock %}

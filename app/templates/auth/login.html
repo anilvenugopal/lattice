@@ -1,0 +1,34 @@
+{% extends "base/bare.html" %}
+{% block title %}Sign in{% endblock %}
+{% from "components/macros.html" import alert, field %}
+{% block content %}
+<div class="auth-card">
+  <h1 class="auth-card__title">Sign in</h1>
+  <p class="auth-card__sub">to continue to {{ settings.app_name }}</p>
+
+  {% if error %}{{ alert("danger", error) }}{% endif %}
+
+  {% if oidc_enabled %}
+  <a class="btn btn--primary btn--block btn--lg" href="/auth/oidc/start?next={{ next | urlencode }}">{{ icon('key', 16) }} Continue with {{ oidc_label }}</a>
+  {% if password_enabled %}<div class="auth-card__or"><span>or sign in with a password</span></div>{% endif %}
+  {% endif %}
+
+  {% if password_enabled %}
+  <form method="post" action="/auth/login" class="stack">
+    {{ csrf_field() }}
+    <input type="hidden" name="next" value="{{ next }}">
+    {{ field("email", "Email", email, type="email", required=True, attrs='autocomplete="username" autofocus') }}
+    {{ field("password", "Password", type="password", required=True, attrs='autocomplete="current-password"') }}
+    <button class="btn {{ 'btn--primary' if not oidc_enabled else '' }} btn--block btn--lg" type="submit">Sign in</button>
+  </form>
+  {% endif %}
+
+  {% if not oidc_enabled and not password_enabled %}
+  {{ alert("warning", "No sign-in method is configured. Set PASSWORD_LOGIN_ENABLED or the OIDC_* settings.") }}
+  {% endif %}
+</div>
+{% if dev_users %}
+<p class="bare__note">Development accounts:
+  {% for email, _, password, _ in dev_users if password %}<code>{{ email }}</code> / <code>{{ password }}</code>{{ ", " if not loop.last }}{% endfor %}</p>
+{% endif %}
+{% endblock %}

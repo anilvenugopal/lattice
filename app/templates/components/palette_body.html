@@ -1,0 +1,29 @@
+{# Ctrl+J body (GET /_search): provider filters with counts, then results. Behaviour: static/js/palette.js. #}
+<nav class="palette__nav" aria-label="Filter by source">
+  <button type="button" class="palette__filter{% if not provider %} is-active{% endif %}" data-provider="" @click="setProvider('')">
+    {{ icon('search') }}<span class="palette__filter-label">All</span>
+  </button>
+  {% for p, n in filters %}
+  <button type="button" class="palette__filter{% if p.key == provider %} is-active{% endif %}" data-provider="{{ p.key }}" @click="setProvider({{ p.key|js }})">
+    {{ icon(p.icon) }}<span class="palette__filter-label">{{ p.label }}</span>{% if n %}<span class="palette__count">{{ n | number }}</span>{% endif %}
+  </button>
+  {% endfor %}
+</nav>
+<div class="palette__results">
+  {% for p, results, total in groups %}
+    {% if not provider %}<div class="palette__group">{{ p.label }}</div>{% endif %}
+    {% for r in results %}
+    <a class="palette__item" data-palette-item href="{{ r.href or '#' }}" data-command="{{ r.command }}"
+       data-preview="/_search/preview/{{ p.key | urlencode }}/{{ r.id | urlencode }}"
+       @click.prevent="open($el)" @mousemove="hover($el)">
+      <span class="palette__icon">{{ icon(p.icon) }}</span>
+      <span class="palette__text"><span>{{ r.title }}</span>{% if r.subtitle %}<span class="palette__sub">{{ r.subtitle }}</span>{% endif %}</span>
+    </a>
+    {% endfor %}
+    {% if not provider and total > results | length %}
+    <button type="button" class="palette__more" @click="setProvider({{ p.key|js }})">Show all {{ total | number }} in {{ p.label }}</button>
+    {% endif %}
+  {% else %}
+    <div class="palette__empty">{% if q %}Nothing matches “{{ q }}”.{% else %}Type to search pages, records and commands.{% endif %}</div>
+  {% endfor %}
+</div>

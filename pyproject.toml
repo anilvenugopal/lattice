@@ -1,0 +1,38 @@
+[project]
+name = "ui-shell"
+version = "0.1.0"
+description = "UI shell template: navigation, auth, admin, preferences and a standard data grid."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "jinja2",
+    "python-multipart",
+    "itsdangerous",
+    "pydantic-settings",
+    "sqlalchemy>=2.0",
+    "alembic",
+    "bcrypt",
+    "httpx",
+    "pyjwt[crypto]",
+]
+
+[dependency-groups]
+dev = ["pytest", "ruff", "cryptography"]
+
+[tool.uv]
+package = false
+default-groups = ["dev"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501", "B008"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

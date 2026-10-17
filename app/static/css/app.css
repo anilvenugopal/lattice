@@ -1,0 +1,38 @@
+/* ==========================================================================
+   Entry stylesheet. Five ITCSS layers, lowest specificity first. `@layer`
+   fixes the cascade order, so a rule in a later layer always wins over an
+   earlier one regardless of selector specificity or file order.
+
+   1 settings    design tokens only (custom properties). No selectors besides :root / theme hooks.
+   2 base        reset and bare HTML elements. No class selectors.
+   3 layout      page structure: shell regions, page containers, stack/cluster/grid objects. No colour decisions beyond surfaces.
+   4 components  named UI pieces (.btn, .card, .dg, .palette …), one file per family.
+   5 utilities   single-purpose helpers (.u-*), the only place !important is allowed.
+
+   Rules (checked by tests/test_css_architecture.py):
+   - Colour literals (#hex, rgb(), hsl(), named colours) appear only in 1-settings.
+   - Primitive tokens (--p-*) are used only in 1-settings.
+   - Layer 2 has no class selectors; layer 5 selectors are .u-* (plus [x-cloak]).
+   - !important appears only in layer 5.
+   - Every stylesheet is imported here into exactly one layer, matching its folder.
+   ========================================================================== */
+@layer settings, base, layout, components, utilities;
+
+@import url("1-settings/tokens.css") layer(settings);
+
+@import url("2-base/base.css") layer(base);
+
+@import url("3-layout/shell.css") layer(layout);
+@import url("3-layout/page.css") layer(layout);
+
+@import url("4-components/controls.css") layer(components);
+@import url("4-components/feedback.css") layer(components);
+@import url("4-components/overlays.css") layer(components);
+@import url("4-components/content.css") layer(components);
+@import url("4-components/brand.css") layer(components);
+@import url("4-components/grid.css") layer(components);
+@import url("4-components/palette.css") layer(components);
+@import url("4-components/auth.css") layer(components);
+@import url("4-components/features.css") layer(components);
+
+@import url("5-utilities/utilities.css") layer(utilities);

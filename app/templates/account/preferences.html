@@ -1,0 +1,19 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, pref_row, segmented, select_input %}
+{% block main %}
+<div class="page page--narrow">
+  {{ page_header("Preferences", "Saved to your account and applied on every device.") }}
+  <form hx-post="/account/preferences" class="stack-lg">
+    {% call card("Appearance") %}
+      {% call pref_row("Theme", "Match system follows your operating system setting.") %}{{ segmented("theme", choices.theme, values.theme, "app.applyTheme(this.value)") }}{% endcall %}
+      {% call pref_row("Density", "Compact fits more rows in grids.") %}{{ segmented("density", choices.density, values.density, "document.documentElement.dataset.density = this.value") }}{% endcall %}
+      {% call pref_row("Times", "How grids and lists show timestamps.") %}{{ select_input("time_format", choices.time_format, values.time_format) }}{% endcall %}
+    {% endcall %}
+    {% call card("Behaviour") %}
+      {% call pref_row("Start page", "Where you land after signing in.") %}{{ select_input("landing_page", choices.landing_page, values.landing_page) }}{% endcall %}
+      {% call pref_row("Rows per page", "Default page size for grids.") %}{{ select_input("page_size", choices.page_size, values.page_size) }}{% endcall %}
+    {% endcall %}
+    <div class="form-actions"><button class="btn btn--primary" type="submit">Save preferences</button></div>
+  </form>
+</div>
+{% endblock %}

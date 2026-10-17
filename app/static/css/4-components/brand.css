@@ -1,0 +1,12 @@
+/* Layer 4 — components. Application logo (components/macros.html brand()).
+   Two images; the one matching the theme mode is shown. */
+.brand { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; color: var(--text); text-decoration: none; }
+.brand:hover { text-decoration: none; }
+.brand__logo { height: var(--brand-logo-h); width: auto; }
+.brand__logo--dark { display: none; }
+[data-mode="dark"] .brand__logo--light { display: none; }
+[data-mode="dark"] .brand__logo--dark { display: block; }
+.brand__name { font-size: var(--fs-base); font-weight: var(--fw-semibold); white-space: nowrap; }
+.brand--lg { --brand-logo-h: 32px; }
+.brand--lg .brand__name { font-size: var(--fs-lg); }
+.topbar__divider { width: 1px; height: 20px; background: var(--border); }

@@ -1,0 +1,41 @@
+/* Layer 3 — layout. Shell regions: rail | (topbar / sidebar + main / statusbar). */
+.shell { display: flex; height: 100vh; overflow: hidden; }
+.shell__col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.shell__body { flex: 1; min-height: 0; display: flex; }
+
+.rail {
+  width: var(--rail-w); flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+  gap: var(--sp-1); padding: var(--sp-3) 0; background: var(--surface-rail);
+}
+.rail__btn {
+  width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;
+  color: var(--text-on-rail); border-radius: var(--r-lg); transition: background var(--dur), color var(--dur);
+}
+.rail__btn:hover { color: var(--text-on-rail-strong); background: var(--surface-rail-hover); text-decoration: none; }
+.rail__btn.is-active { color: var(--text-on-rail-strong); background: var(--surface-rail-active); box-shadow: inset 3px 0 0 var(--accent); }
+.rail__spacer { flex: 1; }
+
+.topbar {
+  height: var(--topbar-h); flex-shrink: 0; display: flex; align-items: center; gap: var(--sp-4);
+  padding: 0 var(--sp-4); background: var(--surface-nav); border-bottom: 1px solid var(--border);
+}
+.topbar__right { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: var(--sp-1); }
+
+.sidebar {
+  width: var(--sidebar-w); flex-shrink: 0; display: flex; flex-direction: column;
+  padding: var(--sp-4) var(--sp-2); background: var(--surface-nav); border-right: 1px solid var(--border);
+}
+
+.main { flex: 1; min-width: 0; overflow: auto; background: var(--surface-page); }
+
+.statusbar {
+  height: var(--statusbar-h); flex-shrink: 0; display: flex; align-items: center; gap: var(--sp-3);
+  padding: 0 var(--sp-3); font-size: var(--fs-xs); color: var(--text-on-statusbar); background: var(--surface-statusbar);
+}
+
+/* Layout without navigation: sign-in, password change, errors. */
+.bare {
+  display: flex; min-height: 100vh; background: var(--surface-page);
+  background-image: radial-gradient(circle at 20% 0%, var(--surface-selected) 0, transparent 45%);
+}
+.bare__main { margin: auto; width: 100%; max-width: 400px; padding: var(--sp-6) var(--sp-4); }

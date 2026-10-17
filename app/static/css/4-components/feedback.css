@@ -1,0 +1,63 @@
+/* Layer 4 — components. Status and feedback: badge, tag, alert, toast, tooltip, empty state, progress. */
+.badge {
+  display: inline-flex; align-items: center; height: 20px; padding: 0 var(--sp-2); font-size: var(--fs-sm);
+  font-weight: var(--fw-medium); white-space: nowrap; border-radius: var(--r-pill);
+  color: var(--tone-fg, var(--tone-neutral-fg)); background: var(--tone-bg, var(--tone-neutral-bg));
+  border: 1px solid var(--tone-bd, var(--tone-neutral-bd));
+}
+.tag {
+  display: inline-block; padding: 0 6px; font-size: var(--fs-xs); line-height: 18px; border-radius: var(--r-sm);
+  color: var(--tone-fg, var(--text-2)); background: var(--tone-bg, var(--surface-recessed)); border: 1px solid var(--tone-bd, var(--border));
+}
+.tags { display: inline-flex; flex-wrap: wrap; gap: var(--sp-1); }
+
+/* Tone modifiers set the --tone-* variables that badge, tag and alert read. */
+.tone-neutral { --tone-bg: var(--tone-neutral-bg); --tone-fg: var(--tone-neutral-fg); --tone-bd: var(--tone-neutral-bd); }
+.tone-info    { --tone-bg: var(--tone-info-bg);    --tone-fg: var(--tone-info-fg);    --tone-bd: var(--tone-info-bd); }
+.tone-success { --tone-bg: var(--tone-success-bg); --tone-fg: var(--tone-success-fg); --tone-bd: var(--tone-success-bd); }
+.tone-warning { --tone-bg: var(--tone-warning-bg); --tone-fg: var(--tone-warning-fg); --tone-bd: var(--tone-warning-bd); }
+.tone-danger  { --tone-bg: var(--tone-danger-bg);  --tone-fg: var(--tone-danger-fg);  --tone-bd: var(--tone-danger-bd); }
+.tone-accent  { --tone-bg: var(--tone-accent-bg);  --tone-fg: var(--tone-accent-fg);  --tone-bd: var(--tone-accent-bd); }
+
+.alert {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px var(--sp-3); margin-bottom: var(--sp-4); font-size: var(--fs-md);
+  color: var(--tone-fg, var(--tone-info-fg)); background: var(--tone-bg, var(--tone-info-bg));
+  border: 1px solid var(--tone-bd, var(--tone-info-bd)); border-radius: var(--r-md);
+}
+.alert svg { margin-top: 1px; }
+.alert ul { margin: 0; padding-left: 18px; }
+.stack > .alert, .stack-lg > .alert { margin-bottom: 0; }
+
+.toasts { position: fixed; z-index: var(--z-toast); right: var(--sp-5); bottom: var(--sp-10); display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-2); }
+.toast {
+  max-width: 440px; padding: 10px 14px; font-size: var(--fs-md); color: var(--toast-fg); background: var(--toast-bg);
+  border-left: 4px solid var(--success); border-radius: var(--r-md); box-shadow: var(--shadow-lg); cursor: pointer;
+  animation: toast-in 160ms ease-out;
+}
+.toast--info { border-left-color: var(--info); }
+.toast--warning { border-left-color: var(--warning); }
+.toast--danger { border-left-color: var(--danger); }
+@keyframes toast-in { from { transform: translateY(8px); opacity: 0; } }
+
+/* Tooltip: data-tip="Text" on any element; data-tip-pos="below" | "right". */
+[data-tip] { position: relative; }
+[data-tip]:hover::after {
+  content: attr(data-tip); position: absolute; z-index: var(--z-tooltip); left: 50%; bottom: calc(100% + 6px);
+  transform: translateX(-50%); padding: 3px var(--sp-2); font-size: var(--fs-sm); font-weight: var(--fw-regular);
+  white-space: nowrap; pointer-events: none; color: var(--tooltip-fg); background: var(--tooltip-bg);
+  border-radius: var(--r-sm); box-shadow: var(--shadow-md);
+}
+[data-tip-pos="below"]:hover::after { top: calc(100% + 6px); bottom: auto; }
+[data-tip-pos="right"]:hover::after { top: 50%; bottom: auto; left: calc(100% + 10px); transform: translateY(-50%); }
+
+.empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: var(--sp-10) var(--sp-4); text-align: center; }
+.empty__icon { width: 52px; height: 52px; margin-bottom: var(--sp-1); display: flex; align-items: center; justify-content: center;
+  color: var(--text-3); background: var(--surface-recessed); border-radius: 50%; }
+.empty__title { font-weight: var(--fw-semibold); }
+.empty__text { max-width: 360px; font-size: var(--fs-md); color: var(--text-3); }
+.empty__actions { margin-top: var(--sp-2); }
+
+.progress { display: inline-block; width: 80px; height: 6px; vertical-align: middle; overflow: hidden;
+  background: var(--surface-recessed); border: 1px solid var(--border-faint); border-radius: 3px; }
+.progress__bar { display: block; height: 100%; background: var(--brand); border-radius: 3px; transition: width 400ms ease; }
+.progress__num { margin-left: var(--sp-2); font-size: var(--fs-sm); color: var(--text-3); font-variant-numeric: tabular-nums; }

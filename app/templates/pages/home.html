@@ -1,0 +1,25 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, stat, card, timeline %}
+{% block main %}
+<div class="page">
+  {{ page_header("Welcome back, " ~ current_user.display_name.split()[0], "Here is what needs attention.") }}
+  {% if tiles %}
+  <div class="stats">
+    {% for t in tiles %}{{ stat(t.label, t.value | number, t.href, t.tone) }}{% endfor %}
+  </div>
+  {% endif %}
+  <div class="grid-2">
+    {% call card("Get around") %}
+      <ul class="link-list">
+        {% for node in nav.rail if node.key != "home" %}
+        <li><a href="{{ node.route }}">{{ icon(node.icon) }} <span><strong>{{ node.label }}</strong><small>{{ node.description }}</small></span></a></li>
+        {% endfor %}
+      </ul>
+      <p class="u-muted u-small">Press <kbd>Ctrl</kbd> <kbd>J</kbd> anywhere to search pages and records, or <kbd>?</kbd> for shortcuts.</p>
+    {% endcall %}
+    {% if current_user.is_admin %}
+      {% call card("Recent activity") %}{{ timeline(recent) }}{% endcall %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

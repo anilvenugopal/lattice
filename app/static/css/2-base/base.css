@@ -1,0 +1,27 @@
+/* Layer 2 — base. Reset and bare elements only; no class selectors. */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; font-family: var(--font-ui); font-size: var(--fs-base); line-height: var(--lh-base);
+  color: var(--text); background: var(--surface-page); -webkit-font-smoothing: antialiased;
+}
+a { color: var(--link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+h1, h2, h3, h4 { margin: 0; font-weight: var(--fw-semibold); }
+p { margin: 0 0 var(--sp-3); }
+p:last-child { margin-bottom: 0; }
+code, kbd, pre { font-family: var(--font-mono); font-size: 0.92em; }
+code { background: var(--surface-recessed); padding: 1px 5px; border-radius: var(--r-sm); }
+kbd {
+  display: inline-block; min-width: 20px; padding: 0 5px; font-size: var(--fs-xs); line-height: 18px; text-align: center;
+  color: var(--text-2); background: var(--surface-panel); border: 1px solid var(--border-strong);
+  border-bottom-width: 2px; border-radius: var(--r-sm);
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+fieldset { margin: 0; padding: 0; border: none; }
+svg { flex-shrink: 0; vertical-align: middle; }
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+::selection { background: var(--surface-selected-strong); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-track { background: transparent; }

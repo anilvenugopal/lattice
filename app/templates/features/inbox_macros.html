@@ -1,0 +1,5 @@
+{# Inbox label tag. The one place inbox labels map to tones. #}
+{% macro label_tag(label) -%}
+{%- set tones = {"finance": "success", "ops": "info", "customer": "accent", "internal": "warning"} -%}
+<span class="tag tone-{{ tones.get(label, 'neutral') }}">{{ label }}</span>
+{%- endmacro %}

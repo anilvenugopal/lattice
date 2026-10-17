@@ -1,0 +1,17 @@
+{# Side panel body for a job. Labels and tones come from the grid columns. #}
+{% from "components/macros.html" import prop_list, badge_for %}
+{{ prop_list([
+  ("Status", badge_for(spec.column("status"), row.status)),
+  ("Type", label_for(spec.column("job_type"), row.job_type)),
+  ("Progress", row.progress ~ "%"),
+  ("Attempts", row.attempts),
+  ("Submitted by", row.submitted_by),
+  ("Created", time_tag(row.created_at, "datetime")),
+  ("Started", time_tag(row.started_at, "datetime")),
+  ("Finished", time_tag(row.finished_at, "datetime")),
+  ("Duration", (duration.total_seconds() | int) ~ " s" if duration else None),
+]) }}
+{% if row.error %}
+<h3 class="panel__section">Error</h3>
+<pre class="code-block tone-danger">{{ row.error }}</pre>
+{% endif %}

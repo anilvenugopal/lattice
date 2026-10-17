@@ -1,0 +1,71 @@
+{# Table, footer and pager. Rendered inside components/grid.html and alone by GET /_grid/{key}/rows. #}
+{% from "components/grid_cell.html" import cell %}
+{% from "components/macros.html" import empty_state %}
+{% set spec = grid.spec %}{% set page = grid.page %}
+{% set multi = spec.selection == "multi" %}
+{% set sort_key = grid.sort.lstrip('-') %}{% set sort_desc = grid.sort.startswith('-') %}
+<div class="dg__scroll">
+  <table class="dg__table">
+    <thead>
+      <tr>
+        {% if multi %}
+        <th class="dg__check"><input type="checkbox" aria-label="Select all on this page"
+            :checked="allOnPage()" :indeterminate="someOnPage()" @change="togglePage($event.target.checked)"></th>
+        {% endif %}
+        {% for col in grid.columns %}
+        <th class="{% if col.align %}is-{{ col.align }}{% endif %}" {% if col.width %}style="width: {{ col.width }}"{% endif %}
+            {% if col.key == sort_key %}aria-sort="{{ 'descending' if sort_desc else 'ascending' }}"{% endif %}>
+          {% if col.sortable %}
+          <button type="button" class="dg__sort{% if col.key == sort_key %} is-sorted{% endif %}" @click="sortBy({{ col.key|js }})">
+            {{ col.label }}
+            {% if col.key == sort_key %}{{ icon('arrow-down' if sort_desc else 'arrow-up', 12) }}{% endif %}
+          </button>
+          {% else %}{{ col.label }}{% endif %}
+        </th>
+        {% endfor %}
+        {% if grid.row_actions %}<th class="dg__menu-col" aria-label="Row actions"></th>{% endif %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in page.rows %}
+      <tr data-id="{{ row.id }}" data-w='{{ pick(row, grid.when_keys) | tojson }}'
+          class="{{ spec.row_class(row) if spec.row_class }}"
+          :class="rowClass($el.dataset.id)" @click="rowClick($event)" @dblclick="rowOpen($el.dataset.id)">
+        {% if multi %}
+        <td class="dg__check" @click.stop="toggleRow($el.closest('tr'), $event)">
+          <input type="checkbox" tabindex="-1" aria-label="Select row" :checked="isSel($el.closest('tr').dataset.id)">
+        </td>
+        {% endif %}
+        {% for col in grid.columns %}
+        <td class="{% if col.align %}is-{{ col.align }}{% endif %}">{{ cell(col, row, spec) }}</td>
+        {% endfor %}
+        {% if grid.row_actions %}
+        <td class="dg__menu-col"><button type="button" class="icon-btn icon-btn--sm" aria-label="Row actions"
+            @click.stop="openRowMenu($event, $el.closest('tr'))">{{ icon('more') }}</button></td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if not page.rows %}
+    {% if grid.gq.q or grid.gq.filters %}
+      {% call empty_state("No matching rows", "Nothing matches the current search and filters.", "search") %}
+        <button type="button" class="btn btn--sm" @click="clearAll()">Clear search and filters</button>
+      {% endcall %}
+    {% else %}
+      {{ empty_state(spec.empty_title, spec.empty_text) }}
+    {% endif %}
+  {% endif %}
+</div>
+<div class="dg__footer" x-init='syncPage({{ page.rows | map(attribute="id") | list | tojson }}, {{ page.total }}, {{ page.page }}, {{ page.pages }})'>
+  <span class="dg__range">{{ page.first | number }}–{{ page.last | number }} of {{ page.total | number }}</span>
+  <span class="dg__spacer"></span>
+  <label class="dg__size">Rows
+    <select class="input input--sm" @change="setSize($event.target.value)">
+      {% for n in grid.page_sizes %}<option value="{{ n }}" {% if n == page.size %}selected{% endif %}>{{ n }}</option>{% endfor %}
+    </select>
+  </label>
+  <span class="dg__pages">Page {{ page.page }} of {{ page.pages }}</span>
+  <button type="button" class="icon-btn icon-btn--sm" aria-label="Previous page" {% if page.page <= 1 %}disabled{% endif %} @click="goPage({{ page.page - 1 }})">{{ icon('chevron-left') }}</button>
+  <button type="button" class="icon-btn icon-btn--sm" aria-label="Next page" {% if page.page >= page.pages %}disabled{% endif %} @click="goPage({{ page.page + 1 }})">{{ icon('chevron-right') }}</button>
+</div>

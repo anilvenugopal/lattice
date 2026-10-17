@@ -1,0 +1,25 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, field, checkbox %}
+{% block main %}
+<div class="page page--narrow">
+  {{ page_header("New user", "Users with a password must change it at first sign-in. Leave the password empty for SSO-only accounts.") }}
+  <form method="post" action="/admin/users/new" class="stack-lg">
+    {{ csrf_field() }}
+    {% call card() %}
+      <div class="stack">
+        {{ field("email", "Email", values.email, type="email", error=errors.email, required=True) }}
+        {{ field("display_name", "Name", values.display_name, error=errors.display_name, required=True) }}
+        {{ field("password", "Temporary password", type="password", error=errors.password,
+                 hint="Optional. 12+ characters with upper case, lower case and a digit.", attrs='autocomplete="new-password"') }}
+        <fieldset class="field"><legend class="field__label">Roles</legend>
+          {% for code, label in roles %}{{ checkbox("roles", label, code in (values.roles or ['viewer']), value=code) }}{% endfor %}
+        </fieldset>
+      </div>
+    {% endcall %}
+    <div class="form-actions">
+      <a class="btn btn--ghost" href="/admin/users">Cancel</a>
+      <button class="btn btn--primary" type="submit">Create user</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

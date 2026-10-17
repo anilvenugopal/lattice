@@ -1,0 +1,34 @@
+{# Side panel / reading pane for one row (app.grid.render.render_panel). A GridSpec.panel callable
+   supplies `body_template` and its context. preview=True is the read-only Ctrl+J preview. #}
+{% from "components/grid_cell.html" import cell %}
+{% from "components/macros.html" import prop_list %}
+<div class="panel" data-row-id="{{ row.id }}">
+  <header class="panel__head">
+    <div class="panel__title" title="{{ title }}">{{ title }}</div>
+    {% if spec.row_href and preview %}
+    <a class="btn btn--sm btn--primary" href="{{ fmt_url(spec.row_href, row) }}">Open</a>
+    {% elif spec.row_href %}
+    <a class="icon-btn" href="{{ fmt_url(spec.row_href, row) }}" data-tip="Open full page" aria-label="Open full page">{{ icon('external') }}</a>
+    {% endif %}
+    {% if spec.layout != "split" and not preview %}
+    <button type="button" class="icon-btn" @click="closePanel()" data-tip="Close (Esc)" aria-label="Close">{{ icon('x') }}</button>
+    {% endif %}
+  </header>
+  {% if actions %}
+  <div class="panel__actions">
+    {% for a in actions %}
+    <button type="button" class="btn btn--sm btn--{{ 'danger-ghost' if a.tone == 'danger' else 'ghost' }}" @click="runForPanel({{ a.key|js }}, $el)">
+      {% if a.icon %}{{ icon(a.icon, 14) }}{% endif %}{{ a.label }}</button>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <div class="panel__body">
+    {% if body_template %}
+      {% include body_template %}
+    {% else %}
+      {% set items = [] %}
+      {% for col in spec.columns if col.label %}{% set _ = items.append((col.label, cell(col, row, spec))) %}{% endfor %}
+      {{ prop_list(items) }}
+    {% endif %}
+  </div>
+</div>

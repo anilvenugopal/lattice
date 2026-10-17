@@ -1,0 +1,16 @@
+{# Layout without navigation: sign-in, password change, pending access, errors before sign-in. #}
+{% from "components/macros.html" import brand %}
+<!doctype html>
+<html lang="en" data-theme="{{ prefs.get(current_user, 'theme') if current_user else 'system' }}">
+<head>
+  <title>{% block title %}{{ settings.app_name }}{% endblock %} · {{ settings.app_name }}</title>
+  {% include "base/head.html" %}
+</head>
+<body class="bare">
+  <main class="bare__main">
+    <div class="bare__brand">{{ brand("brand--lg") }}</div>
+    {% block content %}{% endblock %}
+  </main>
+  {% include "components/toasts.html" %}
+</body>
+</html>

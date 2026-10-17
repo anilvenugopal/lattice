@@ -1,0 +1,9 @@
+{# Toast container for every layout. A pending flash() message is shown on load. #}
+<div class="toasts" x-data x-cloak aria-live="polite"
+     {% if flash %}x-init="$store.toasts.push({{ flash.message|js }}, {{ flash.tone|js }})"{% endif %}>
+  <template x-for="t in $store.toasts.items" :key="t.id">
+    <div class="toast" :class="'toast--' + t.tone" @click="$store.toasts.dismiss(t.id)">
+      <span x-text="t.message"></span>
+    </div>
+  </template>
+</div>

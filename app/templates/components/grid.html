@@ -1,0 +1,162 @@
+{#
+  The standard data grid. Build the context with app.grid.build_grid() and render:
+    {% from "components/grid.html" import data_grid %}{{ data_grid(grid) }}
+  Client behaviour lives in static/js/grid.js (Alpine component `dataGrid`).
+#}
+{% macro data_grid(grid) -%}
+{% set spec = grid.spec %}{% set gq = grid.gq %}
+{% set has_panel = grid.config.hasPanel %}
+<div class="dg dg--{{ spec.layout }}" id="dg-{{ spec.key }}" tabindex="-1"
+     x-data='dataGrid({{ grid.config | tojson }})'
+     @keydown="onKey($event)" @gridrefresh.window="onRefreshEvent($event)">
+
+  {% if spec.views and not grid.views_in_nav %}
+  <div class="dg__views" role="tablist">
+    {% for v in spec.views %}
+    <button type="button" role="tab" class="dg__view" :class="{ 'is-active': view === {{ v.key|js }} }"
+            @click="setView({{ v.key|js }})">{{ v.label }}</button>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form class="dg__toolbar" x-ref="state" @submit.prevent="reload({ page: 1 })" autocomplete="off">
+    <input type="hidden" name="view" :value="view" value="{{ gq.view }}">
+    <input type="hidden" name="sort" x-ref="sort" value="{{ gq.sort }}">
+    <input type="hidden" name="page" x-ref="page" value="{{ gq.page }}">
+    <input type="hidden" name="size" x-ref="size" value="{{ gq.size }}">
+
+    <label class="dg__search">
+      {{ icon('search', 15) }}
+      <input type="search" name="q" value="{{ gq.q }}" x-ref="search" placeholder="{{ spec.search_placeholder }}"
+             aria-label="Search" @input.debounce.300ms="reload({ page: 1, reset: true })"
+             @keydown.escape.stop="$el.value ? ($el.value = '', reload({ page: 1, reset: true })) : $el.blur()">
+    </label>
+
+    {% for flt, options, selected in grid.filters %}
+    <div class="menu-wrap" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.stop="open = false">
+      <button type="button" class="chip{% if selected %} is-on{% endif %}" @click="open = !open" data-filter="f_{{ flt.key }}">
+        {{ flt.label }}<span class="chip__count" data-filter-count>{% if selected %}{{ selected | length }}{% endif %}</span>{{ icon('chevron-down', 13) }}
+      </button>
+      <div class="menu menu--filter" x-show="open" x-cloak>
+        {% for val, text in options %}
+        <label class="menu__check">
+          <input type="{{ 'checkbox' if flt.multiple else 'radio' }}" name="f_{{ flt.key }}" value="{{ val }}"
+                 {% if val|string in selected %}checked{% endif %} @change="reload({ page: 1, reset: true })">
+          <span>{{ text }}</span>
+        </label>
+        {% else %}
+        <div class="menu__empty">No options</div>
+        {% endfor %}
+        <div class="menu__sep"></div>
+        <button type="button" class="menu__item" @click="clearFilter({{ ('f_' ~ flt.key)|js }}); open = false">Clear</button>
+      </div>
+    </div>
+    {% endfor %}
+    <button type="button" class="btn btn--link btn--sm" x-show="dirty" x-cloak @click="clearAll()">Clear all</button>
+
+    <span class="dg__spacer"></span>
+
+    <div class="dg__tools">
+      <div class="menu-wrap" x-data="{ open: false }" @click.outside="open = false">
+        <button type="button" class="icon-btn" @click="open = !open" data-tip="Columns" aria-label="Columns">{{ icon('columns') }}</button>
+        <div class="menu menu--right" x-show="open" x-cloak>
+          <div class="menu__header"><div class="menu__title">Columns</div></div>
+          {% for col in grid.all_columns if col.label %}
+          <label class="menu__check{% if col.required %} is-disabled{% endif %}">
+            <input type="checkbox" {% if col.key not in grid.hidden %}checked{% endif %} {% if col.required %}disabled{% endif %}
+                   @change="toggleColumn({{ col.key|js }}, $event.target.checked)">
+            <span>{{ col.label }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      {% if spec.export %}
+      <a class="icon-btn" href="#" @click.prevent="window.location = exportUrl()" data-tip="Export CSV" aria-label="Export CSV">{{ icon('download') }}</a>
+      {% endif %}
+      <button type="button" class="icon-btn" @click="reload()" data-tip="Refresh" aria-label="Refresh"
+              :class="{ 'is-spinning': loading }">{{ icon('refresh') }}</button>
+    </div>
+    {% for a in grid.toolbar_actions %}
+    <button type="button" class="btn btn--{{ a.tone }}" @click="run({{ a.key|js }})">
+      {% if a.icon %}{{ icon(a.icon, 15) }}{% endif %}{{ a.label }}</button>
+    {% endfor %}
+  </form>
+
+  {% if spec.selection != "none" and grid.selection_actions %}
+  <div class="dg__selbar" x-show="count > 0" x-cloak x-transition.opacity.duration.100ms>
+    <span class="dg__selcount"><strong x-text="allMatching ? total.toLocaleString() : count"></strong> selected</span>
+    <template x-if="allOnPage() && total > pageIds.length && !allMatching && config.selection === 'multi'">
+      <button type="button" class="btn btn--link btn--sm" @click="allMatching = true">Select all <span x-text="total.toLocaleString()"></span> matching</button>
+    </template>
+    <span class="dg__selsep"></span>
+    {% for a in grid.selection_actions %}
+    <button type="button" class="btn btn--sm btn--{{ a.tone }}" :disabled="!canRun({{ a.key|js }})"
+            :title="reason({{ a.key|js }})" @click="run({{ a.key|js }})">
+      {% if a.icon %}{{ icon(a.icon, 14) }}{% endif %}{{ a.label }}</button>
+    {% endfor %}
+    <span class="dg__spacer"></span>
+    <button type="button" class="btn btn--ghost btn--sm" @click="clearSelection()">Clear</button>
+  </div>
+  {% endif %}
+
+  <div class="dg__layout">
+    <div class="dg__body" x-ref="body" :class="{ 'is-loading': loading }">
+      {% include "components/grid_body.html" %}
+    </div>
+    {% if has_panel %}
+    <aside class="dg__panel" x-show="panelOpen || config.layout === 'split'" {% if spec.layout != 'split' %}x-cloak{% endif %}>
+      <template x-ref="placeholder">
+        <div class="dg__panel-placeholder">{{ icon('panel-right', 28) }}<span>Select a row to see it here.</span></div>
+      </template>
+      <div x-ref="panel" class="dg__panel-inner" hx-sync="this:replace" x-init="showPlaceholder()"></div>
+    </aside>
+    {% endif %}
+  </div>
+
+  {# Row menu, positioned at the clicked button. #}
+  {% if grid.row_actions %}
+  <div class="menu menu--floating" x-show="rowMenu.open" x-cloak :style="`top:${rowMenu.y}px;left:${rowMenu.x}px`"
+       @click.outside="rowMenu.open = false" @keydown.escape.window="rowMenu.open = false">
+    {% for a in grid.row_actions %}
+    <button type="button" class="menu__item{% if a.tone == 'danger' %} menu__item--danger{% endif %}"
+            :disabled="!rowEligible({{ a.key|js }})" @click="runFromMenu({{ a.key|js }})">
+      {% if a.icon %}{{ icon(a.icon) }}{% endif %}{{ a.label }}</button>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {# Confirm / input dialog for actions. Fields come from Action.fields. #}
+  <div class="overlay" x-show="dialog.open" x-cloak @click.self="dialog.open = false"
+       @keydown.escape.stop="dialog.open = false">
+    <form class="dialog dialog--sm" @submit.prevent="submitDialog()">
+      <div class="dialog__head"><h2 x-text="dialog.title"></h2>
+        <button type="button" class="icon-btn" @click="dialog.open = false" aria-label="Close">{{ icon('x') }}</button></div>
+      <div class="dialog__body">
+        <p class="dialog__text" x-show="dialog.text" x-text="dialog.text"></p>
+        <template x-for="f in dialog.fields" :key="f.name">
+          <label class="field">
+            <span class="field__label"><span x-text="f.label"></span><span class="field__req" x-show="f.required"> *</span></span>
+            <template x-if="f.kind === 'select'">
+              <select class="input" x-model="dialog.values[f.name]" :required="f.required">
+                <option value="" x-show="!f.required">—</option>
+                <template x-for="o in f.options" :key="o[0]"><option :value="o[0]" x-text="o[1]" :selected="dialog.values[f.name] === o[0]"></option></template>
+              </select>
+            </template>
+            <template x-if="f.kind === 'textarea'">
+              <textarea class="input" rows="4" x-model="dialog.values[f.name]" :required="f.required" :placeholder="f.placeholder"></textarea>
+            </template>
+            <template x-if="!['select', 'textarea'].includes(f.kind)">
+              <input class="input" :type="f.kind" x-model="dialog.values[f.name]" :required="f.required" :placeholder="f.placeholder">
+            </template>
+          </label>
+        </template>
+      </div>
+      <div class="dialog__foot">
+        <button type="button" class="btn btn--ghost" @click="dialog.open = false">Cancel</button>
+        <button type="submit" class="btn" :class="dialog.tone === 'danger' ? 'btn--danger' : 'btn--primary'"
+                x-text="dialog.submit" :disabled="dialog.busy" x-ref="dialogSubmit"></button>
+      </div>
+    </form>
+  </div>
+</div>
+{%- endmacro %}

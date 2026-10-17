@@ -1,0 +1,13 @@
+{# Side panel body for a work item. Context from work_items.panel(); labels and tones from the grid columns. #}
+{% from "components/macros.html" import prop_list, badge_for, user_chip, timeline %}
+{{ prop_list([
+  ("Status", badge_for(spec.column("status"), item.status)),
+  ("Account", item.account),
+  ("Owner", user_chip(row.owner)),
+  ("Amount", item.amount | money),
+  ("Received", time_tag(item.received_at, "datetime")),
+]) }}
+{% if item.description %}<h3 class="panel__section">Description</h3><p class="prose">{{ item.description }}</p>{% endif %}
+<h3 class="panel__section">Recent activity</h3>
+{{ timeline(events) }}
+<a class="btn btn--block u-mt-3" href="/work/{{ item.id }}">Open full page</a>

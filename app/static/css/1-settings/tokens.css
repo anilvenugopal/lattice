@@ -1,0 +1,178 @@
+/* ==========================================================================
+   Layer 1 — settings. Design tokens in three tiers:
+
+   Tier 1  primitives (--p-*)   raw palette and scales. Referenced ONLY in this file.
+   Tier 2  semantic             what a value means: surfaces, text, borders, tones.
+                                 The dark theme remaps this tier and nothing else.
+   Tier 3  component            values one component family owns (rail, grid, toast…),
+                                 always defined from tier 2 so they follow the theme.
+
+   Add a colour: primitive (if new) → semantic meaning, in BOTH theme blocks.
+   ========================================================================== */
+:root {
+  /* ── Tier 1: primitives ─────────────────────────────────────────────── */
+  --p-white: #FFFFFF;
+  --p-black: #000000;
+  --p-navy-900: #0F2044; --p-navy-700: #1A3461; --p-navy-600: #234484; --p-navy-500: #2E57A8;
+  --p-navy-400: #4C74C4; --p-navy-350: #5D84D2; --p-navy-300: #8FAADC; --p-navy-200: #B8CCF0;
+  --p-navy-100: #D8E5F8; --p-navy-050: #EEF3FC;
+  --p-navy-950: #13213F; --p-navy-dk-1: #1D2A47; --p-navy-dk-2: #243560;
+  --p-amber-900: #1A1200; --p-amber-700: #8A5208; --p-amber-500: #D4820F; --p-amber-200: #F5D89A;
+  --p-amber-100: #FBF0D0; --p-amber-050: #FDF8EE;
+  --p-green-700: #1E6B45; --p-green-500: #2E8F5E; --p-green-200: #A8D9BE; --p-green-050: #E8F7EF;
+  --p-red-700: #9B1F33; --p-red-500: #BE2D44; --p-red-450: #D9475E; --p-red-400: #E8657A;
+  --p-red-200: #F0B8C0; --p-red-050: #FCEEF0;
+  --p-violet-700: #5B3BA8; --p-violet-200: #D5C8F2; --p-violet-050: #F3EFFC;
+  --p-gray-1000: #0A0E18; --p-gray-950: #0E1320; --p-gray-900: #151B2B; --p-gray-850: #1B2234;
+  --p-gray-800: #232B3F; --p-gray-750: #2A3348; --p-gray-700: #313A50; --p-gray-650: #33405C;
+  --p-gray-600: #4B5569; --p-gray-500: #64748B; --p-gray-450: #5A657A; --p-gray-400: #94A3B8;
+  --p-gray-300: #C3CAD6; --p-gray-200: #DCE0E8; --p-gray-150: #E7EAF0; --p-gray-100: #F0F2F5;
+  --p-gray-050: #F7F8FA; --p-slate-rail: #1C2333;
+  --p-ink-200: #E6EAF2; --p-ink-300: #AAB4C6; --p-ink-400: #8591A6; --p-ink-500: #A9B3C7;
+  /* dark-theme tone washes */
+  --p-dk-neutral-bg: #222A3C; --p-dk-neutral-fg: #B4BDCD; --p-dk-neutral-bd: #2E374C;
+  --p-dk-info-bg: #18264A;    --p-dk-info-fg: #9DB8EC;    --p-dk-info-bd: #263A6A;
+  --p-dk-success-bg: #12301F; --p-dk-success-fg: #7FD1A3; --p-dk-success-bd: #1D4A31;
+  --p-dk-warning-bg: #33250C; --p-dk-warning-fg: #EBBE6A; --p-dk-warning-bd: #4D3812;
+  --p-dk-danger-bg: #3A151C;  --p-dk-danger-fg: #F09AA8;  --p-dk-danger-bd: #5A1F2A;
+  --p-dk-accent-bg: #261C42;  --p-dk-accent-fg: #BFAAF0;  --p-dk-accent-bd: #3A2B66;
+  --p-shadow-ink: 15, 22, 41;
+
+  /* Scales (theme independent) */
+  --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Code", Consolas, monospace;
+  --fs-2xs: 10px; --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-base: 14px; --fs-lg: 16px;
+  --fs-xl: 20px; --fs-2xl: 24px; --fs-display: 40px;
+  --fw-regular: 400; --fw-medium: 500; --fw-semibold: 600;
+  --lh-tight: 1.25; --lh-base: 1.45; --lh-loose: 1.6;
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 20px; --sp-6: 24px;
+  --sp-8: 32px; --sp-10: 40px;
+  --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 12px; --r-pill: 999px;
+  --dur: 140ms;
+  --z-menu: 40; --z-tooltip: 60; --z-overlay: 80; --z-toast: 100;
+
+  /* ── Tier 2: semantic (light) ───────────────────────────────────────── */
+  --surface-page: var(--p-gray-050);
+  --surface-panel: var(--p-white);
+  --surface-recessed: var(--p-gray-100);
+  --surface-hover: var(--p-gray-100);
+  --surface-selected: var(--p-navy-050);
+  --surface-selected-strong: var(--p-navy-100);
+  --surface-nav: var(--p-white);
+  --surface-rail: var(--p-slate-rail);
+  --surface-rail-hover: var(--p-gray-750);
+  --surface-rail-active: var(--p-gray-650);
+  --surface-statusbar: var(--p-navy-700);
+  --surface-inverse: var(--p-gray-900);
+  --surface-input: var(--p-white);
+  --surface-overlay: rgba(var(--p-shadow-ink), 0.45);
+
+  --border: var(--p-gray-200);
+  --border-strong: var(--p-gray-300);
+  --border-faint: var(--p-gray-150);
+
+  --text: var(--p-gray-900);
+  --text-2: var(--p-gray-600);
+  --text-3: var(--p-gray-500);
+  --text-disabled: var(--p-gray-400);
+  --text-inverse: var(--p-white);
+  --text-on-brand: var(--p-white);
+  --text-on-rail: var(--p-ink-500);
+  --text-on-rail-strong: var(--p-white);
+  --text-on-statusbar: rgba(255, 255, 255, 0.85);
+  --link: var(--p-navy-500);
+
+  --brand: var(--p-navy-500);
+  --brand-hover: var(--p-navy-600);
+  --brand-alt: var(--p-violet-700);
+  --accent: var(--p-amber-500);
+  --text-on-accent: var(--p-amber-900);
+  --danger: var(--p-red-500);
+  --danger-hover: var(--p-red-700);
+  --success: var(--p-green-500);
+  --warning: var(--p-amber-500);
+  --info: var(--p-navy-300);
+  --highlight: var(--p-amber-500);
+  --wash-on-dark: rgba(255, 255, 255, 0.15);
+
+  --tone-neutral-bg: var(--p-gray-100);  --tone-neutral-fg: var(--p-gray-600);  --tone-neutral-bd: var(--p-gray-200);
+  --tone-info-bg: var(--p-navy-050);     --tone-info-fg: var(--p-navy-600);     --tone-info-bd: var(--p-navy-200);
+  --tone-success-bg: var(--p-green-050); --tone-success-fg: var(--p-green-700); --tone-success-bd: var(--p-green-200);
+  --tone-warning-bg: var(--p-amber-050); --tone-warning-fg: var(--p-amber-700); --tone-warning-bd: var(--p-amber-200);
+  --tone-danger-bg: var(--p-red-050);    --tone-danger-fg: var(--p-red-700);    --tone-danger-bd: var(--p-red-200);
+  --tone-accent-bg: var(--p-violet-050); --tone-accent-fg: var(--p-violet-700); --tone-accent-bd: var(--p-violet-200);
+
+  --focus-ring: 0 0 0 3px rgba(46, 87, 168, 0.28);
+  --shadow-sm: 0 1px 2px rgba(var(--p-shadow-ink), 0.06);
+  --shadow-md: 0 4px 12px rgba(var(--p-shadow-ink), 0.10), 0 1px 3px rgba(var(--p-shadow-ink), 0.06);
+  --shadow-lg: 0 16px 40px rgba(var(--p-shadow-ink), 0.18), 0 2px 6px rgba(var(--p-shadow-ink), 0.08);
+  color-scheme: light;
+
+  /* ── Tier 3: component tokens ───────────────────────────────────────── */
+  --rail-w: 56px;
+  --sidebar-w: 220px;
+  --topbar-h: 48px;
+  --statusbar-h: 24px;
+  --control-h: 32px;
+  --control-h-sm: 28px;
+  --row-pad-y: 8px;
+  --panel-w: 420px;
+  --palette-w: 1080px;
+  --palette-nav-w: 190px;
+  --palette-preview-w: 400px;
+  --avatar-gradient: linear-gradient(135deg, var(--brand), var(--brand-alt));
+  --tooltip-bg: var(--surface-inverse);
+  --tooltip-fg: var(--text-inverse);
+  --toast-bg: var(--surface-inverse);
+  --toast-fg: var(--text-inverse);
+  --brand-logo-h: 26px;
+}
+
+/* Density preference (Account › Preferences). Remaps component tokens only. */
+[data-density="compact"] { --row-pad-y: 4px; --control-h: 28px; }
+
+/* ── Tier 2: semantic (dark). Set by base/head.html as data-mode on <html>. ── */
+[data-mode="dark"] {
+  --surface-page: var(--p-gray-950);
+  --surface-panel: var(--p-gray-900);
+  --surface-recessed: var(--p-gray-850);
+  --surface-hover: var(--p-gray-850);
+  --surface-selected: var(--p-navy-dk-1);
+  --surface-selected-strong: var(--p-navy-dk-2);
+  --surface-nav: var(--p-gray-900);
+  --surface-rail: var(--p-gray-1000);
+  --surface-rail-hover: var(--p-gray-850);
+  --surface-rail-active: var(--p-gray-800);
+  --surface-statusbar: var(--p-navy-950);
+  --surface-inverse: var(--p-gray-700);
+  --surface-input: var(--p-gray-850);
+  --surface-overlay: rgba(0, 0, 0, 0.6);
+
+  --border: var(--p-gray-800);
+  --border-strong: var(--p-gray-700);
+  --border-faint: var(--p-gray-850);
+
+  --text: var(--p-ink-200);
+  --text-2: var(--p-ink-300);
+  --text-3: var(--p-ink-400);
+  --text-disabled: var(--p-gray-450);
+  --link: var(--p-navy-300);
+
+  --brand: var(--p-navy-400);
+  --brand-hover: var(--p-navy-350);
+  --danger: var(--p-red-450);
+  --danger-hover: var(--p-red-400);
+
+  --tone-neutral-bg: var(--p-dk-neutral-bg); --tone-neutral-fg: var(--p-dk-neutral-fg); --tone-neutral-bd: var(--p-dk-neutral-bd);
+  --tone-info-bg: var(--p-dk-info-bg);       --tone-info-fg: var(--p-dk-info-fg);       --tone-info-bd: var(--p-dk-info-bd);
+  --tone-success-bg: var(--p-dk-success-bg); --tone-success-fg: var(--p-dk-success-fg); --tone-success-bd: var(--p-dk-success-bd);
+  --tone-warning-bg: var(--p-dk-warning-bg); --tone-warning-fg: var(--p-dk-warning-fg); --tone-warning-bd: var(--p-dk-warning-bd);
+  --tone-danger-bg: var(--p-dk-danger-bg);   --tone-danger-fg: var(--p-dk-danger-fg);   --tone-danger-bd: var(--p-dk-danger-bd);
+  --tone-accent-bg: var(--p-dk-accent-bg);   --tone-accent-fg: var(--p-dk-accent-fg);   --tone-accent-bd: var(--p-dk-accent-bd);
+
+  --focus-ring: 0 0 0 3px rgba(143, 170, 220, 0.35);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 44px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}

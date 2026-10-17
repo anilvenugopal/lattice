@@ -1,0 +1,29 @@
+{# Shared <head> content. Theme is resolved before first paint so dark mode never flashes. #}
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" href="{{ settings.brand_logo_light }}" media="(prefers-color-scheme: light)">
+<link rel="icon" href="{{ settings.brand_logo_dark }}" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="/static/css/app.css">
+<script>
+  (function () {
+    var root = document.documentElement;
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    // static/js/app.js adds the rest of window.app.
+    window.app = {
+      applyTheme: function (theme) {
+        root.dataset.theme = theme;
+        root.dataset.mode = theme === 'system' ? (mq.matches ? 'dark' : 'light') : theme;
+      },
+    };
+    app.applyTheme(root.dataset.theme || 'system');
+    mq.addEventListener('change', function () { app.applyTheme(root.dataset.theme); });
+  })();
+</script>
+<script src="/static/js/vendor/htmx.min.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/grid.js"></script>
+<script src="/static/js/palette.js"></script>
+<script defer src="/static/js/vendor/alpine.min.js"></script>

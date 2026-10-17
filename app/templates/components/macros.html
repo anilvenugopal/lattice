@@ -1,0 +1,190 @@
+{#
+  Shared UI macros. Import what you need:
+    {% from "components/macros.html" import page_header, badge, empty_state, prop_list, card, field, select_field %}
+  The UI kit page (Administration > UI kit) shows each one rendered.
+#}
+
+{# Page title row. Put buttons in the call block:
+   {% call page_header("Users", "Accounts and roles") %}<a class="btn">…</a>{% endcall %} #}
+{% macro page_header(title, subtitle="", badge_text="", badge_tone="neutral") -%}
+<div class="page-header">
+  <div class="page-header__text">
+    <h1 class="page-header__title">{{ title }}{% if badge_text %} {{ badge(badge_text, badge_tone) }}{% endif %}</h1>
+    {% if subtitle %}<p class="page-header__sub">{{ subtitle }}</p>{% endif %}
+  </div>
+  {% if caller is defined %}<div class="page-header__actions">{{ caller() }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+{# tone: neutral | info | success | warning | danger | accent #}
+{% macro badge(text, tone="neutral") -%}
+<span class="badge tone-{{ tone }}">{{ text }}</span>
+{%- endmacro %}
+
+{# The application logo (light and dark variants from settings) and, optionally, its name.
+   CSS (4-components/brand.css) shows the variant that matches the current theme. #}
+{% macro brand(class="") -%}
+<a class="brand {{ class }}" href="/">
+  <img class="brand__logo brand__logo--light" src="{{ settings.brand_logo_light }}" alt="{{ '' if settings.brand_show_name else settings.app_name }}">
+  <img class="brand__logo brand__logo--dark" src="{{ settings.brand_logo_dark }}" alt="{{ '' if settings.brand_show_name else settings.app_name }}">
+  {% if settings.brand_show_name %}<span class="brand__name">{{ settings.app_name }}</span>{% endif %}
+</a>
+{%- endmacro %}
+
+{# Inline message. tone: info | success | warning | danger. Text, or a call block for richer content. #}
+{% macro alert(tone, text="") -%}
+<div class="alert tone-{{ tone }}" role="{{ 'alert' if tone == 'danger' else 'status' }}">
+  {{ icon({'success': 'check', 'info': 'info'}.get(tone, 'alert')) }}
+  {% if caller is defined %}{{ caller() }}{% else %}<span>{{ text }}</span>{% endif %}
+</div>
+{%- endmacro %}
+
+{# The sign-out form. One POST route (/auth/logout) for every sign-out control. #}
+{% macro signout_button(label="Sign out", class="btn btn--link") -%}
+<form method="post" action="/auth/logout" data-signout>{{ csrf_field() }}
+  <button class="{{ class }}" type="submit">{{ caller() if caller is defined else label }}</button></form>
+{%- endmacro %}
+
+{% macro progress(value) -%}
+<span class="progress" title="{{ value }}%"><span class="progress__bar" style="width: {{ value }}%"></span></span><span class="progress__num">{{ value }}%</span>
+{%- endmacro %}
+
+{# Badge for a grid Column value: label and tone come from the Column definition. #}
+{% macro badge_for(col, value) -%}
+{{ badge(label_for(col, value), tone_for(col, value)) }}
+{%- endmacro %}
+
+{% macro empty_state(title, text="", icon_name="layout") -%}
+<div class="empty">
+  <div class="empty__icon">{{ icon(icon_name, 28) }}</div>
+  <div class="empty__title">{{ title }}</div>
+  {% if text %}<div class="empty__text">{{ text }}</div>{% endif %}
+  {% if caller is defined %}<div class="empty__actions">{{ caller() }}</div>{% endif %}
+</div>
+{%- endmacro %}
+
+{# items: list of (label, value) pairs. Values may be Markup. #}
+{% macro prop_list(items, columns=1) -%}
+<dl class="props props--cols-{{ columns }}">
+  {% for label, value in items %}
+  <div class="props__row"><dt>{{ label }}</dt><dd>{{ value if value not in (None, '') else '—' }}</dd></div>
+  {% endfor %}
+</dl>
+{%- endmacro %}
+
+{% macro card(title="", subtitle="", flush=False) -%}
+<section class="card{% if flush %} card--flush{% endif %}">
+  {% if title %}<header class="card__head"><h2 class="card__title">{{ title }}</h2>
+    {% if subtitle %}<span class="card__sub">{{ subtitle }}</span>{% endif %}</header>{% endif %}
+  <div class="card__body">{{ caller() }}</div>
+</section>
+{%- endmacro %}
+
+{% macro stat(label, value, href="", tone="") -%}
+<a class="stat{% if tone %} stat--{{ tone }}{% endif %}" {% if href %}href="{{ href }}"{% endif %}>
+  <span class="stat__value">{{ value }}</span><span class="stat__label">{{ label }}</span>
+</a>
+{%- endmacro %}
+
+{# Form fields. `error` shows under the input and marks it invalid. #}
+{% macro field(name, label, value="", type="text", error="", hint="", required=False, placeholder="", attrs="") -%}
+<label class="field{% if error %} field--invalid{% endif %}">
+  <span class="field__label">{{ label }}{% if required %} <span class="field__req">*</span>{% endif %}</span>
+  {% if type == "textarea" %}
+  <textarea class="input" name="{{ name }}" rows="5" placeholder="{{ placeholder }}" {% if required %}required{% endif %} {{ attrs }}>{{ value }}</textarea>
+  {% else %}
+  <input class="input" type="{{ type }}" name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" {% if required %}required{% endif %} {{ attrs }}>
+  {% endif %}
+  {% if error %}<span class="field__error">{{ error }}</span>{% elif hint %}<span class="field__hint">{{ hint }}</span>{% endif %}
+</label>
+{%- endmacro %}
+
+{% macro select_field(name, label, options, value="", error="", hint="", required=False, blank="") -%}
+<label class="field{% if error %} field--invalid{% endif %}">
+  <span class="field__label">{{ label }}{% if required %} <span class="field__req">*</span>{% endif %}</span>
+  <select class="input" name="{{ name }}" {% if required %}required{% endif %}>
+    {% if blank %}<option value="">{{ blank }}</option>{% endif %}
+    {% for val, text in options %}
+    <option value="{{ val }}" {% if val|string == value|string %}selected{% endif %}>{{ text }}</option>
+    {% endfor %}
+  </select>
+  {% if error %}<span class="field__error">{{ error }}</span>{% elif hint %}<span class="field__hint">{{ hint }}</span>{% endif %}
+</label>
+{%- endmacro %}
+
+{# A settings row: label and hint on the left, the control (call block) on the right. #}
+{% macro pref_row(label, hint="") -%}
+<div class="form-row">
+  <div class="form-row__label"><strong>{{ label }}</strong>{% if hint %}<small>{{ hint }}</small>{% endif %}</div>
+  {{ caller() }}
+</div>
+{%- endmacro %}
+
+{# 2–4 mutually exclusive options as a segmented control. onchange: optional inline JS. #}
+{% macro segmented(name, options, value, onchange="") -%}
+<div class="segmented">
+  {% for val, text in options %}
+  <label><input type="radio" name="{{ name }}" value="{{ val }}" {% if val == value %}checked{% endif %}
+    {% if onchange %}onchange="{{ onchange }}"{% endif %}><span>{{ text }}</span></label>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{# A bare select (no label wrapper), for pref_row and toolbars. #}
+{% macro select_input(name, options, value) -%}
+<select class="input input--auto" name="{{ name }}">
+  {% for val, text in options %}<option value="{{ val }}" {% if val == value %}selected{% endif %}>{{ text }}</option>{% endfor %}
+</select>
+{%- endmacro %}
+
+{# Active sessions. current_id marks "This device"; revoke=True adds per-row sign-out buttons. #}
+{% macro session_table(sessions, current_id=None, revoke=False) -%}
+{% if sessions %}
+<table class="table">
+  <thead><tr><th>Browser</th><th>IP address</th><th>Method</th><th>Last active</th>{% if revoke %}<th></th>{% endif %}</tr></thead>
+  <tbody>
+  {% for s in sessions %}
+    <tr>
+      <td class="u-truncate" title="{{ s.user_agent }}">{{ s.user_agent[:60] or 'Unknown' }}{% if s.id == current_id %} {{ badge('This device', 'success') }}{% endif %}</td>
+      <td class="u-mono">{{ s.ip_address or '—' }}</td>
+      <td>{{ auth_method_labels.get(s.auth_method, s.auth_method) }}</td>
+      <td>{{ time_tag(s.last_seen_at) }}</td>
+      {% if revoke %}<td class="u-text-right"><button class="btn btn--sm btn--ghost" hx-post="/account/sessions/{{ s.id }}/revoke"
+          {% if s.id == current_id %}hx-confirm="Sign out of this device?"{% endif %}>Sign out</button></td>{% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="u-muted card__pad">No active sessions.</p>{% endif %}
+{%- endmacro %}
+
+{% macro checkbox(name, label, checked=False, value="on", hint="", disabled=False) -%}
+<label class="check">
+  <input type="checkbox" name="{{ name }}" value="{{ value }}" {% if checked %}checked{% endif %} {% if disabled %}disabled{% endif %}>
+  <span>{{ label }}{% if hint %}<span class="check__hint">{{ hint }}</span>{% endif %}</span>
+</label>
+{%- endmacro %}
+
+{# Audit timeline. events: rows from app.services.audit.history(). #}
+{% macro timeline(events) -%}
+{% if events %}
+<ol class="timeline">
+  {% for ev in events %}
+  <li class="timeline__item">
+    <span class="timeline__dot"></span>
+    <div class="timeline__text"><strong>{{ ev.actor }}</strong> {{ ev.summary }}</div>
+    <div class="timeline__meta">{{ time_tag(ev.at) }} · <code>{{ ev.action }}</code></div>
+  </li>
+  {% endfor %}
+</ol>
+{% else %}
+<p class="u-muted">No activity yet.</p>
+{% endif %}
+{%- endmacro %}
+
+{% macro user_chip(name, sub="") -%}
+{%- if name -%}
+<span class="user-chip"><span class="avatar avatar--sm">{{ initials(name) }}</span>
+  <span class="user-chip__text"><span>{{ name }}</span>{% if sub %}<span class="user-chip__sub">{{ sub }}</span>{% endif %}</span></span>
+{%- else -%}<span class="u-muted">—</span>{%- endif -%}
+{%- endmacro %}

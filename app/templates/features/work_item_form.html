@@ -1,0 +1,29 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, field, select_field %}
+{% set v = values if values is defined else {} %}
+{% macro val(name) %}{{ v[name] if name in v else (item[name] if item else '') }}{% endmacro %}
+{% block main %}
+<div class="page page--narrow">
+  {{ page_header("Edit " ~ item.ref if item else "New work item") }}
+  <form method="post" action="{{ '/work/%s/edit' % item.id if item else '/work/new' }}" class="stack-lg">
+    {{ csrf_field() }}
+    {% call card() %}
+      <div class="stack">
+        {{ field("title", "Title", val("title"), error=errors.title, required=True) }}
+        {{ field("account", "Account", val("account")) }}
+        <div class="grid-2 grid-2--tight">
+          {{ select_field("status", "Status", statuses, val("status") or "new") }}
+          {{ select_field("priority", "Priority", priorities, val("priority") or "normal") }}
+          {{ select_field("owner_id", "Owner", owners, val("owner_id"), blank="Unassigned") }}
+          {{ field("amount", "Amount", val("amount") or 0, type="number", error=errors.amount, attrs='step="0.01"') }}
+        </div>
+        {{ field("description", "Description", val("description"), type="textarea") }}
+      </div>
+    {% endcall %}
+    <div class="form-actions">
+      <a class="btn btn--ghost" href="{{ '/work/%s' % item.id if item else '/work' }}">Cancel</a>
+      <button class="btn btn--primary" type="submit">{{ 'Save changes' if item else 'Create' }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
