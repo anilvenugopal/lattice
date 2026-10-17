@@ -1,27 +1,18 @@
 """Demo data: example work items, jobs and messages for the development users.
 
-`seed(db)` is the app's AppManifest.seed. Run on its own with:
-
-    uv run python -m lattice_demo.seed           # skips if users already exist
-    uv run python -m lattice_demo.seed --reset   # deletes example rows first
-
-Never run against production.
+`seed(db)` is the app's AppManifest.seed, run by `lattice seed` after the
+development users exist.
 """
 
 from __future__ import annotations
 
-import argparse
 import random
 from datetime import timedelta
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 
 from lattice.api import (
-    DEV_USERS,
-    SessionLocal,
     User,
-    settings,
-    users,
     utcnow,
 )
 from lattice_demo import inbox, jobs, work_items
@@ -51,11 +42,6 @@ BODY = ("Hi,\n\nFollowing up on our conversation earlier this week. I have attac
         "and marked the open questions inline. Could you review them before Friday?\n\n"
         "The main change is the revised limit on the property schedule; the rest is unchanged from the "
         "previous version.\n\nThanks,\n{name}")
-
-
-def seed_users(db) -> list[User]:
-    return [users.create(db, email, name, password=password, roles=roles)
-            for email, name, password, roles in DEV_USERS]
 
 
 def seed_examples(db, people: list[User]) -> None:
@@ -108,26 +94,3 @@ def seed(db) -> None:
     seed_examples(db, list(db.scalars(select(User).order_by(User.id))))
     db.commit()
 
-
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--reset", action="store_true", help="delete example rows and users first")
-    args = parser.parse_args()
-    if settings.is_production:
-        raise SystemExit("Refusing to seed a production database.")
-    with SessionLocal() as db:
-        if args.reset:
-            for model in (Message, Job, WorkItem):
-                db.execute(delete(model))
-            db.execute(delete(User).where(User.email.in_([u[0] for u in DEV_USERS])))
-            db.commit()
-        if db.scalar(select(User).limit(1)):
-            print("Users exist; skipping. Use --reset to recreate the example data.")
-            return
-        seed_users(db)
-        seed(db)
-    print(f"Seeded. Sign in as {DEV_USERS[0][0]} / {DEV_USERS[0][2]}")
-
-
-if __name__ == "__main__":
-    main()

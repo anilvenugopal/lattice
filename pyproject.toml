@@ -7,7 +7,7 @@ name = "lattice"
 version = "0.1.0"
 description = "Lattice: application platform with navigation, Ctrl+J search, auth, admin, preferences and a standard data grid."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
@@ -21,6 +21,9 @@ dependencies = [
     "httpx",
     "pyjwt[crypto]",
 ]
+
+[project.scripts]
+lattice = "lattice.cli:main"
 
 [dependency-groups]
 # The demo app and host are installed for development and tests only; the
@@ -42,7 +45,7 @@ packages = ["lattice"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py312"
+target-version = "py314"
 
 [tool.ruff.lint.isort]
 known-first-party = ["lattice", "lattice_demo", "demo_host"]
@@ -64,7 +67,7 @@ root_packages = ["lattice", "lattice_demo", "demo_host"]
 name = "Lattice layers: each imports only the layers below it"
 type = "layers"
 layers = [
-    "lattice.api | lattice.testing",
+    "lattice.api | lattice.testing | lattice.cli",
     "lattice.host",
     "lattice.platform",
     "lattice.components",

@@ -25,13 +25,15 @@ object set (the query) feeds a table, the selection feeds actions and a detail v
 | Live refresh | `poll_seconds` |
 | URL holds the state | Copy the address bar to share a filtered view |
 | Ctrl+J search provider with preview | `palette=Palette(title, href, subtitle, icon)` |
-| Home page count tile | `register_tile(HomeTile(label, GRID, view=..., filters=...))` |
+| Home page count tile | `HomeTile(label, GRID, view=..., filters=...)` in the manifest's `tiles=` |
 | Audit event per row per action | Automatic |
 
 ## Declaring a grid
 
 ```python
-from app.grid import Action, Column, Field, Filter, GridSpec, Palette, View, register
+# apps/helpdesk/lattice_helpdesk/tickets.py — an app with key "helpdesk"
+from lattice.api import (Action, Column, EDITORS, Filter, GridSpec, Palette, View,
+                         get_db, render_grid_page)
 
 def query(db, user):
     # Labeled columns. Must include "id". This is the access boundary.
@@ -43,8 +45,8 @@ def close(ctx):                         # ctx.ids, ctx.rows, ctx.values, ctx.use
     ctx.db.execute(update(Ticket).where(Ticket.id.in_(ctx.ids)).values(status="closed"))
     return f"Closed {ctx.count} ticket(s)."   # str or ActionResult; do not commit
 
-GRID = register(GridSpec(
-    key="tickets", title="Tickets", path="/tickets", query=query,
+GRID = GridSpec(
+    key="helpdesk.tickets", title="Tickets", path="/helpdesk/tickets", query=query,
     columns=[
         Column("ref", "Ref", kind="mono", required=True),
         Column("subject", "Subject", kind="strong"),
@@ -57,18 +59,23 @@ GRID = register(GridSpec(
     views=[View("open", "Open", where={"status": ["new", "open"]}),
            View("mine", "Mine", where={"assignee_id": "$me"}), View("all", "All")],
     actions=[
-        Action("new", "New ticket", scope="none", href="/tickets/new", tone="primary", icon="plus"),
+        Action("new", "New ticket", scope="none", href="/helpdesk/tickets/new", tone="primary", icon="plus"),
         Action("close", "Close", handler=close, when={"status": ["new", "open"]},
-               confirm="Close {count} ticket(s)?", roles=("editor", "admin")),
+               confirm="Close {count} ticket(s)?", roles=EDITORS),
     ],
-    default_sort="-opened_at", row_href="/tickets/{id}",
-    palette=Palette(title="{ref} · {subject}", href="/tickets/{id}"),
-))
+    default_sort="-opened_at", row_href="/helpdesk/tickets/{id}",
+    palette=Palette(title="{ref} · {subject}", href="/helpdesk/tickets/{id}"),
+)
 
-@router.get("/tickets")
+@router.get("/tickets")                  # mounted under /helpdesk by the host
 def tickets(request: Request, db: Session = Depends(get_db)):
     return render_grid_page(request, db, GRID, "tickets")
+
+# In the app's AppManifest: grids=[GRID], routers=[router], nav=[NavNode("tickets", …)]
 ```
+
+The grid key starts with the app key and a dot, and the path starts with the app's
+prefix; `create_app` refuses to start otherwise.
 
 A view's `where` and a filter's `key` refer to columns in the query, so
 `assignee_id` must be selected too (add `hidden=True` columns or simply select it;
@@ -119,7 +126,7 @@ Server-side helpers: `GridSpec.actions_for(user)` (role filter) and `Action.appl
 ### Endpoints (shared by all grids)
 
 `GET /_grid/{key}/rows`, `GET /_grid/{key}/panel/{id}`, `POST /_grid/{key}/action/{action}`,
-`POST /_grid/{key}/columns`, `GET /_grid/{key}/export.csv`. Feature modules do not
+`POST /_grid/{key}/columns`, `GET /_grid/{key}/export.csv`. Apps do not
 write list endpoints.
 
 ### Selection rules
@@ -132,7 +139,7 @@ write list endpoints.
 
 ```python
 grid = build_grid(request, db, GRID, sync_url=False)
-return render_page(request, "features/thing.html", "things.detail", grid=grid)
+return render_page(request, "helpdesk/thing.html", "things.detail", grid=grid)
 ```
 ```jinja
 {% from "components/grid.html" import data_grid %}{{ data_grid(grid) }}

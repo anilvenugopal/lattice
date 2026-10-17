@@ -1,4 +1,4 @@
-"""Settings read from environment variables or `.env`. See `.env.example`."""
+"""Settings read from LATTICE_* environment variables or `.env`. See `.env.example`."""
 
 from __future__ import annotations
 
@@ -6,17 +6,19 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", env_prefix="LATTICE_", extra="ignore")
 
     app_name: str = "Lattice"
     app_env: str = "development"
     # Logo shown in the top bar and on sign-in pages: one file for light mode, one for dark.
     brand_logo_light: str = "/static/brand/logo-light.svg"
     brand_logo_dark: str = "/static/brand/logo-dark.svg"
-    # Show APP_NAME next to the logo. Set false when the logo files already contain the name.
+    # Show LATTICE_APP_NAME next to the logo. Set false when the logo files already contain the name.
     brand_show_name: bool = True
     secret_key: str = "dev-secret-change-me"
-    database_url: str = "sqlite:///./data/lattice.kernel.db"
+    database_url: str = "sqlite:///./data/lattice.db"
+    # The host the `lattice` command line runs and seeds: "module:attribute".
+    host: str = "demo_host.main:app"
 
     session_idle_minutes: int = 480
     # None = secure cookies in production or over HTTPS (see lattice/kernel/auth/cookies.py).

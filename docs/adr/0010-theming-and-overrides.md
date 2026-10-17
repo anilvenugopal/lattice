@@ -30,16 +30,17 @@ registries, or a template override at a defined place.
 
 ### Logos and favicon
 
-- **The host** sets these in settings: `BRAND_LOGO_LIGHT`, `BRAND_LOGO_DARK`,
-  `BRAND_SHOW_NAME` (these exist today). They become `LATTICE_BRAND_*` in the
-  restructure.
-- **An app** declares an **app icon** in its manifest, with light and dark
-  variants. It is shown on the app's rail entry, its Ctrl+J source and its home
-  tiles. An app never replaces the shell logo.
+- **The host** sets these in settings: `LATTICE_BRAND_LOGO_LIGHT`,
+  `LATTICE_BRAND_LOGO_DARK`, `LATTICE_BRAND_SHOW_NAME`.
+- **An app** declares an **app icon** in its manifest: a name in the icon
+  registry, from the icons the app adds (`icon="demo:app"`). Icons draw with
+  `currentColor`, so one icon serves light and dark. It is shown in the Help menu
+  next to the app's help link. An app never replaces the shell logo.
 
 ### Colour scheme
 
-- **Host theme file.** The host may add a `theme.css` that redefines semantic
+- **Host theme file.** The host may add `static/theme.css` in its host folder
+  (`create_app(host_dir=…)`), served at `/static/host/theme.css`, that redefines semantic
   tokens inside `@layer settings`, once in `:root` and once in
   `[data-mode="dark"]`. It loads after the core tokens, so it wins. Components
   are unchanged because they read only tokens.

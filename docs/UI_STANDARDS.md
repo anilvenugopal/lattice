@@ -22,10 +22,10 @@ Open **Administration › UI kit** in the running app to see every component.
 
 | Type | Template | Example |
 |---|---|---|
-| List | `components/grid_page.html` via `render_grid_page` | `/work`, `/jobs`, `/admin/users` |
-| Split list + reader | same, with `layout="split"` | `/inbox` |
-| Record (detail) | `page_header` + `card`s with `prop_list` + `timeline` | `/work/1`, `/admin/users/1` |
-| Form | `page page--narrow`, `card` with `field`s, `form-actions` | `/work/new` |
+| List | `components/grid_page.html` via `render_grid_page` | `/demo/work`, `/demo/jobs`, `/admin/users` |
+| Split list + reader | same, with `layout="split"` | `/demo/inbox` |
+| Record (detail) | `page_header` + `card`s with `prop_list` + `timeline` | `/demo/work/1`, `/admin/users/1` |
+| Form | `page page--narrow`, `card` with `field`s, `form-actions` | `/demo/work/new` |
 | Settings | `card` with `form-row`s | `/account/preferences` |
 | Dashboard | `stats` + `grid-2` of cards | `/` |
 
@@ -37,7 +37,7 @@ Containers: `.page` (default), `.page--narrow` (forms, settings, 760px),
 
 | Macro / class | Use for |
 |---|---|
-| `brand(class)` | The logo and app name (top bar, sign-in pages). Variants from `BRAND_LOGO_LIGHT` / `BRAND_LOGO_DARK` |
+| `brand(class)` | The logo and app name (top bar, sign-in pages). Variants from `LATTICE_BRAND_LOGO_LIGHT` / `LATTICE_BRAND_LOGO_DARK` |
 | `page_header(title, subtitle, badge_text, badge_tone)` with a `call` block for buttons | Every page title |
 | `card(title, subtitle, flush)` | Grouping content; `flush` for tables |
 | `prop_list(items, columns)` | Read-only fields of a record |
@@ -72,7 +72,7 @@ One primary button per region (the main action). Destructive actions use
 
 ## CSS architecture
 
-Five ITCSS layers. `app/static/css/app.css` declares their order with
+Five ITCSS layers. `lattice/static/css/app.css` declares their order with
 `@layer settings, base, layout, components, utilities;`. A rule in a later layer
 always beats an earlier one, whatever its specificity.
 
@@ -81,7 +81,7 @@ always beats an earlier one, whatever its specificity.
 | 1 settings | `1-settings/tokens.css` | Custom properties only, in three tiers: primitives `--p-*` (raw palette) → semantic (`--surface-*`, `--text-*`, `--tone-*`, spacing, type) → component tokens (`--rail-w`, `--toast-bg`) | Selectors other than `:root` and theme hooks |
 | 2 base | `2-base/base.css` | Reset and bare elements (`body`, `a`, `kbd`, `svg`) | Class selectors |
 | 3 layout | `3-layout/shell.css`, `page.css` | Shell regions, page containers, layout objects (`.stack`, `.cluster`, `.grid-2`) | Component visuals |
-| 4 components | `4-components/*.css`, one file per family | Named pieces: `.btn`, `.card`, `.dg`, `.palette`; feature-owned sections in `features.css` | Colour literals, primitive tokens, `!important` |
+| 4 components | `4-components/*.css`, one file per family | Named pieces: `.btn`, `.card`, `.dg`, `.palette`. Apps add their own stylesheet, scoped to `[data-app="{key}"]` | Colour literals, primitive tokens, `!important` |
 | 5 utilities | `5-utilities/utilities.css` | `.u-*` single-purpose helpers (`u-muted`, `u-mono`, `u-text-right`) | Anything else |
 
 `tests/test_css_architecture.py` enforces these rules:
@@ -113,7 +113,7 @@ Keys:
 - Tab and Shift+Tab switch the source.
 - Enter opens the result or runs the command.
 
-Providers live in `app/search.py`.
+Providers live in `lattice/components/search/providers.py`; an app adds one through its manifest `search=`.
 
 ## Keyboard
 

@@ -1,5 +1,5 @@
-"""Development sign-in accounts. Created by scripts/seed.py and listed on the login page
-when APP_ENV=development. Never used in production."""
+"""Development sign-in accounts. Created by `lattice seed` and listed on the sign-in page
+when LATTICE_APP_ENV=development. Never used in production."""
 
 DEV_USERS = [
     # email, display name, password (None = SSO-only), roles

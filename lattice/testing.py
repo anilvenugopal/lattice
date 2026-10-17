@@ -12,9 +12,9 @@ from __future__ import annotations
 
 import os
 
-os.environ.setdefault("APP_ENV", "test")
-os.environ.setdefault("BCRYPT_ROUNDS", "4")
-os.environ.setdefault("DATABASE_URL", "sqlite:///./data/test-unused.db")
+os.environ.setdefault("LATTICE_APP_ENV", "test")
+os.environ.setdefault("LATTICE_BCRYPT_ROUNDS", "4")
+os.environ.setdefault("LATTICE_DATABASE_URL", "sqlite:///./data/test-unused.db")
 
 import pytest  # noqa: E402
 from alembic.config import Config  # noqa: E402

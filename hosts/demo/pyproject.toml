@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "lattice-demo-host"
 version = "0.1.0"
 description = "A Lattice host that runs the demo app."
-requires-python = ">=3.12"
+requires-python = ">=3.14"
 dependencies = ["lattice", "lattice-demo"]
 
 [tool.uv.sources]

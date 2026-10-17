@@ -64,12 +64,15 @@ is its own package. Reasons: [ADR 0002](adr/0002-one-core-package-apps-as-packag
 lattice/                         (this repository, a uv workspace)
   lattice/                       the core package
     api.py                       the only module apps import
-    kernel/                      registry, auth, users, permissions, nav, search,
-                                 references, events, audit, preferences, settings,
-                                 bindings, migrations, web (render, flash, toast)
-    components/
-      grid/  form/  chart/  graph/  stepper/  tree/  timeline/  record/
-                                 each: spec.py, endpoints, templates/, static/
+    kernel/                      auth, users, nav, audit, preferences, settings, db,
+                                 web (render, flash, toast), icons, slots, css_rules;
+                                 later: permissions, references, events, bindings
+    components/                  grid/, search/ (Ctrl+J), tiles, manifest (AppManifest);
+                                 later: form/, chart/, graph/, stepper/, tree/, record/
+    platform/                    Lattice's own apps: home, account, admin
+    host.py                      create_app and the checks on every app
+    cli.py                       lattice migrate | create-user | seed | dev
+    testing.py                   pytest fixtures for core and app tests
     static/css/                  the five CSS layers (docs/UI_STANDARDS.md)
     templates/                   shell layout, macros
   apps/
@@ -94,7 +97,7 @@ Import contracts, checked by a test (`import-linter`), in the same way
 
 | Contract | Rule |
 |---|---|
-| Layers | `lattice.components` may import `lattice.kernel`; never the reverse |
+| Layers | `kernel` ← `components` ← `platform` ← `host` ← `api`, `cli`, `testing`; each imports only the layers below it |
 | Public entry point | Apps import only `lattice.api`. Everything else is internal and may change without notice |
 | Independence | `apps.*` packages never import each other |
 | Component isolation | One component imports another only through its spec (a chart may take a grid's source), never its internals |
@@ -114,11 +117,12 @@ Every app package exposes one `AppManifest`. The host passes the manifests to
 
 ```python
 # lattice_taskline/__init__.py
-app = AppManifest(
+APP = AppManifest(
     key="taskline",                         # URL prefix, template folder, settings prefix, permission prefix
     label="Jobs",
-    icon=AppIcon(light="icons/app-light.svg", dark="icons/app-dark.svg"),   # rail, Ctrl+J, tiles
-    help_url="https://…/taskline",
+    icon="taskline:app",                    # from the app's own icons; follows the theme
+    icons={"app": "<path …/>"},
+    help_url="https://…/taskline",          # listed in the Help menu
     permissions=[Permission("taskline.view"), Permission("taskline.operate")],
     bindings=["default"],                   # or one per instance, see 6.4
     nav=[...],                              # NavNodes, under /taskline/...
@@ -134,7 +138,8 @@ app = AppManifest(
 )
 
 # host: strategiq-web
-app = create_app(apps=[demo.app, lattice_taskline.app, lattice_incidents.app, strategiq_web.app])
+app = create_app(apps=[lattice_taskline.APP, lattice_incidents.APP, strategiq_web.APP],
+                 host_dir=Path(__file__).parent)      # templates/, static/theme.css
 ```
 
 What `create_app` does with each manifest:
@@ -150,7 +155,7 @@ What `create_app` does with each manifest:
 | `publishes`, `subscribes` | Event bus (4.4) |
 | `bindings`, `migrations` | Database bindings and `lattice migrate` (section 5) |
 | templates, static | Template search order host → app (`{key}/…`) → core; static files at `/static/{key}/` (4.6) |
-| `icon`, `help_url` | Rail entry, Ctrl+J source and home tiles; help menu (4.6) |
+| `icon`, `icons`, `help_url` | The app's icons (`icon("{key}:name")`); its entry in the Help menu (4.6) |
 | `settings` | Validated at startup; a missing required setting stops the host with one clear message |
 
 An app's CSS declares `@layer components { … }`, so it joins the five-layer
@@ -484,26 +489,28 @@ In priority order. Each will get its own design note when it is started.
 
 ## 10. Where Lattice is today
 
+Step 1 (kernel restructure) is done. What remains:
+
 | Area | Today | Target |
 |---|---|---|
-| Package | One `app/` package; features in `app/features/` | `lattice/` core + `apps/*` packages, `lattice.api` |
-| Database | SQLite default, one connection | Postgres only, per-app bindings and schemas |
+| Package | `lattice` core, `apps/demo`, `hosts/demo`, `lattice.api`, import contracts | Unchanged |
+| Apps | `AppManifest` and `create_app(apps=[…])` with namespace checks | + settings, bindings, permissions, references, panels, events per manifest |
+| Database | SQLite default, one connection, one Alembic history | Postgres only, per-app bindings, schemas and migrations |
 | Permissions | Roles only (`admin`, `editor`, `viewer`) | Permissions grouped into roles; per-binding scopes |
 | Grid | SQLAlchemy query, offset paging, sync | Data sources, keyset paging, async sources |
-| Apps | `FEATURES` tuple in `app/main.py` | `AppManifest` and `create_app(apps=[…])` |
 | Cross-app | None needed yet | References, record panels, events |
-| Components | Grid, macros, timeline, stats | + form, chart, stepper, tree, graph, record view |
-| CSS | Five ITCSS layers, tested | Unchanged; app CSS joins via `@layer components`, scoped by `data-app` |
-| Branding | Host settings for name and logos | + host `theme.css` (allowed tokens), app icons and accents, icon registry, named slots |
-| Settings | `.env`, no prefix | `LATTICE_` prefix; per-app prefixes |
+| Components | Grid, Ctrl+J, tiles, macros, timeline, stats | + form, chart, stepper, tree, graph, record view |
+| CSS | Five ITCSS layers; app stylesheets scoped by `data-app`; host theme limited to brand tokens; all checked | Unchanged; `--app-accent` read by core when an app needs an accent |
+| Branding | Settings for name and logos; host folder (`theme.css`, page overrides); icon registry; named slots | Unchanged |
+| Settings | `LATTICE_` prefix | + per-app prefixes (`LATTICE_{KEY}_`) |
 
 ## 11. Order of work
 
 Each step ends with tests passing and the demo running, and each is reviewed
 before the next starts.
 
-1. **Kernel restructure.**
-   - `app/` becomes `lattice/` with `kernel/` and `components/`.
+1. **Kernel restructure.** Done.
+   - `app/` becomes `lattice/` with `kernel/`, `components/` and `platform/`.
    - `lattice.api` and the import-contract test.
    - `AppManifest` and `create_app`.
    - Template search order, icon registry, named slots and `data-app` scoping

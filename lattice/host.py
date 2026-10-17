@@ -180,6 +180,7 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
         for router in app.routers:
             web.include_router(router, prefix=mount)
     _add_error_handlers(web)
+    web.state.apps = apps          # the host's own apps, for `lattice seed`
     return web
 
 
