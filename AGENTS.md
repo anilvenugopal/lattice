@@ -40,6 +40,8 @@ Always use `uv run …`; bare `python`/`pytest` miss the environment.
 | `app/services/` | `audit` (record, history), `users` (lookup, create), `preferences`, `home` (home tiles) |
 | `app/auth/roles.py` | Role codes (`ADMIN`, `ADMINS`, `EDITORS`). Never write role strings elsewhere |
 | `app/models.py` + `alembic/versions/` | Schema. Every model change ships with a migration |
+| `docs/ARCHITECTURE.md` | Target design: kernel, components, apps, hosts, and the order of work |
+| `docs/adr/` | Architecture decisions, one file each. Read before changing anything they cover |
 | `docs/GRID.md` | Grid contract and recipes |
 | `docs/UI_STANDARDS.md` | Page patterns, components, styling rules |
 | `docs/AUTH.md` | Password and OIDC sign-in, roles, sessions |

@@ -35,6 +35,8 @@ Sign in as `admin@example.com` / `Admin12345!` (also `editor@…`/`Editor12345!`
 ## Docs
 
 - [AGENTS.md](AGENTS.md) — rules and recipes (read this first)
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — where Lattice is going: kernel, components, apps, hosts
+- [docs/adr/](docs/adr/README.md) — architecture decisions
 - [docs/GRID.md](docs/GRID.md) — the grid contract
 - [docs/UI_STANDARDS.md](docs/UI_STANDARDS.md) — page patterns and components
 - [docs/AUTH.md](docs/AUTH.md) — sign-in, OIDC setup, roles, sessions
