@@ -117,6 +117,8 @@ Every app package exposes one `AppManifest`. The host passes the manifests to
 app = AppManifest(
     key="taskline",                         # URL prefix, template folder, settings prefix, permission prefix
     label="Jobs",
+    icon=AppIcon(light="icons/app-light.svg", dark="icons/app-dark.svg"),   # rail, Ctrl+J, tiles
+    help_url="https://…/taskline",
     permissions=[Permission("taskline.view"), Permission("taskline.operate")],
     bindings=["default"],                   # or one per instance, see 6.4
     nav=[...],                              # NavNodes, under /taskline/...
@@ -147,11 +149,13 @@ What `create_app` does with each manifest:
 | `record_panels` | Panel registry (4.3) |
 | `publishes`, `subscribes` | Event bus (4.4) |
 | `bindings`, `migrations` | Database bindings and `lattice migrate` (section 5) |
-| templates, static | Template loader search path `{key}/…`; static files at `/static/{key}/` |
+| templates, static | Template search order host → app (`{key}/…`) → core; static files at `/static/{key}/` (4.6) |
+| `icon`, `help_url` | Rail entry, Ctrl+J source and home tiles; help menu (4.6) |
 | `settings` | Validated at startup; a missing required setting stops the host with one clear message |
 
 An app's CSS declares `@layer components { … }`, so it joins the five-layer
-cascade without being imported by Lattice's `app.css`.
+cascade without being imported by Lattice's `app.css`. What an app may style is
+limited (4.6).
 
 ### 4.2 References
 
@@ -216,6 +220,35 @@ providers and record panels check permissions, never role names.
 Some permissions apply per instance. In the Ops console, a user may operate the
 dev taskline but only view prod, so permissions can be scoped to a binding:
 `taskline.operate@prod`.
+
+### 4.6 Theming and overrides
+
+The host owns the brand. Apps style only their own pages.
+[ADR 0010](adr/0010-theming-and-overrides.md).
+
+- **Precedence.** Every lookup (templates, icons, tokens) goes host, then app,
+  then core. Each level overrides only what it owns. No level edits or copies
+  core files.
+- **What the host sets:**
+  - the name, logos and favicon (settings);
+  - brand colours and fonts, in a `theme.css` that may redefine only an allowed
+    list of semantic tokens, for both light and dark;
+  - the icon set;
+  - whole sign-in, error and home pages.
+- **What an app sets:**
+  - an app icon (light and dark) for its rail entry, Ctrl+J source and tiles;
+  - an `--app-accent` and its own component tokens, scoped under
+    `[data-app="{key}"]`, which the shell puts on the app's pages;
+  - icons in its own namespace (`icon("taskline:dag")`);
+  - templates in its own folder.
+
+  An app cannot restyle the shell or override core templates.
+- **Named slots** take small additions without a template override:
+  `topbar.end`, `statusbar.start`, `statusbar.end`, `signin.footer`,
+  `home.sections`, `help.menu`.
+- **Checks.** The CSS architecture test checks host and app stylesheets against
+  these rules. The app loader rejects templates, icons or slots outside an app's
+  namespace.
 
 ## 5. Data
 
@@ -460,7 +493,8 @@ In priority order. Each will get its own design note when it is started.
 | Apps | `FEATURES` tuple in `app/main.py` | `AppManifest` and `create_app(apps=[…])` |
 | Cross-app | None needed yet | References, record panels, events |
 | Components | Grid, macros, timeline, stats | + form, chart, stepper, tree, graph, record view |
-| CSS | Five ITCSS layers, tested | Unchanged; app CSS joins via `@layer components` |
+| CSS | Five ITCSS layers, tested | Unchanged; app CSS joins via `@layer components`, scoped by `data-app` |
+| Branding | Host settings for name and logos | + host `theme.css` (allowed tokens), app icons and accents, icon registry, named slots |
 | Settings | `.env`, no prefix | `LATTICE_` prefix; per-app prefixes |
 
 ## 11. Order of work
@@ -472,6 +506,9 @@ before the next starts.
    - `app/` becomes `lattice/` with `kernel/` and `components/`.
    - `lattice.api` and the import-contract test.
    - `AppManifest` and `create_app`.
+   - Template search order, icon registry, named slots and `data-app` scoping
+     ([ADR 0010](adr/0010-theming-and-overrides.md)), with the CSS test extended
+     for host and app stylesheets.
    - The example features move to `apps/demo`.
    - The `lattice` CLI and `LATTICE_` settings.
 2. **Postgres and bindings.**

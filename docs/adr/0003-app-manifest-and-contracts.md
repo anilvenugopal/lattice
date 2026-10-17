@@ -1,6 +1,6 @@
 # 0003. Apps plug in through a manifest and kernel contracts
 
-Status: Proposed
+Status: Accepted
 
 ## Context
 

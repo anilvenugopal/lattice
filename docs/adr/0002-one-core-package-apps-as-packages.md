@@ -1,6 +1,6 @@
 # 0002. One core package with enforced boundaries; each app its own package
 
-Status: Proposed. Condition from review: clear documentation and code
+Status: Accepted. Condition from review: clear documentation and code
 organisation are required.
 
 ## Context
