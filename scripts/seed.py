@@ -14,12 +14,12 @@ from datetime import timedelta
 
 from sqlalchemy import delete, select
 
-from app.config import settings
-from app.db import SessionLocal
-from app.dev_seed import DEV_USERS
-from app.features import inbox, jobs, work_items
-from app.models import Job, Message, User, WorkItem, utcnow
-from app.services import users as users_service
+from lattice.features import inbox, jobs, work_items
+from lattice.kernel.config import settings
+from lattice.kernel.db import SessionLocal
+from lattice.kernel.dev_seed import DEV_USERS
+from lattice.kernel.models import Job, Message, User, WorkItem, utcnow
+from lattice.kernel.services import users as users_service
 
 
 def keys(options) -> list[str]:

@@ -2,7 +2,7 @@
 
 from sqlalchemy import select
 
-from app.models import Message
+from lattice.kernel.models import Message
 
 
 def test_all_providers_with_counts(as_user, items):

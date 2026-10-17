@@ -9,7 +9,7 @@ setup:  ## Install dependencies, migrate, seed development data
 	uv run python -m scripts.seed
 
 dev:  ## Run the app with reload on http://localhost:8000
-	uv run uvicorn app.main:app --reload --port 8000
+	uv run uvicorn lattice.main:app --reload --port 8000
 
 migrate:  ## Apply pending migrations
 	uv run alembic upgrade head

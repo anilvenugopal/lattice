@@ -1,0 +1,45 @@
+{# One table cell. Column kinds are documented in lattice/components/grid/spec.py (ColumnKind). #}
+{% from "components/macros.html" import badge_for, progress, user_chip %}
+{% macro cell(col, row, spec) -%}
+{%- set v = row[col.key] -%}
+{%- set text = label_for(col, v) -%}
+{%- set sec = label_for(spec.column(col.secondary), row[col.secondary]) if col.secondary and row[col.secondary] else "" -%}
+{%- if col.href %}<a class="dg__link" href="{{ fmt_url(col.href, row) }}" @click.stop>{% endif -%}
+{%- if col.kind == "template" -%}
+  {% include col.template %}
+{%- elif col.kind == "star" -%}
+  <button type="button" class="star{% if v %} is-on{% endif %}" @click.stop="runForRow({{ col.star_action|js }}, $el.closest('tr'))" aria-label="Toggle star">{{ icon('star', 15) }}</button>
+{%- elif col.kind == "user" -%}
+  {{ user_chip(text, sec) }}
+{%- elif v is none or v == "" -%}
+  <span class="u-muted">—</span>
+{%- elif col.kind == "strong" -%}
+  <span class="dg__strong">{{ text }}</span>
+{%- elif col.kind == "mono" -%}
+  <span class="dg__mono">{{ text }}</span>
+{%- elif col.kind == "number" -%}
+  <span class="dg__num">{{ v | number }}</span>
+{%- elif col.kind == "money" -%}
+  <span class="dg__num">{{ v | money }}</span>
+{%- elif col.kind == "percent" -%}
+  <span class="dg__num">{{ v | number(1) }}%</span>
+{%- elif col.kind == "date" -%}
+  {{ time_tag(v, "date") }}
+{%- elif col.kind == "datetime" -%}
+  {{ time_tag(v, "datetime") }}
+{%- elif col.kind == "ago" -%}
+  {{ time_tag(v) }}
+{%- elif col.kind == "badge" -%}
+  {{ badge_for(col, v) }}
+{%- elif col.kind == "bool" -%}
+  {% if v %}<span class="bool bool--yes">{{ icon('check', 15) }}</span>{% else %}<span class="bool">—</span>{% endif %}
+{%- elif col.kind == "tags" -%}
+  <span class="tags">{% for t in (v|string).split(',') if t.strip() %}<span class="tag">{{ t.strip() }}</span>{% endfor %}</span>
+{%- elif col.kind == "progress" -%}
+  {{ progress(v) }}
+{%- else -%}
+  {{ text }}
+{%- endif -%}
+{%- if sec and col.kind not in ("user", "template") %}<div class="dg__secondary">{{ sec }}</div>{% endif -%}
+{%- if col.href %}</a>{% endif -%}
+{%- endmacro %}

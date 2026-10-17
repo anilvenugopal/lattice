@@ -1,0 +1,19 @@
+{# Ctrl+J preview of a page (lattice/components/search/providers.py PAGES). #}
+<div class="panel">
+  <header class="panel__head">
+    <div class="panel__title">{{ node.label }}</div>
+    <a class="btn btn--sm btn--primary" href="{{ node.route }}">Open</a>
+  </header>
+  <div class="panel__body">
+    <p class="u-muted u-small">{{ chain | map(attribute="label") | join(" › ") }}</p>
+    {% if node.description %}<p>{{ node.description }}</p>{% endif %}
+    {% if children %}
+    <h3 class="panel__section">Pages in {{ node.label }}</h3>
+    <ul class="link-list">
+      {% for c in children %}
+      <li><a href="{{ c.route }}">{{ icon(c.icon or "layout") }} <span><strong>{{ c.label }}</strong>{% if c.description %}<small>{{ c.description }}</small>{% endif %}</span></a></li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+</div>

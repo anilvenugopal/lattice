@@ -1,11 +1,11 @@
-"""Enforces the five-layer CSS architecture described in app/static/css/app.css."""
+"""Enforces the five-layer CSS architecture described in lattice/static/css/app.css."""
 
 import re
 from pathlib import Path
 
 import pytest
 
-CSS = Path("app/static/css")
+CSS = Path("lattice/static/css")
 LAYERS = {"1-settings": "settings", "2-base": "base", "3-layout": "layout",
           "4-components": "components", "5-utilities": "utilities"}
 COLOR_LITERAL = re.compile(

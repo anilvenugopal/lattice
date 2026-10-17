@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.nav import NODES
+from lattice.kernel.nav import NODES
 from tests.conftest import csrf
 
 PAGES = ["/", "/work", "/work/1", "/jobs", "/inbox", "/inbox?view=archive",
@@ -98,9 +98,9 @@ def test_every_url_the_js_posts_to_exists():
 
     from starlette.routing import Match
 
-    from app.main import app
+    from lattice.main import app
     urls = set()
-    for js in Path("app/static/js").glob("*.js"):
+    for js in Path("lattice/static/js").glob("*.js"):
         urls |= set(re.findall(r"app\.post\(\s*'(/[^'$`]+)'", js.read_text()))
     assert urls, "no app.post() URLs found"
     for url in urls:
@@ -139,7 +139,7 @@ def test_profile_update_and_blank_name(as_user, users, db):
     assert resp.status_code == 400
     c.post("/account/profile", data={"display_name": "Val V"}, headers={"X-CSRF-Token": csrf(c)})
     db.expire_all()
-    from app.models import User
+    from lattice.kernel.models import User
     assert db.get(User, users["viewer"].id).display_name == "Val V"
 
 
@@ -159,7 +159,7 @@ def test_home_links_come_from_the_nav_manifest(as_user, items):
 
 
 def test_brand_logo_variants_come_from_settings(client, as_user, monkeypatch):
-    from app.config import settings
+    from lattice.kernel.config import settings
     monkeypatch.setattr(settings, "brand_logo_light", "/static/brand/acme-light.svg")
     monkeypatch.setattr(settings, "brand_logo_dark", "/static/brand/acme-dark.svg")
     monkeypatch.setattr(settings, "brand_show_name", False)

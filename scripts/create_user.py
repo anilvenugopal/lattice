@@ -12,10 +12,10 @@ from __future__ import annotations
 import argparse
 import getpass
 
-from app.auth.passwords import hash_password, policy_errors
-from app.db import SessionLocal
-from app.models import UserRole
-from app.services import users
+from lattice.kernel.auth.passwords import hash_password, policy_errors
+from lattice.kernel.db import SessionLocal
+from lattice.kernel.models import UserRole
+from lattice.kernel.services import users
 
 
 def main() -> None:

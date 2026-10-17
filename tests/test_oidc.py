@@ -9,9 +9,9 @@ import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
 from sqlalchemy import select
 
-from app.auth import oidc
-from app.config import settings
-from app.models import User
+from lattice.kernel.auth import oidc
+from lattice.kernel.config import settings
+from lattice.kernel.models import User
 from tests.conftest import csrf, make_user
 
 ISSUER = "https://idp.test"

@@ -1,0 +1,15 @@
+/* Layer 4 — components owned by feature modules (lattice/features/*). One section per feature.
+   Delete a section when you delete its feature. */
+
+/* ── Inbox (lattice/features/inbox.py) ──────────────────────────────────── */
+.msg { min-width: 0; padding: 2px 0; }
+.msg__top { display: flex; align-items: center; gap: 6px; }
+.msg__from, .msg__subject, .msg__snippet { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.msg__clip { display: flex; color: var(--text-3); }
+.msg__snippet { font-size: var(--fs-sm); color: var(--text-3); }
+.is-unread .msg__from, .is-unread .msg__subject { font-weight: var(--fw-semibold); color: var(--text); }
+.reader { display: flex; flex-direction: column; gap: var(--sp-4); }
+.reader__meta { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.reader__body { font-size: var(--fs-base); }
+.reader__attach { display: flex; align-items: center; gap: var(--sp-2); padding: 10px; font-size: var(--fs-md);
+  border: 1px solid var(--border); border-radius: var(--r-md); }

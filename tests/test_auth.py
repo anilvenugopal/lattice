@@ -1,7 +1,7 @@
 from sqlalchemy import select
 
-from app.auth.sessions import COOKIE_NAME as SESSION_COOKIE
-from app.models import AuditEvent, UserSession
+from lattice.kernel.auth.sessions import COOKIE_NAME as SESSION_COOKIE
+from lattice.kernel.models import AuditEvent, UserSession
 from tests.conftest import PASSWORD, csrf, login, make_user
 
 
@@ -92,8 +92,8 @@ def test_revoking_sessions_on_deactivate(as_user, users, client):
 
 
 def test_session_helpers_leave_the_commit_to_the_caller(db, users):
-    from app.auth.sessions import revoke_user_sessions
-    from app.models import UserSession, utcnow
+    from lattice.kernel.auth.sessions import revoke_user_sessions
+    from lattice.kernel.models import UserSession, utcnow
     db.add(UserSession(id="s1", user_id=users["editor"].id, expires_at=utcnow()))
     db.commit()
     revoke_user_sessions(db, users["editor"].id)
@@ -120,7 +120,7 @@ def test_unknown_email_still_runs_bcrypt(client, users, monkeypatch):
 
 
 def test_cookies_are_secure_in_production(client, users, monkeypatch):
-    from app.config import settings
+    from lattice.kernel.config import settings
     monkeypatch.setattr(settings, "app_env", "production")
     resp = login(client, "admin@test.io")
     assert "secure" in resp.headers["set-cookie"].lower()
@@ -129,7 +129,7 @@ def test_cookies_are_secure_in_production(client, users, monkeypatch):
 def test_oidc_refuses_symmetric_algorithms():
     import pytest as _pytest
 
-    from app.auth import oidc
+    from lattice.kernel.auth import oidc
     assert oidc._signing_algorithms({"id_token_signing_alg_values_supported": ["HS256", "RS256"]}) == ["RS256"]
     with _pytest.raises(oidc.OIDCError):
         oidc._signing_algorithms({"id_token_signing_alg_values_supported": ["HS256", "none"]})

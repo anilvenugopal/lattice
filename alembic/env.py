@@ -1,8 +1,8 @@
 from logging.config import fileConfig
 
 from alembic import context
-from app import db as app_db
-from app import models  # noqa: F401  registers tables on Base.metadata
+from lattice.kernel import db as app_db
+from lattice.kernel import models  # noqa: F401  registers tables on Base.metadata
 
 config = context.config
 if config.config_file_name:

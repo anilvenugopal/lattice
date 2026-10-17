@@ -1,8 +1,8 @@
 from sqlalchemy import select
 
-from app.features import inbox, work_items
-from app.grid import engine
-from app.models import AuditEvent, Message, UserPreference, WorkItem
+from lattice.components.grid import engine
+from lattice.features import inbox, work_items
+from lattice.kernel.models import AuditEvent, Message, UserPreference, WorkItem
 from tests.conftest import current, post_json
 
 
@@ -125,7 +125,7 @@ def test_values_that_do_not_fit_the_column_match_nothing(as_user, items):
 
 
 def test_secondary_line_uses_its_own_column_labels(as_user, db, users):
-    from app.models import Job
+    from lattice.kernel.models import Job
     db.add(Job(name="Nightly", job_type="sync", status="queued"))
     db.commit()
     html = as_user("viewer").get("/_grid/jobs/rows").text
@@ -133,13 +133,13 @@ def test_secondary_line_uses_its_own_column_labels(as_user, db, users):
 
 
 def test_links_url_encode_row_values():
-    from app.web import fmt, fmt_url
+    from lattice.kernel.web import fmt, fmt_url
     row = {"id": 7, "subject": "Q&A #2 + more"}
     assert fmt_url("/inbox?q={subject}", row) == "/inbox?q=Q%26A%20%232%20%2B%20more"
     assert fmt("{subject}", row) == "Q&A #2 + more"
 
 
 def test_js_filter_escapes_values_for_alpine_attributes():
-    from app.web import env
+    from lattice.kernel.web import env
     out = env.from_string('<b @click="run({{ k|js }})">').render(k="a'); alert(1); ('")
     assert out == '<b @click="run(&#34;a&#39;); alert(1); (&#39;&#34;)">'

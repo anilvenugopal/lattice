@@ -2,7 +2,7 @@
 
 from sqlalchemy import select
 
-from app.models import AuditEvent, Job, Message, User, UserSession
+from lattice.kernel.models import AuditEvent, Job, Message, User, UserSession
 from tests.conftest import csrf, login, post_json
 
 

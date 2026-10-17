@@ -14,10 +14,10 @@ from alembic.config import Config
 from fastapi.testclient import TestClient
 
 from alembic import command
-from app import db as app_db
-from app.auth import csrf as csrf_cookie
-from app.models import Message, User, WorkItem
-from app.services import users as users_service
+from lattice.kernel import db as app_db
+from lattice.kernel.auth import csrf as csrf_cookie
+from lattice.kernel.models import Message, User, WorkItem
+from lattice.kernel.services import users as users_service
 
 PASSWORD = "Passw0rd-Long!"
 
@@ -67,7 +67,7 @@ def items(db, users):
 
 @pytest.fixture
 def client(db):
-    from app.main import app
+    from lattice.main import app
     with TestClient(app) as c:
         yield c
 
@@ -101,7 +101,7 @@ def post_json(client, url, body):
 
 def current(user, roles=None):
     """A CurrentUser for calling grid code directly, without a request."""
-    from app.auth.sessions import CurrentUser
+    from lattice.kernel.auth.sessions import CurrentUser
     return CurrentUser(id=user.id, email=user.email, display_name=user.display_name,
                        roles=tuple(roles or user.role_codes), must_change_password=False,
                        has_password=True, session_id="test")
