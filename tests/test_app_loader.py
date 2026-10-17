@@ -55,7 +55,8 @@ def test_app_routes_mount_under_its_key_and_nav_follows_app_order(db, users):
     web = create_app(apps=[notes])
     assert [n.key for n in nav.NODES if n.parent is None] == \
         ["home", "notes", "admin", "account"]
-    assert nav.BY_KEY["notes"].app == "notes" and nav.BY_KEY["admin.users"].app == "admin"
+    # Platform pages (admin, account, home) carry no app key, so no data-app.
+    assert nav.BY_KEY["notes"].app == "notes" and nav.BY_KEY["admin.users"].app == ""
     with TestClient(web) as c:
         assert login(c, "viewer@test.io").status_code == 303
         assert c.get("/notes/hello").json() == {"ok": True}

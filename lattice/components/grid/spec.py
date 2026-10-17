@@ -171,6 +171,11 @@ class GridSpec:
     empty_text: str = ""
     palette: Palette | None = None
 
+    @property
+    def app_key(self) -> str:
+        """The owning app's key: the grid key's prefix ("demo.jobs" -> "demo"); "" for platform grids."""
+        return self.key.partition(".")[0] if "." in self.key else ""
+
     def column(self, key: str) -> Column | None:
         return next((c for c in self.columns if c.key == key), None)
 

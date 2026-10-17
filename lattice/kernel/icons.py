@@ -1,6 +1,9 @@
 """Inline SVG icons (Lucide-style strokes, 24px grid). Use `{{ icon("name") }}` in templates.
 
-Add an icon by adding its path markup here. Unknown names render an empty box.
+Lookup order (ADR 0010): `icon("search")` uses the host's replacement if it has one,
+then the core set below. `icon("demo:queue")` uses the icons the `demo` app declares.
+Icons draw with `currentColor`, so they follow the light and dark themes.
+Unknown names render an empty box.
 """
 
 from __future__ import annotations
@@ -58,8 +61,39 @@ PATHS: dict[str, str] = {
 }
 
 
+_HOST: dict[str, str] = {}
+_APPS: dict[str, dict[str, str]] = {}
+
+
+def reset() -> None:
+    _HOST.clear()
+    _APPS.clear()
+
+
+def set_host_icons(icons: dict[str, str]) -> None:
+    """A host may replace core icons; it may not add new unprefixed names."""
+    unknown = sorted(set(icons) - set(PATHS))
+    if unknown:
+        raise ValueError(f"Host icons {unknown} replace no core icon")
+    _HOST.update(icons)
+
+
+def add_app_icons(app_key: str, icons: dict[str, str]) -> None:
+    bad = sorted(name for name in icons if ":" in name)
+    if bad:
+        raise ValueError(f"App {app_key!r} icon names {bad} must not contain ':'")
+    _APPS[app_key] = dict(icons)
+
+
+def _body(name: str) -> str:
+    if ":" in name:
+        app_key, _, short = name.partition(":")
+        return _APPS.get(app_key, {}).get(short, "")
+    return _HOST.get(name) or PATHS.get(name, "")
+
+
 def icon(name: str, size: int = 16, cls: str = "") -> Markup:
-    body = PATHS.get(name, "")
+    body = _body(name)
     return Markup(
         f'<svg class="icon {cls}" width="{size}" height="{size}" viewBox="0 0 24 24" fill="none" '
         f'stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" '

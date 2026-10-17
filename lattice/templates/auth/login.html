@@ -27,6 +27,7 @@
   {{ alert("warning", "No sign-in method is configured. Set PASSWORD_LOGIN_ENABLED or the OIDC_* settings.") }}
   {% endif %}
 </div>
+{{ slot("signin.footer") }}
 {% if dev_users %}
 <p class="bare__note">Development accounts:
   {% for email, _, password, _ in dev_users if password %}<code>{{ email }}</code> / <code>{{ password }}</code>{{ ", " if not loop.last }}{% endfor %}</p>

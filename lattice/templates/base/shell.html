@@ -51,9 +51,19 @@
           <span x-show="theme === 'dark'" x-cloak>{{ icon('moon', 17) }}</span>
           <span x-show="theme === 'system'" x-cloak>{{ icon('monitor', 17) }}</span>
         </button>
-        <button class="icon-btn" type="button" @click="shortcutsOpen = true" data-tip="Keyboard shortcuts (?)" data-tip-pos="below" aria-label="Keyboard shortcuts">
-          {{ icon('keyboard', 17) }}
-        </button>
+        <div class="menu-wrap" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
+          <button class="icon-btn" type="button" @click="open = !open" data-tip="Help" data-tip-pos="below" aria-label="Help">
+            {{ icon('info', 17) }}
+          </button>
+          <div class="menu menu--right" x-show="open" x-cloak x-transition.opacity.duration.100ms>
+            <button class="menu__item" type="button" @click="open = false; shortcutsOpen = true">{{ icon('keyboard') }} Keyboard shortcuts <kbd>?</kbd></button>
+            {% for label, url, app_icon in help_links %}
+            <a class="menu__item" href="{{ url }}" target="_blank" rel="noopener">{{ icon(app_icon or 'external') }} {{ label }} help</a>
+            {% endfor %}
+            {{ slot("help.menu") }}
+          </div>
+        </div>
+        {{ slot("topbar.end") }}
         <div class="menu-wrap" x-data="{ open: false }" @click.outside="open = false" @keydown.escape="open = false">
           <button class="avatar-btn" type="button" @click="open = !open" aria-label="Account menu">
             <span class="avatar">{{ current_user.initials }}</span>
@@ -84,7 +94,7 @@
         </nav>
       </aside>
       {% endif %}
-      <main class="main" id="main">
+      <main class="main" id="main"{% if nav.app %} data-app="{{ nav.app }}"{% endif %}>
         {% block main %}{% endblock %}
       </main>
     </div>
@@ -92,6 +102,8 @@
     <footer class="statusbar">
       <span class="statusbar__env statusbar__env--{{ settings.app_env }}">{{ settings.app_env | upper }}</span>
       <span>{{ current_user.display_name }} · {{ current_user.roles | join(', ') }}</span>
+      {{ slot("statusbar.start") }}
+      <span class="statusbar__end">{{ slot("statusbar.end") }}</span>
     </footer>
   </div>
 

@@ -20,15 +20,23 @@ from lattice.kernel.display import initials
 from lattice.kernel.icons import icon
 from lattice.kernel.nav import nav_context
 from lattice.kernel.services import preferences
+from lattice.kernel.slots import render_slot
 
 CORE_TEMPLATES = Path(__file__).parent.parent / "templates"
 templates = Jinja2Templates(directory=CORE_TEMPLATES)
 env = templates.env
 
 
-def set_template_dirs(app_dirs: list[Path]) -> None:
-    """Search the apps' template folders, then core. Called by create_app."""
-    env.loader = FileSystemLoader([*app_dirs, CORE_TEMPLATES])
+def set_host_assets(template_dirs: list[Path], stylesheets: list[str],
+                    help_links: list[tuple[str, str, str]]) -> None:
+    """Called by create_app.
+
+    template_dirs: searched in order before core (host, then apps).
+    stylesheets: URLs loaded after the core app.css (app stylesheets, then the host theme).
+    help_links: (label, url, icon) for the Help menu.
+    """
+    env.loader = FileSystemLoader([*template_dirs, CORE_TEMPLATES])
+    env.globals.update(extra_stylesheets=stylesheets, help_links=help_links)
 
 
 def _iso(value) -> str:
@@ -97,6 +105,9 @@ env.globals.update(
     icon=icon,
     time_tag=time_tag,
     fmt=fmt,
+    slot=render_slot,
+    extra_stylesheets=[],
+    help_links=[],
     fmt_url=fmt_url,
     label_for=label_for,
     initials=initials,

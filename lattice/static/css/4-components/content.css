@@ -95,5 +95,6 @@ a.stat:hover { text-decoration: none; border-color: var(--border-strong); box-sh
 .sidebar__item:hover { color: var(--text); background: var(--surface-hover); text-decoration: none; }
 .sidebar__item.is-active { font-weight: var(--fw-medium); color: var(--brand); background: var(--surface-selected); }
 
+.statusbar__end { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); }
 .statusbar__env { padding: 0 6px; font-weight: var(--fw-semibold); letter-spacing: 0.04em; background: var(--wash-on-dark); border-radius: var(--r-sm); }
 .statusbar__env--development { color: var(--text-on-accent); background: var(--accent); }

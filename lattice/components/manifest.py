@@ -21,6 +21,8 @@ class AppManifest:
 
     key: str                                   # URL prefix /{key}, grid key prefix {key}.
     label: str
+    icon: str = ""                             # icon registry name, e.g. "demo:app"
+    help_url: str = ""                         # listed in the shell's Help menu
     nav: list[NavNode] = field(default_factory=list)
     routers: list[APIRouter] = field(default_factory=list)
     grids: list[GridSpec] = field(default_factory=list)
@@ -28,6 +30,15 @@ class AppManifest:
     tiles: list[HomeTile] = field(default_factory=list)
     # Folder holding templates/{key}/…; searched before core templates.
     templates: Path | None = None
+    # Folder served at /static/{key}/, and stylesheets in it loaded on every page.
+    # Each stylesheet declares @layer components and scopes every selector to
+    # [data-app="{key}"] (ADR 0010).
+    static: Path | None = None
+    stylesheets: list[str] = field(default_factory=list)
+    # Icons the app adds, used as icon("{key}:name"). Values are SVG path markup.
+    icons: dict[str, str] = field(default_factory=dict)
+    # Slot name -> template in the app's own folder ("{key}/…").
+    slots: dict[str, str] = field(default_factory=dict)
     # Started with the host, cancelled at shutdown.
     background: Callable[[], Awaitable[None]] | None = None
     # Development data for `lattice seed`; receives a session and commits.

@@ -1,0 +1,19 @@
+/* Demo app styles. Components layer, scoped to the demo's pages and panels (ADR 0010). */
+@layer components {
+
+/* ── Inbox message cell and reading pane ─────────────────────────────── */
+[data-app="demo"] .msg { min-width: 0; padding: 2px 0; }
+[data-app="demo"] .msg__top { display: flex; align-items: center; gap: 6px; }
+[data-app="demo"] .msg__from, [data-app="demo"] .msg__subject, [data-app="demo"] .msg__snippet {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[data-app="demo"] .msg__clip { display: flex; color: var(--text-3); }
+[data-app="demo"] .msg__snippet { font-size: var(--fs-sm); color: var(--text-3); }
+[data-app="demo"] .is-unread .msg__from, [data-app="demo"] .is-unread .msg__subject {
+  font-weight: var(--fw-semibold); color: var(--text); }
+[data-app="demo"] .reader { display: flex; flex-direction: column; gap: var(--sp-4); }
+[data-app="demo"] .reader__meta { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+[data-app="demo"] .reader__body { font-size: var(--fs-base); }
+[data-app="demo"] .reader__attach { display: flex; align-items: center; gap: var(--sp-2); padding: 10px;
+  font-size: var(--fs-md); border: 1px solid var(--border); border-radius: var(--r-md); }
+
+}

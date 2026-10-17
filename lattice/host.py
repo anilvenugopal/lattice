@@ -25,16 +25,18 @@ from lattice.components.grid import router as grid_router
 from lattice.components.manifest import AppManifest
 from lattice.components.search import providers as search_providers
 from lattice.components.search import router as search_router
-from lattice.kernel import nav
+from lattice.kernel import css_rules, icons, nav, slots
 from lattice.kernel.auth import routes as auth_routes
 from lattice.kernel.auth.middleware import AuthMiddleware, is_htmx
 from lattice.kernel.config import settings
-from lattice.kernel.web import render, set_template_dirs
+from lattice.kernel.web import render, set_host_assets
 from lattice.platform import account, admin, home
 
 APP_KEY = re.compile(r"^[a-z][a-z0-9_]*$")
 # Paths the kernel and components own; no app may use them as its key.
-RESERVED_KEYS = {"home", "admin", "account", "auth", "static", "health", "docs"}
+RESERVED_KEYS = {"home", "admin", "account", "auth", "static", "health", "docs", "host"}
+# Core pages a host may replace by placing a template of the same name in its templates/.
+HOST_OVERRIDABLE = {"auth/login.html", "base/error.html", "pages/home.html"}
 
 
 class AppError(Exception):
@@ -58,10 +60,44 @@ def _check(app: AppManifest) -> None:
             fail(f"grid key {grid.key!r} must start with {app.key + '.'!r}")
         if not grid.path.startswith(app.prefix + "/") and grid.path != app.prefix:
             fail(f"grid {grid.key!r} path {grid.path!r} must start with {app.prefix}")
+    if app.templates and app.templates.is_dir():
+        extra = sorted(p.name for p in app.templates.iterdir() if p.name != app.key)
+        if extra:
+            fail(f"templates folder may only contain {app.key}/ (found {extra})")
+    for slot_name, template in app.slots.items():
+        if not template.startswith(app.key + "/"):
+            fail(f"slot {slot_name!r} template {template!r} must be in {app.key}/")
+    if app.stylesheets and not app.static:
+        fail("declares stylesheets but no static folder")
+    for name in app.stylesheets:
+        path = app.static / name
+        if not path.is_file():
+            fail(f"stylesheet {name!r} not found in {app.static}")
+        errors = css_rules.app_stylesheet_errors(path.read_text(), app.key)
+        if errors:
+            fail(f"stylesheet {name!r}: " + "; ".join(errors))
 
 
-def _register(app: AppManifest) -> None:
-    nav.add(app.nav, app.key)
+def _check_host(host_dir: Path) -> None:
+    templates = host_dir / "templates"
+    if templates.is_dir():
+        for path in templates.rglob("*.html"):
+            name = path.relative_to(templates).as_posix()
+            if name not in HOST_OVERRIDABLE and not name.startswith("host/"):
+                raise AppError(f"Host template {name!r}: a host may override only "
+                               f"{', '.join(sorted(HOST_OVERRIDABLE))}, or add templates under host/")
+    theme = host_dir / "static" / "theme.css"
+    if theme.is_file():
+        errors = css_rules.host_theme_errors(theme.read_text())
+        if errors:
+            raise AppError("Host theme.css: " + "; ".join(errors))
+
+
+def _register(app: AppManifest, platform: bool) -> None:
+    nav.add(app.nav, "" if platform else app.key)
+    icons.add_app_icons(app.key, app.icons)
+    for slot_name, template in app.slots.items():
+        slots.add(slot_name, template)
     for grid in app.grids:
         grid_router.register(grid)
     for tile in app.tiles:
@@ -72,14 +108,27 @@ def _register(app: AppManifest) -> None:
 
 def _reset_registries() -> None:
     nav.reset()
+    icons.reset()
+    slots.reset()
     grid_router.REGISTRY.clear()
     tiles.TILES.clear()
     search_providers.reset()
 
 
-def create_app(apps: list[AppManifest]) -> FastAPI:
-    """Build the web application for a host from its list of app manifests."""
+def create_app(apps: list[AppManifest], host_dir: Path | None = None,
+               icons_override: dict[str, str] | None = None,
+               slot_templates: dict[str, str] | None = None) -> FastAPI:
+    """Build the web application for a host from its list of app manifests.
+
+    host_dir: the host's folder. Optional `templates/` replaces the core pages in
+    HOST_OVERRIDABLE and holds slot templates under `host/`; optional `static/` is
+    served at /static/host/, and its `theme.css` (brand tokens only) loads after core CSS.
+    icons_override: replacements for core icons, by name.
+    slot_templates: slot name -> template under host/ in the host's templates.
+    """
     _reset_registries()
+    if host_dir:
+        _check_host(host_dir)
     platform_first, platform_last = [home.APP], [admin.APP, account.APP]
     keys = [a.key for a in apps]
     duplicates = {k for k in keys if keys.count(k) > 1}
@@ -92,8 +141,19 @@ def create_app(apps: list[AppManifest]) -> FastAPI:
     ordered = [(a, "") for a in platform_first] + [(a, a.prefix) for a in apps] + \
               [(a, a.prefix) for a in platform_last]
     for app, _mount in ordered:
-        _register(app)
-    set_template_dirs([a.templates for a, _ in ordered if a.templates])
+        _register(app, platform=app in platform_first + platform_last)
+    icons.set_host_icons(icons_override or {})
+    for slot_name, template in (slot_templates or {}).items():
+        slots.add(slot_name, template)
+
+    host_static = host_dir / "static" if host_dir and (host_dir / "static").is_dir() else None
+    stylesheets = [f"/static/{a.key}/{name}" for a, _ in ordered for name in a.stylesheets]
+    if host_static and (host_static / "theme.css").is_file():
+        stylesheets.append("/static/host/theme.css")
+    template_dirs = [host_dir / "templates"] if host_dir and (host_dir / "templates").is_dir() else []
+    template_dirs += [a.templates for a, _ in ordered if a.templates]
+    set_host_assets(template_dirs, stylesheets,
+                    [(a.label, a.help_url, a.icon) for a, _ in ordered if a.help_url])
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -106,6 +166,12 @@ def create_app(apps: list[AppManifest]) -> FastAPI:
 
     web = FastAPI(title=settings.app_name, lifespan=lifespan,
                   docs_url=None if settings.is_production else "/docs", redoc_url=None)
+    # More specific static mounts first: /static would otherwise catch /static/{key}/.
+    for app, _ in ordered:
+        if app.static:
+            web.mount(f"/static/{app.key}", StaticFiles(directory=app.static))
+    if host_static:
+        web.mount("/static/host", StaticFiles(directory=host_static))
     web.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
     web.add_middleware(AuthMiddleware)
     for router in (auth_routes.router, grid_router.router, search_router.router):

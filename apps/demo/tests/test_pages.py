@@ -63,3 +63,12 @@ def test_home_links_come_from_the_nav_manifest(as_user, items):
 def test_invalid_path_value_shows_error_page(as_user, items):
     resp = as_user("viewer").get("/demo/work/abc")
     assert resp.status_code == 422 and "Invalid request" in resp.text and "<html" in resp.text
+
+
+def test_demo_pages_are_scoped_and_load_the_demo_stylesheet(as_user, items):
+    c = as_user("viewer")
+    page = c.get("/demo/inbox").text
+    assert 'data-app="demo"' in page and 'href="/static/demo/demo.css"' in page
+    assert "[data-app=\"demo\"] .msg" in c.get("/static/demo/demo.css").text
+    # Panels carry the app key too, so the Ctrl+J preview gets the app's styles.
+    assert 'data-app="demo"' in c.get(f"/_grid/demo.work_items/panel/{items[0].id}").text

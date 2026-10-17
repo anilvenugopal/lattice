@@ -2,7 +2,7 @@
    supplies `body_template` and its context. preview=True is the read-only Ctrl+J preview. #}
 {% from "components/grid_cell.html" import cell %}
 {% from "components/macros.html" import prop_list %}
-<div class="panel" data-row-id="{{ row.id }}">
+<div class="panel" data-row-id="{{ row.id }}"{% if spec.app_key %} data-app="{{ spec.app_key }}"{% endif %}>
   <header class="panel__head">
     <div class="panel__title" title="{{ title }}">{{ title }}</div>
     {% if spec.row_href and preview %}

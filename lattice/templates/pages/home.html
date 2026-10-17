@@ -21,5 +21,6 @@
       {% call card("Recent activity") %}{{ timeline(recent) }}{% endcall %}
     {% endif %}
   </div>
+  {{ slot("home.sections") }}
 </div>
 {% endblock %}

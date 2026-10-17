@@ -7,7 +7,9 @@
 <link rel="icon" href="{{ settings.brand_logo_light }}" media="(prefers-color-scheme: light)">
 <link rel="icon" href="{{ settings.brand_logo_dark }}" media="(prefers-color-scheme: dark)">
 <link rel="stylesheet" href="/static/css/app.css">
-<script>
+{# App stylesheets, then the host theme (create_app, ADR 0010). #}
+{% for href in extra_stylesheets %}<link rel="stylesheet" href="{{ href }}">
+{% endfor %}<script>
   (function () {
     var root = document.documentElement;
     var mq = window.matchMedia('(prefers-color-scheme: dark)');

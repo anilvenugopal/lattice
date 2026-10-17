@@ -33,6 +33,5 @@
 @import url("4-components/grid.css") layer(components);
 @import url("4-components/palette.css") layer(components);
 @import url("4-components/auth.css") layer(components);
-@import url("4-components/features.css") layer(components);
 
 @import url("5-utilities/utilities.css") layer(utilities);

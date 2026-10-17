@@ -41,7 +41,10 @@ def reset() -> None:
 
 
 def add(nodes: list[NavNode], app_key: str) -> None:
-    """Register an app's nodes, tagged with the app that owns them."""
+    """Register an app's nodes, tagged with the app that owns them.
+
+    Lattice's own platform apps pass app_key "", so their pages carry no data-app.
+    """
     for node in nodes:
         if node.key in BY_KEY:
             raise ValueError(f"Nav key {node.key!r} is declared twice "
@@ -78,6 +81,7 @@ def nav_context(user, active_key: str) -> dict:
         "active_item": active_item,
         "breadcrumb": chain,
         "title": chain[-1].label,
+        "app": chain[-1].app,                       # <main data-app="…"> (ADR 0010)
     }
 
 
