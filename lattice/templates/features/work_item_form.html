@@ -5,7 +5,7 @@
 {% block main %}
 <div class="page page--narrow">
   {{ page_header("Edit " ~ item.ref if item else "New work item") }}
-  <form method="post" action="{{ '/work/%s/edit' % item.id if item else '/work/new' }}" class="stack-lg">
+  <form method="post" action="{{ '/demo/work/%s/edit' % item.id if item else '/demo/work/new' }}" class="stack-lg">
     {{ csrf_field() }}
     {% call card() %}
       <div class="stack">
@@ -21,7 +21,7 @@
       </div>
     {% endcall %}
     <div class="form-actions">
-      <a class="btn btn--ghost" href="{{ '/work/%s' % item.id if item else '/work' }}">Cancel</a>
+      <a class="btn btn--ghost" href="{{ '/demo/work/%s' % item.id if item else '/demo/work' }}">Cancel</a>
       <button class="btn btn--primary" type="submit">{{ 'Save changes' if item else 'Create' }}</button>
     </div>
   </form>

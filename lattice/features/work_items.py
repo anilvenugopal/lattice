@@ -22,10 +22,9 @@ from lattice.components.grid import (
     GridSpec,
     Palette,
     View,
-    register,
     render_grid_page,
 )
-from lattice.components.tiles import HomeTile, register_tile
+from lattice.components.tiles import HomeTile
 from lattice.features.common import user_options
 from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.auth.deps import current_user, require_roles
@@ -82,13 +81,13 @@ def remove(ctx: ActionContext) -> str:
 def panel(db: Session, user, row: dict) -> dict:
     return {"template": "features/work_item_panel.html",
             "item": db.get(WorkItem, row["id"]),
-            "events": audit.history(db, "work_items", row["id"], limit=5)}
+            "events": audit.history(db, "demo.work_items", row["id"], limit=5)}
 
 
-GRID = register(GridSpec(
-    key="work_items",
+GRID = GridSpec(
+    key="demo.work_items",
     title="Work items",
-    path="/work",
+    path="/demo/work",
     query=query,
     columns=[
         Column("ref", "Ref", kind="mono", width="110px", required=True),
@@ -116,9 +115,9 @@ GRID = register(GridSpec(
         View("all", "All"),
     ],
     actions=[
-        Action("new", "New item", scope="none", href="/work/new", tone="primary", icon="plus",
+        Action("new", "New item", scope="none", href="/demo/work/new", tone="primary", icon="plus",
                roles=EDITORS),
-        Action("open", "Open", scope="single", href="/work/{id}", icon="external"),
+        Action("open", "Open", scope="single", href="/demo/work/{id}", icon="external"),
         Action("assign", "Assign", handler=assign, icon="assign", roles=EDITORS,
                fields=[Field("owner_id", "Owner", kind="select",
                              options=lambda db, u: [("", "Unassigned"), *user_options(db)])]),
@@ -131,19 +130,21 @@ GRID = register(GridSpec(
                roles=ADMINS, confirm="Delete {count} item(s)? This cannot be undone."),
     ],
     default_sort="-received_at",
-    row_href="/work/{id}",
+    row_href="/demo/work/{id}",
     panel=panel,
     panel_title="{ref} · {title}",
     search_placeholder="Search ref, title, account, owner",
     empty_title="No work items match",
     empty_text="Change the view or clear filters to see more.",
-    palette=Palette(title="{ref} · {title}", subtitle="{account}", href="/work/{id}",
+    palette=Palette(title="{ref} · {title}", subtitle="{account}", href="/demo/work/{id}",
                     icon="queue"),
-))
+)
 
-register_tile(HomeTile("Open work items", GRID, view="open"))
-register_tile(HomeTile("Assigned to me", GRID, view="mine", tone="accent"))
 
+TILES = [
+    HomeTile("Open work items", GRID, view="open"),
+    HomeTile("Assigned to me", GRID, view="mine", tone="accent"),
+]
 
 router = APIRouter(dependencies=[Depends(csrf_protect)])
 
@@ -193,9 +194,9 @@ async def create(request: Request, db: Session = Depends(get_db), user=Depends(c
     db.add(item)
     db.flush()
     item.ref = f"WI-{item.id:05d}"
-    audit.record(db, user.id, "work_items.create", "Created", "work_items", item.id)
+    audit.record(db, user.id, "demo.work_items.create", "Created", "demo.work_items", item.id)
     db.commit()
-    return RedirectResponse(f"/work/{item.id}", status_code=303)
+    return RedirectResponse(f"/demo/work/{item.id}", status_code=303)
 
 
 def _get(db: Session, item_id: int) -> WorkItem:
@@ -210,7 +211,7 @@ def detail(item_id: int, request: Request, db: Session = Depends(get_db)):
     item = _get(db, item_id)
     owner = db.get(User, item.owner_id) if item.owner_id else None
     return render_page(request, "features/work_item_detail.html", "work.detail",
-                       item=item, owner=owner, events=audit.history(db, "work_items", item.id),
+                       item=item, owner=owner, events=audit.history(db, "demo.work_items", item.id),
                        spec=GRID, can_edit=request.state.user.has_any(EDITORS),
                        crumb=item.ref)
 
@@ -235,7 +236,7 @@ async def save(item_id: int, request: Request, db: Session = Depends(get_db),
     for key, value in changed.items():
         setattr(item, key, value)
     if changed:
-        audit.record(db, user.id, "work_items.edit", "Edited " + ", ".join(sorted(changed)),
-                     "work_items", item.id)
+        audit.record(db, user.id, "demo.work_items.edit", "Edited " + ", ".join(sorted(changed)),
+                     "demo.work_items", item.id)
     db.commit()
-    return RedirectResponse(f"/work/{item.id}", status_code=303)
+    return RedirectResponse(f"/demo/work/{item.id}", status_code=303)

@@ -58,7 +58,7 @@ def idp(monkeypatch):
 
 
 def sign_in(client, idp, claims, nonce_override=None):
-    resp = client.get("/auth/oidc/start?next=/jobs", follow_redirects=False)
+    resp = client.get("/auth/oidc/start?next=/demo/jobs", follow_redirects=False)
     params = parse_qs(urlparse(resp.headers["location"]).query)
     assert params["code_challenge_method"] == ["S256"]
     idp["claims"] = {"nonce": nonce_override or params["nonce"][0], **claims}
@@ -68,10 +68,10 @@ def sign_in(client, idp, claims, nonce_override=None):
 
 def test_first_sso_sign_in_creates_user_with_default_role(client, db, idp):
     resp = sign_in(client, idp, {"sub": "u-1", "email": "New.Person@corp.io", "name": "New Person"})
-    assert resp.status_code == 303 and resp.headers["location"] == "/jobs"
+    assert resp.status_code == 303 and resp.headers["location"] == "/demo/jobs"
     user = db.scalar(select(User).where(User.email == "new.person@corp.io"))
     assert user.oidc_subject == "u-1" and user.role_codes == ["viewer"] and user.password_hash is None
-    assert client.get("/jobs").status_code == 200
+    assert client.get("/demo/jobs").status_code == 200
 
 
 def test_sso_links_existing_account_by_verified_email(client, db, idp, users):

@@ -19,10 +19,9 @@ from lattice.components.grid import (
     GridSpec,
     Palette,
     View,
-    register,
     render_grid_page,
 )
-from lattice.components.tiles import HomeTile, register_tile
+from lattice.components.tiles import HomeTile
 from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.db import get_db
 from lattice.kernel.models import Message
@@ -87,10 +86,10 @@ def panel(db: Session, user, row: dict) -> dict:
 LABELS = [("finance", "Finance"), ("ops", "Operations"), ("customer", "Customer"),
           ("internal", "Internal")]
 
-GRID = register(GridSpec(
-    key="inbox",
+GRID = GridSpec(
+    key="demo.inbox",
     title="Inbox",
-    path="/inbox",
+    path="/demo/inbox",
     query=query,
     columns=[
         Column("is_starred", "", kind="star", star_action="star", sortable=False, width="34px",
@@ -129,10 +128,12 @@ GRID = register(GridSpec(
     empty_title="No messages",
     empty_text="Messages in this folder will appear here.",
     palette=Palette(title="{subject}", subtitle="{sender_name}",
-                    href="/inbox?view=inbox&q={subject}", icon="mail"),
-))
-register_tile(HomeTile("Unread messages", GRID, view="inbox", filters={"is_read": ["false"]}))
+                    href="/demo/inbox?view=inbox&q={subject}", icon="mail"),
+)
 
+TILES = [
+    HomeTile("Unread messages", GRID, view="inbox", filters={"is_read": ["false"]}),
+]
 
 router = APIRouter(dependencies=[Depends(csrf_protect)])
 

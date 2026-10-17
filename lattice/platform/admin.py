@@ -22,9 +22,9 @@ from lattice.components.grid import (
     Filter,
     GridSpec,
     View,
-    register,
     render_grid_page,
 )
+from lattice.components.manifest import AppManifest
 from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.auth.deps import current_user, require_roles
 from lattice.kernel.auth.passwords import hash_password, policy_errors
@@ -33,12 +33,11 @@ from lattice.kernel.auth.sessions import AUTH_METHOD_LABELS, is_active_clause, r
 from lattice.kernel.auth.sessions import active as active_sessions
 from lattice.kernel.db import get_db
 from lattice.kernel.models import AuditEvent, Role, User, UserRole, UserSession, utcnow
-from lattice.kernel.nav import NODES
+from lattice.kernel.nav import NODES, NavNode
 from lattice.kernel.services import audit, users
 from lattice.kernel.web import flash, render_page
 
-router = APIRouter(prefix="/admin",
-                   dependencies=[Depends(csrf_protect), Depends(require_roles(*ADMINS))])
+router = APIRouter(dependencies=[Depends(csrf_protect), Depends(require_roles(*ADMINS))])
 
 
 def role_options(db: Session, _user=None) -> list[tuple[str, str]]:
@@ -114,7 +113,7 @@ def sign_out_users(ctx):
     return f"Revoked {n} session(s)."
 
 
-USERS = register(GridSpec(
+USERS = GridSpec(
     key="users",
     title="Users",
     path="/admin/users",
@@ -157,7 +156,7 @@ USERS = register(GridSpec(
     row_href="/admin/users/{id}",
     panel_title="{display_name}",
     search_placeholder="Search name, email, role",
-))
+)
 
 
 @router.get("/users")
@@ -259,7 +258,7 @@ def roles_query(db: Session, user):
             .outerjoin(members, members.c.role_code == Role.code))
 
 
-ROLES = register(GridSpec(
+ROLES = GridSpec(
     key="roles", title="Roles", path="/admin/roles", roles=ADMINS, query=roles_query,
     columns=[Column("id", "Code", kind="mono", width="120px"),
              Column("label", "Role", kind="strong"),
@@ -267,7 +266,7 @@ ROLES = register(GridSpec(
              Column("members", "Members", kind="number", align="right", width="100px")],
     selection="none", default_sort="sort_order", export=False, search=["id", "label"],
     panel_title="{label}",
-))
+)
 
 
 @router.get("/roles")
@@ -295,7 +294,7 @@ def revoke_sessions(ctx):
     return f"Revoked {len(ids)} session(s).{note}"
 
 
-SESSIONS = register(GridSpec(
+SESSIONS = GridSpec(
     key="sessions", title="Sessions", path="/admin/sessions", roles=ADMINS, query=sessions_query,
     columns=[Column("user", "User", kind="user", secondary="email"),
              Column("email", "Email", hidden=True),
@@ -312,7 +311,7 @@ SESSIONS = register(GridSpec(
     actions=[Action("revoke", "Revoke", handler=revoke_sessions, icon="logout", tone="danger",
                     confirm="Revoke {count} session(s)? Those users are signed out.")],
     default_sort="-last_seen_at", panel_title="{user}", export=False,
-))
+)
 
 
 @router.get("/sessions")
@@ -335,7 +334,7 @@ def action_options(db: Session, _user=None):
                                        .order_by(AuditEvent.action))]
 
 
-AUDIT = register(GridSpec(
+AUDIT = GridSpec(
     key="audit", title="Audit log", path="/admin/audit", roles=ADMINS, query=audit_query,
     columns=[Column("at", "When", kind="datetime", width="180px"),
              Column("actor", "Actor", kind="user", width="180px"),
@@ -348,7 +347,7 @@ AUDIT = register(GridSpec(
              Filter("target_type", "Target", lambda db, u: [
                  (t, t) for t in db.scalars(select(AuditEvent.target_type).distinct()) if t])],
     selection="none", default_sort="-at", panel_title="{action}",
-))
+)
 
 
 @router.get("/audit")
@@ -374,3 +373,26 @@ def system_page(request: Request, db: Session = Depends(get_db)):
 def ui_kit(request: Request):
     return render_page(request, "admin/ui_kit.html", "admin.uikit")
 
+
+
+APP = AppManifest(
+    key="admin", label="Administration", routers=[router],
+    grids=[USERS, ROLES, SESSIONS, AUDIT],
+    nav=[
+        NavNode("admin", "Administration", "/admin/users", icon="shield", roles=ADMINS,
+                description="Users, roles, sessions, audit log and system settings"),
+        NavNode("admin.users", "Users", "/admin/users", parent="admin", roles=ADMINS,
+                keywords="accounts people"),
+        NavNode("admin.user", "User", "/admin/users", parent="admin.users", roles=ADMINS,
+                hidden=True),
+        NavNode("admin.roles", "Roles", "/admin/roles", parent="admin", roles=ADMINS,
+                keywords="permissions"),
+        NavNode("admin.sessions", "Sessions", "/admin/sessions", parent="admin", roles=ADMINS),
+        NavNode("admin.audit", "Audit log", "/admin/audit", parent="admin", roles=ADMINS,
+                keywords="history events"),
+        NavNode("admin.system", "System", "/admin/system", parent="admin", roles=ADMINS,
+                keywords="configuration settings health"),
+        NavNode("admin.uikit", "UI kit", "/admin/ui-kit", parent="admin", roles=ADMINS,
+                keywords="components styles gallery"),
+    ],
+)

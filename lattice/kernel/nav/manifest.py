@@ -1,7 +1,8 @@
-"""Navigation manifest: the only place navigation structure is declared.
+"""Navigation: NavNode and the registry of every app's nodes.
 
+Each app declares its nodes in its AppManifest; create_app registers them here.
 Rail, sidebar, breadcrumbs, page titles, role gating of menus and the Ctrl+J
-palette all derive from NODES. Adding a page = one NavNode + one route.
+pages all derive from NODES. Adding a page = one NavNode + one route.
 
 A route passes its node key to `render_page(..., nav_key=...)`.
 Top-level nodes (parent=None) are rail icons. Their children are the sidebar.
@@ -11,9 +12,7 @@ breadcrumbs and keep their parent highlighted.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-
-from lattice.kernel.auth.roles import ADMINS
+from dataclasses import dataclass, replace
 
 
 @dataclass(frozen=True)
@@ -28,58 +27,28 @@ class NavNode:
     bottom: bool = False             # rail bottom group
     keywords: str = ""               # extra Ctrl+J match terms
     description: str = ""
+    app: str = ""                    # owning app key, set when registered
 
 
-NODES: list[NavNode] = [
-    # ── Rail ────────────────────────────────────────────────────────────────
-    NavNode("home", "Home", "/", icon="home", description="Overview and recent activity"),
-    NavNode("work", "Work Queue", "/work", icon="queue",
-            keywords="submissions cases requests tickets",
-            description="Table grid with views, bulk actions, side panel and detail pages"),
-    NavNode("jobs", "Jobs", "/jobs", icon="activity", keywords="tasks runs background",
-            description="Live-polling grid with state-dependent actions"),
-    NavNode("inbox", "Inbox", "/inbox", icon="inbox", keywords="mail email messages",
-            description="Split layout: message list and reading pane"),
-    NavNode("admin", "Administration", "/admin/users", icon="shield", roles=ADMINS,
-            description="Users, roles, sessions, audit log and system settings"),
-    NavNode("account", "Account", "/account/preferences", icon="user", bottom=True),
+# Filled by lattice.host.create_app from the app manifests, in rail order.
+NODES: list[NavNode] = []
+BY_KEY: dict[str, NavNode] = {}
 
-    # ── Work Queue ──────────────────────────────────────────────────────────
-    NavNode("work.items", "Items", "/work", parent="work"),
-    NavNode("work.new", "New item", "/work/new", parent="work", keywords="create add"),
-    NavNode("work.detail", "Detail", "/work", parent="work.items", hidden=True),
 
-    # Jobs has no children, so its pages render without a sidebar.
+def reset() -> None:
+    NODES.clear()
+    BY_KEY.clear()
 
-    # ── Inbox ───────────────────────────────────────────────────────────────
-    NavNode("inbox.inbox", "Inbox", "/inbox", parent="inbox"),
-    NavNode("inbox.starred", "Starred", "/inbox?view=starred", parent="inbox"),
-    NavNode("inbox.archive", "Archive", "/inbox?view=archive", parent="inbox"),
 
-    # ── Administration ──────────────────────────────────────────────────────
-    NavNode("admin.users", "Users", "/admin/users", parent="admin", roles=ADMINS,
-            keywords="accounts people"),
-    NavNode("admin.user", "User", "/admin/users", parent="admin.users", roles=ADMINS,
-            hidden=True),
-    NavNode("admin.roles", "Roles", "/admin/roles", parent="admin", roles=ADMINS,
-            keywords="permissions"),
-    NavNode("admin.sessions", "Sessions", "/admin/sessions", parent="admin", roles=ADMINS),
-    NavNode("admin.audit", "Audit log", "/admin/audit", parent="admin", roles=ADMINS,
-            keywords="history events"),
-    NavNode("admin.system", "System", "/admin/system", parent="admin", roles=ADMINS,
-            keywords="configuration settings health"),
-    NavNode("admin.uikit", "UI kit", "/admin/ui-kit", parent="admin", roles=ADMINS,
-            keywords="components styles gallery"),
-
-    # ── Account ─────────────────────────────────────────────────────────────
-    NavNode("account.preferences", "Preferences", "/account/preferences", parent="account",
-            keywords="theme dark light density settings"),
-    NavNode("account.profile", "Profile", "/account/profile", parent="account"),
-    NavNode("account.security", "Security", "/account/security", parent="account",
-            keywords="password sessions sign out"),
-]
-
-BY_KEY: dict[str, NavNode] = {n.key: n for n in NODES}
+def add(nodes: list[NavNode], app_key: str) -> None:
+    """Register an app's nodes, tagged with the app that owns them."""
+    for node in nodes:
+        if node.key in BY_KEY:
+            raise ValueError(f"Nav key {node.key!r} is declared twice "
+                             f"(apps {BY_KEY[node.key].app!r} and {app_key!r})")
+        node = replace(node, app=app_key)
+        NODES.append(node)
+        BY_KEY[node.key] = node
 
 
 def _chain(key: str) -> list[NavNode]:

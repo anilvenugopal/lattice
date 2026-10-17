@@ -6,17 +6,18 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import RedirectResponse, Response
 from sqlalchemy.orm import Session
 
+from lattice.components.manifest import AppManifest
 from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.auth.deps import current_user
 from lattice.kernel.auth.sessions import active as active_sessions
 from lattice.kernel.auth.sessions import revoke_session, revoke_user_sessions
 from lattice.kernel.db import get_db
 from lattice.kernel.models import User, UserSession
-from lattice.kernel.nav import NODES
+from lattice.kernel.nav import NODES, NavNode
 from lattice.kernel.services import audit, preferences
 from lattice.kernel.web import render_page, toast
 
-router = APIRouter(prefix="/account", dependencies=[Depends(csrf_protect)])
+router = APIRouter(dependencies=[Depends(csrf_protect)])
 
 
 def _landing_choices(user) -> list[tuple[str, str]]:
@@ -96,3 +97,16 @@ def revoke_others(db: Session = Depends(get_db), user=Depends(current_user)):
 @router.get("/")
 def account_root():
     return RedirectResponse("/account/preferences")
+
+
+APP = AppManifest(
+    key="account", label="Account", routers=[router],
+    nav=[
+        NavNode("account", "Account", "/account/preferences", icon="user", bottom=True),
+        NavNode("account.preferences", "Preferences", "/account/preferences", parent="account",
+                keywords="theme dark light density settings"),
+        NavNode("account.profile", "Profile", "/account/profile", parent="account"),
+        NavNode("account.security", "Security", "/account/security", parent="account",
+                keywords="password sessions sign out"),
+    ],
+)

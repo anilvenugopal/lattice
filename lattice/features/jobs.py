@@ -27,10 +27,9 @@ from lattice.components.grid import (
     GridSpec,
     Palette,
     View,
-    register,
     render_grid_page,
 )
-from lattice.components.tiles import HomeTile, register_tile
+from lattice.components.tiles import HomeTile
 from lattice.kernel import db as app_db
 from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.config import settings
@@ -85,10 +84,10 @@ def panel(db: Session, user, row: dict) -> dict:
     return {"template": "features/job_panel.html", "duration": duration}
 
 
-GRID = register(GridSpec(
-    key="jobs",
+GRID = GridSpec(
+    key="demo.jobs",
     title="Jobs",
-    path="/jobs",
+    path="/demo/jobs",
     query=query,
     columns=[
         Column("id", "#", kind="mono", width="70px", required=True),
@@ -126,12 +125,14 @@ GRID = register(GridSpec(
     poll_seconds=5,
     search_placeholder="Search jobs, types, errors",
     empty_title="No jobs",
-    palette=Palette(title="Job #{id} · {name}", subtitle="{status}", href="/jobs?q={name}",
+    palette=Palette(title="Job #{id} · {name}", subtitle="{status}", href="/demo/jobs?q={name}",
                     icon="activity"),
-))
-register_tile(HomeTile("Jobs running", GRID, view="active", tone="info"))
-register_tile(HomeTile("Jobs failed", GRID, view="failed", tone="danger"))
+)
 
+TILES = [
+    HomeTile("Jobs running", GRID, view="active", tone="info"),
+    HomeTile("Jobs failed", GRID, view="failed", tone="danger"),
+]
 
 router = APIRouter(dependencies=[Depends(csrf_protect)])
 
@@ -143,7 +144,7 @@ def jobs_page(request: Request, db: Session = Depends(get_db)):
 
 
 async def background() -> None:
-    """Started by lattice/main.py at startup. In development, moves demo jobs along every 3s."""
+    """Started by the host (AppManifest.background). In development, moves demo jobs along every 3s."""
     if settings.app_env != "development":
         return
 

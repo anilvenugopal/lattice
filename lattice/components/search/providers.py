@@ -139,6 +139,10 @@ def grid_provider(spec: GridSpec) -> SearchProvider:
 _EXTRA: list[SearchProvider] = []
 
 
+def reset() -> None:
+    _EXTRA.clear()
+
+
 def register_provider(provider: SearchProvider) -> SearchProvider:
     """Add a search source (e.g. an external system) after the grid providers."""
     _EXTRA.append(provider)

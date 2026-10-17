@@ -5,8 +5,8 @@
 <div class="page">
   {% set status_col = spec.column("status") %}
   {% call page_header(item.ref ~ " · " ~ item.title, item.account, label_for(status_col, item.status), tone_for(status_col, item.status)) %}
-    <a class="btn btn--ghost" href="/work">{{ icon('chevron-left', 14) }}Back to list</a>
-    {% if can_edit %}<a class="btn btn--primary" href="/work/{{ item.id }}/edit">{{ icon('edit', 14) }}Edit</a>{% endif %}
+    <a class="btn btn--ghost" href="/demo/work">{{ icon('chevron-left', 14) }}Back to list</a>
+    {% if can_edit %}<a class="btn btn--primary" href="/demo/work/{{ item.id }}/edit">{{ icon('edit', 14) }}Edit</a>{% endif %}
   {% endcall %}
   <div class="grid-2 grid-2--wide-left">
     <div class="stack-lg">
