@@ -20,21 +20,25 @@ class AppManifest:
     """What an app adds to a host. Listed once per app package."""
 
     key: str                                   # URL prefix /{key}, grid key prefix {key}.
-    label: str
+    label: str                      # app name in menus, Help and Ctrl+J
     icon: str = ""                             # icon registry name, e.g. "demo:app"
     help_url: str = ""                         # listed in the shell's Help menu
-    nav: list[NavNode] = field(default_factory=list)
+    nav: list[NavNode] = field(default_factory=list)  # the app's pages; every page has a node
+    # FastAPI routers, mounted as declared (paths start with /{key})
+    # FastAPI routers, mounted as declared (paths start with /{key})
     routers: list[APIRouter] = field(default_factory=list)
+    # registered for actions, export, Ctrl+J and tiles
+    # registered for actions, export, Ctrl+J and tiles
     grids: list[GridSpec] = field(default_factory=list)
-    search: list[SearchProvider] = field(default_factory=list)
-    tiles: list[HomeTile] = field(default_factory=list)
+    search: list[SearchProvider] = field(default_factory=list)  # extra Ctrl+J sources
+    tiles: list[HomeTile] = field(default_factory=list)  # count tiles on the home page
     # Folder holding templates/{key}/…; searched before core templates.
     templates: Path | None = None
     # Folder served at /static/{key}/, and stylesheets in it loaded on every page.
     # Each stylesheet declares @layer components and scopes every selector to
     # [data-app="{key}"] (ADR 0010).
     static: Path | None = None
-    stylesheets: list[str] = field(default_factory=list)
+    stylesheets: list[str] = field(default_factory=list)  # file names inside `static`
     # Icons the app adds, used as icon("{key}:name"). Values are SVG path markup.
     icons: dict[str, str] = field(default_factory=dict)
     # Folder of Markdown help topics with index.md and an optional help.toml page map.

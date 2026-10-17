@@ -70,7 +70,9 @@ root_packages = ["lattice", "lattice_demo", "demo_host"]
 name = "Lattice layers: each imports only the layers below it"
 type = "layers"
 layers = [
-    "lattice.api | lattice.testing | lattice.cli",
+    "lattice.cli",
+    "lattice.reference | lattice.testing",
+    "lattice.api",
     "lattice.host",
     "lattice.platform",
     "lattice.components",

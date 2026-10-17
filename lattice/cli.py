@@ -4,6 +4,7 @@
     lattice create-user EMAIL NAME [--role R]... [--no-password] [--keep-password]
     lattice seed                         development users, then each app's seed (not in production)
     lattice dev [--port 8000]            run the host with reload
+    lattice docs build|check             regenerate (or check) the Reference pages
 
 The host comes from LATTICE_HOST ("module:attribute", default demo_host.main:app).
 """
@@ -87,22 +88,39 @@ def dev(args) -> None:
     uvicorn.run(settings.host, reload=True, port=args.port)
 
 
-def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(prog="lattice")
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="lattice", description="The Lattice command line.")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("migrate", help="apply database migrations").set_defaults(run=migrate)
     p = sub.add_parser("create-user", help="create or update a user (first admin)")
-    p.add_argument("email")
-    p.add_argument("name")
+    p.add_argument("email", help="sign-in email; an existing user with it is updated")
+    p.add_argument("name", help="display name")
     p.add_argument("--role", action="append", default=[], help="repeatable, e.g. --role admin")
-    p.add_argument("--no-password", action="store_true", help="SSO-only account")
+    p.add_argument("--no-password", action="store_true", help="no password: the user signs in with SSO only")
     p.add_argument("--keep-password", action="store_true", help="do not force a change at sign-in")
     p.set_defaults(run=create_user)
     sub.add_parser("seed", help="development users and example data").set_defaults(run=seed)
     p = sub.add_parser("dev", help="run the host with reload")
     p.add_argument("--port", type=int, default=8000)
     p.set_defaults(run=dev)
-    args = parser.parse_args(argv)
+    p = sub.add_parser("docs", help="regenerate the Reference pages of the documentation")
+    p.add_argument("action", choices=["build", "check"],
+                   help="build writes the pages; check fails if they are out of date")
+    p.set_defaults(run=docs)
+    return parser
+
+
+def docs(args) -> None:
+    from lattice import reference
+    parser = build_parser()
+    stale = reference.write(parser) if args.action == "build" else reference.stale(parser)
+    if args.action == "check" and stale:
+        raise SystemExit(f"Out of date: {', '.join(stale)}. Run `lattice docs build`.")
+    print("Written: " + ", ".join(stale) if stale else "Reference pages are up to date.")
+
+
+def main(argv: list[str] | None = None) -> None:
+    args = build_parser().parse_args(argv)
     args.run(args)
 
 

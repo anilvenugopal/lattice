@@ -4,7 +4,7 @@
   The UI kit page (Administration > UI kit) shows each one rendered.
 #}
 
-{# Page title row. Put buttons in the call block:
+{# Page title row. Put buttons in a call block, e.g.
    {% call page_header("Users", "Accounts and roles") %}<a class="btn">…</a>{% endcall %} #}
 {% macro page_header(title, subtitle="", badge_text="", badge_tone="neutral") -%}
 <div class="page-header">
@@ -165,7 +165,7 @@
 </label>
 {%- endmacro %}
 
-{# Audit timeline. events: rows from app.services.audit.history(). #}
+{# Audit timeline. events: rows from audit.history(). #}
 {% macro timeline(events) -%}
 {% if events %}
 <ol class="timeline">

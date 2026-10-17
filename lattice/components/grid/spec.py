@@ -28,14 +28,18 @@ Options = list[tuple[str, str]] | Callable[[Session, Any], list[tuple[str, str]]
 
 @dataclass
 class Column:
+    """A column of the grid. Its `labels` and `tones` are the one place a status value's text and
+    colour are declared.
+    """
+
     key: str                       # label of a column in GridSpec.query
-    label: str
-    kind: ColumnKind = "text"
-    sortable: bool = True
+    label: str                     # header text
+    kind: ColumnKind = "text"      # how values render, see Column kinds
+    sortable: bool = True          # header click sorts by it
     hidden: bool = False           # off until the user turns it on in the Columns menu
     required: bool = False         # cannot be turned off
     width: str = ""                # CSS width, e.g. "120px"
-    align: Literal["", "right", "center"] = ""
+    align: Literal["", "right", "center"] = ""  # header and cell alignment
     tones: dict[str, Tone] = field(default_factory=dict)    # badge: value -> tone
     labels: dict[str, str] = field(default_factory=dict)    # value -> display text
     href: str = ""                 # link target, formatted with the row: "/work/{id}"
@@ -46,38 +50,44 @@ class Column:
 
 @dataclass
 class Filter:
+    """A dropdown in the filter bar that narrows rows to the chosen values of one column."""
+
     key: str                       # column label in GridSpec.query
-    label: str
-    options: Options
-    multiple: bool = True
+    label: str                      # dropdown text
+    options: Options                # (value, label) pairs, or a function (db, user) returning them
+    multiple: bool = True           # allow several values (matched with IN)
 
 
 @dataclass
 class View:
     """A named preset of filters shown as a tab above the grid (or in the sidebar)."""
 
-    key: str
-    label: str
+    key: str                        # in the URL as ?view=
+    label: str                      # tab text
     where: dict[str, Any] = field(default_factory=dict)   # "$me" means the current user id
-    sort: str = ""
+    sort: str = ""                  # sort applied with the view, e.g. "-created_at"
 
 
 @dataclass
 class Field:
     """An input collected in a dialog before an action runs."""
 
-    name: str
-    label: str
-    kind: Literal["text", "textarea", "select", "number", "date"] = "text"
+    name: str                       # key in ActionContext.values
+    label: str                      # input label
+    kind: Literal["text", "textarea", "select", "number", "date"] = "text"  # input type
+    # kind="select": (value, label) pairs or a function (db, user)
+    # kind="select": (value, label) pairs or a function (db, user)
     options: Options = field(default_factory=list)
-    required: bool = False
-    default: str = ""
-    placeholder: str = ""
+    required: bool = False          # the dialog will not submit without it
+    default: str = ""               # initial value
+    placeholder: str = ""           # hint inside the empty input
 
 
 @dataclass
 class ActionContext:
-    db: Session
+    """What an action handler receives."""
+
+    db: Session                     # the request's session; the grid commits after the handler
     user: Any                       # CurrentUser
     ids: list[Any]                  # eligible ids, already scoped by GridSpec.query
     rows: list[dict]                # the eligible rows as the grid query returns them
@@ -90,11 +100,13 @@ class ActionContext:
 
 @dataclass
 class ActionResult:
-    message: str = ""
-    tone: Tone = "success"
-    refresh: bool = True
-    clear_selection: bool = True
-    redirect: str = ""
+    """What an action handler may return. A plain string is the success message."""
+
+    message: str = ""               # toast text; default "{action label}: {n} updated."
+    tone: Tone = "success"          # toast tone
+    refresh: bool = True            # reload the grid rows
+    clear_selection: bool = True    # empty the selection after
+    redirect: str = ""              # navigate to this URL instead of refreshing
 
 
 ActionHandler = Callable[[ActionContext], ActionResult | str | None]
@@ -104,6 +116,7 @@ ActionHandler = Callable[[ActionContext], ActionResult | str | None]
 class Action:
     """A button in the grid's action bar and row menu.
 
+    # selection it needs, see above
     scope: "none" needs no selection (e.g. New), "single" exactly one row,
     "multi" one or more rows.
     Either `handler` runs server-side, or `href` navigates ("/work/{id}" for single).
@@ -114,18 +127,20 @@ class Action:
     The handler must not commit; the grid commits after writing the audit event.
     """
 
-    key: str
-    label: str
-    scope: Literal["none", "single", "multi"] = "multi"
-    handler: ActionHandler | None = None
-    href: str = ""
+    key: str  # unique in the grid; the audit event is "{grid key}.{action key}"
+    label: str                      # button text
+    scope: Literal["none", "single", "multi"] = "multi"  # selection it needs, see above
+    handler: ActionHandler | None = None  # runs server-side with an ActionContext
+    href: str = ""                  # navigate instead of running a handler
     confirm: str = ""               # "{count}" is replaced with the selection size
-    tone: Literal["default", "primary", "danger"] = "default"
-    icon: str = ""
-    roles: tuple[str, ...] = ()
+    tone: Literal["default", "primary", "danger"] = "default"  # button style
+    icon: str = ""                  # icon name, see Slots and icons
+    roles: tuple[str, ...] = ()     # empty = every user who can see the grid
+    # inputs asked for in a dialog before the action runs
     fields: list[Field] = field(default_factory=list)
+    # row values the action applies to, e.g. {"status": ["failed"]}
     when: dict[str, list[Any]] = field(default_factory=dict)
-    in_row_menu: bool = True
+    in_row_menu: bool = True        # also list the action in each row's ⋯ menu
 
     def applies(self, row: dict) -> bool:
         """True when the row satisfies `when` (always true without `when`)."""
@@ -139,37 +154,43 @@ class Palette:
     Strings are formatted with the row; `href` values are URL-encoded.
     """
 
-    title: str
-    href: str
-    subtitle: str = ""
-    icon: str = "link"
+    title: str                      # result title, formatted with the row: "{ref} · {title}"
+    href: str                       # opened with Enter: "/demo/work/{id}"
+    subtitle: str = ""              # muted second line
+    icon: str = "link"              # result icon
 
 
 @dataclass
 class GridSpec:
-    key: str
-    title: str
+    """One list screen: what rows exist, how they look, how users narrow them and what they can do
+    with a selection.
+    """
+
+    key: str                        # unique: "{app}.{name}"
+    title: str                      # heading and Ctrl+J source name
     path: str                                          # page that hosts the grid
     query: Callable[[Session, Any], Select]            # labeled columns, must include "id"
-    columns: list[Column]
-    search: list[str] = field(default_factory=list)
-    filters: list[Filter] = field(default_factory=list)
-    views: list[View] = field(default_factory=list)
-    actions: list[Action] = field(default_factory=list)
-    selection: Literal["multi", "single", "none"] = "multi"
+    columns: list[Column]           # in display order
+    search: list[str] = field(default_factory=list)  # columns matched by the search box (ILIKE)
+    filters: list[Filter] = field(default_factory=list)  # dropdowns in the filter bar
+    views: list[View] = field(default_factory=list)  # tabs of preset filters
+    actions: list[Action] = field(default_factory=list)  # buttons in the action bar and row menu
+    selection: Literal["multi", "single", "none"] = "multi"  # how many rows can be selected
     default_sort: str = "-id"                          # "-" prefix sorts descending
     row_href: str = ""                                 # Enter / double-click target
+    # (db, user, row) -> context for the side panel; None: no panel
+    # (db, user, row) -> context for the side panel; None: no panel
     panel: Callable[[Session, Any, dict], dict] | None = None
-    panel_title: str = "{id}"
+    panel_title: str = "{id}"       # side panel heading, formatted with the row
     layout: Literal["table", "split"] = "table"        # split: list + reading pane
-    row_class: Callable[[dict], str] | None = None
-    poll_seconds: int = 0
-    export: bool = True
-    roles: tuple[str, ...] = ()
-    search_placeholder: str = "Search"
-    empty_title: str = "Nothing here yet"
-    empty_text: str = ""
-    palette: Palette | None = None
+    row_class: Callable[[dict], str] | None = None  # extra CSS class per row, e.g. unread
+    poll_seconds: int = 0           # reload rows every n seconds; 0 = never
+    export: bool = True             # offer CSV download of the filtered rows
+    roles: tuple[str, ...] = ()     # who may open the grid; empty = every signed-in user
+    search_placeholder: str = "Search"  # search box hint
+    empty_title: str = "Nothing here yet"  # shown when no rows match
+    empty_text: str = ""            # second line under empty_title
+    palette: Palette | None = None  # make rows findable from Ctrl+J
 
     @property
     def app_key(self) -> str:

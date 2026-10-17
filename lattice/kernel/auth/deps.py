@@ -8,6 +8,7 @@ from lattice.kernel.auth.sessions import CurrentUser
 
 
 def current_user(request: Request) -> CurrentUser:
+    """Route dependency: the signed-in user (401 when nobody is signed in)."""
     user = request.state.user
     if user is None:
         raise HTTPException(status_code=401)

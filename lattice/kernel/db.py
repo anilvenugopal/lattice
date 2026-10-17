@@ -15,7 +15,7 @@ from lattice.kernel.config import settings
 
 
 class Base(DeclarativeBase):
-    pass
+    """Base class for every SQLAlchemy model, Lattice's and the apps'."""
 
 
 def make_engine(url: str):
@@ -47,5 +47,6 @@ def configure(url: str) -> None:
 
 
 def get_db() -> Iterator[Session]:
+    """Route dependency: a database session, closed when the request ends."""
     with SessionLocal() as db:
         yield db

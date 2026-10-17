@@ -25,22 +25,32 @@ from lattice.kernel.web import fmt, fmt_url, render
 
 @dataclass(frozen=True)
 class SearchResult:
-    id: str
-    title: str
-    subtitle: str = ""
+    """One Ctrl+J result."""
+
+    id: str                         # passed back to the provider's preview
+    title: str                      # result text
+    subtitle: str = ""              # muted second line
     href: str = ""          # opened with Enter; empty for commands
     command: str = ""       # key of a client-side command (static/js/palette.js)
 
 
 @dataclass(frozen=True)
 class SearchProvider:
-    key: str
-    label: str
-    icon: str
+    """A Ctrl+J source: answers a query and renders a preview of one result."""
+
+    key: str                        # unique; the filter chip and the preview URL use it
+    label: str                      # filter chip text
+    icon: str                       # icon shown on its results
+    # (db, user, query, limit) -> results
+    # (db, user, query, limit) -> results
     search: Callable[[Session, object, str, int], list[SearchResult]]
+    # (db, user, query) -> number of matches, for the filter chip
+    # (db, user, query) -> number of matches, for the filter chip
     count: Callable[[Session, object, str], int]
+    # (request, db, result id) -> HTML for the preview pane
+    # (request, db, result id) -> HTML for the preview pane
     preview: Callable[[Request, Session, str], object]
-    roles: tuple[str, ...] = field(default=())
+    roles: tuple[str, ...] = field(default=())  # who sees the source; empty = everyone
 
 
 # ── Pages ────────────────────────────────────────────────────────────────────

@@ -17,10 +17,12 @@ from lattice.kernel.nav import NODES
 
 @dataclass(frozen=True)
 class HomeTile:
-    label: str
-    spec: GridSpec
-    view: str = ""
-    filters: dict[str, list[str]] = field(default_factory=dict)
+    """A count on the home page: the rows of a grid view, linking to that view."""
+
+    label: str                      # tile text
+    spec: GridSpec                  # the grid whose rows are counted
+    view: str = ""                  # key of one of the grid's views
+    filters: dict[str, list[str]] = field(default_factory=dict)  # extra filters: column -> values
     tone: str = ""            # stat tone, shown only when the count is above zero
 
 

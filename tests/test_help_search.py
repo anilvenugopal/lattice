@@ -6,7 +6,7 @@ from datetime import datetime
 from fastapi.testclient import TestClient
 
 from lattice.components.help import search as help_search
-from lattice.components.help.content import Topic
+from lattice.components.help.content import HELP, Topic
 from lattice.components.manifest import AppManifest
 from lattice.host import create_app
 from lattice.kernel.auth.sessions import CurrentUser
@@ -58,6 +58,14 @@ def test_roles_filter_results_and_snippets_mark_matches():
     assert "admin" not in [h.topic.slug for h in index.search("approval", VIEWER)]
     hit = index.search("download", VIEWER)[0]
     assert "<mark>Download</mark>" in hit.snippet
+
+
+def test_search_text_is_rendered_text_not_markdown(db, users, tmp_path):
+    root = tmp_path / "help"
+    root.mkdir()
+    (root / "index.md").write_text("---\ntitle: N\n---\nUse **bold** `code` and [a link](https://x.io).\n")
+    create_app(apps=[AppManifest(key="notes", label="Notes", help=root)])
+    assert HELP["notes"].home.text == "Use bold code and a link."
 
 
 # ── Pages and Ctrl+J ─────────────────────────────────────────────────────────

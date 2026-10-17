@@ -219,7 +219,10 @@ def _toc_and_text(tokens) -> tuple[list[tuple[int, str, str]], str]:
     for i, token in enumerate(tokens):
         if token.type == "heading_open" and token.tag in ("h2", "h3"):
             toc.append((int(token.tag[1]), token.attrGet("id") or "", tokens[i + 1].content))
-        if token.type == "inline" or token.type == "fence" and token.info != "mermaid":
+        if token.type == "inline":
+            words.append("".join(" " if c.type in ("softbreak", "hardbreak") else c.content
+                                 for c in token.children or []))
+        elif token.type == "fence" and token.info != "mermaid":
             words.append(token.content)
     return toc, "\n".join(words)
 

@@ -17,16 +17,18 @@ from dataclasses import dataclass, replace
 
 @dataclass(frozen=True)
 class NavNode:
-    key: str
-    label: str
-    route: str
-    parent: str | None = None
+    """A page in the navigation. Top-level nodes are rail icons; their children are the sidebar."""
+
+    key: str                        # unique; pages pass it to render_page
+    label: str                      # menu text and page title
+    route: str                      # URL of the page
+    parent: str | None = None       # key of the parent node; None for a rail icon
     icon: str | None = None          # rail icon name, see lattice/kernel/icons.py
     roles: tuple[str, ...] = ()      # empty = every signed-in user
     hidden: bool = False             # routing/breadcrumb only
     bottom: bool = False             # rail bottom group
     keywords: str = ""               # extra Ctrl+J match terms
-    description: str = ""
+    description: str = ""           # shown under the page in Ctrl+J results
     app: str = ""                    # owning app key, set when registered
 
 

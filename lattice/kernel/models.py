@@ -22,6 +22,7 @@ from lattice.kernel.db import Base
 
 
 def utcnow() -> datetime:
+    """The current time as naive UTC, the form every timestamp column stores."""
     return datetime.now(UTC).replace(tzinfo=None)
 
 
@@ -37,6 +38,8 @@ class Role(Base):
 
 
 class User(Base):
+    """A person who can sign in. Apps refer to users by `User.id`."""
+
     __tablename__ = "app_user"
 
     id: Mapped[int] = mapped_column(primary_key=True)
