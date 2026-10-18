@@ -5,7 +5,7 @@ description: Add a new list screen (records, queue, jobs, messages) to a Lattice
 
 # Add a grid page
 
-Read `docs/GRID.md` first. Copy the closest example in `apps/demo/lattice_demo/`:
+Read `lattice/help/developer/building-apps/grids.md` first. Copy the closest example in `apps/demo/lattice_demo/`:
 `work_items.py` (table + detail page), `jobs.py` (polling, row-state actions),
 `inbox.py` (split reader, per-user rows). Import only from `lattice.api`.
 

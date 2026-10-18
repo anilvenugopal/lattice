@@ -130,7 +130,8 @@ def test_help_for_page_uses_the_map_then_the_app_home(db, users, tmp_path):
         assert c.get("/help/for/notes", follow_redirects=False).headers["location"] == \
             "/help/notes/writing#save-a-note"
         assert c.get("/help/for/notes.other", follow_redirects=False).headers["location"] == "/help/notes"
-        assert c.get("/help/for/admin.users", follow_redirects=False).headers["location"] == "/help/lattice"
+        assert c.get("/help/for/admin.users", follow_redirects=False).headers["location"] == \
+            "/help/lattice/user-guide/administration#users"
         assert c.get("/help/for/unknown", follow_redirects=False).headers["location"] == "/help"
 
 

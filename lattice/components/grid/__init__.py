@@ -1,4 +1,4 @@
-"""Standard data grid. See docs/GRID.md."""
+"""Standard data grid. See lattice/help/developer/building-apps/grids.md."""
 
 from lattice.components.grid.render import build_grid, render_grid_page
 from lattice.components.grid.router import REGISTRY, register

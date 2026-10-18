@@ -73,7 +73,7 @@ lattice/                         (this repository, a uv workspace)
     host.py                      create_app and the checks on every app
     cli.py                       lattice migrate | create-user | seed | dev
     testing.py                   pytest fixtures for core and app tests
-    static/css/                  the five CSS layers (docs/UI_STANDARDS.md)
+    static/css/                  the five CSS layers
     templates/                   shell layout, macros
   apps/
     demo/                        today's examples (work queue, jobs, inbox)
@@ -295,7 +295,7 @@ Every component checks the same permissions and uses the same action model.
 
 ### 6.1 Grid
 
-Today's grid ([GRID.md](GRID.md)) with one change: the rows come from a
+Today's grid ([Grids](../lattice/help/developer/building-apps/grids.md)) with one change: the rows come from a
 **data source** instead of only a SQLAlchemy query.
 [ADR 0008](adr/0008-grid-data-sources.md).
 

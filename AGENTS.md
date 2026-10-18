@@ -39,18 +39,18 @@ are `LATTICE_*` environment variables (`.env.example`).
 | `lattice/components/` | `grid/` (spec, engine, render, router), `search/` (Ctrl+J providers and routes), `tiles.py` (home tiles), `manifest.py` (`AppManifest`) |
 | `lattice/platform/` | Lattice's own apps, built with `AppManifest`: `home.py`, `account.py`, `admin.py` |
 | `lattice/host.py` | `create_app(apps=[…])`: registers apps and checks they stay in their namespace |
-| `lattice/cli.py` | `lattice migrate`, `create-user`, `seed`, `dev` |
+| `lattice/cli.py` | `lattice migrate`, `create-user`, `seed`, `dev`, `docs build\|check` |
 | `lattice/testing.py` | Pytest fixtures for core and app tests (`db`, `users`, `client`, `as_user`, `host_apps`…) |
 | `lattice/templates/`, `lattice/static/` | Shell layout, shared macros, grid templates; the five CSS layers |
 | `apps/demo/` | `lattice-demo`: the example app (Work Queue, Jobs, Inbox), its models, templates, styles, seed and tests |
 | `hosts/demo/` | `lattice-demo-host`: runs Lattice with the demo app |
 | `alembic/` | Migrations (one history until per-app migrations in step 2) |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | Target design and decisions. Read before changing anything they cover |
-| `docs/GRID.md`, `docs/UI_STANDARDS.md`, `docs/AUTH.md` | Grid contract; page patterns and styling; sign-in, roles, sessions |
+| `lattice/help/` | The user guide and developer guide, served in the app at `/help`. `developer/building-apps/` covers the grid, pages, styling and access; `developer/running/` covers sign-in, users and branding. `developer/reference/` is generated: run `uv run lattice docs build` after changing what it documents |
 
 Layers (checked by `tests/test_import_contracts.py`): `kernel` ← `components` ←
-`platform` ← `host` ← `api`, `cli`, `testing`. Each imports only the layers
-below it. Apps import only `lattice.api`.
+`platform` ← `host` ← `api` ← `testing`, `reference` ← `cli`. Each imports only
+the layers below it. Apps import only `lattice.api`.
 
 ## Rules
 
@@ -59,7 +59,7 @@ below it. Apps import only `lattice.api`.
 1. **Every list of records is a `GridSpec`.** Do not write a `<table>` for records,
    a custom pager, a custom filter bar, custom bulk-selection JS, or a bespoke
    side panel. If the grid cannot do something, extend `lattice/components/grid/`
-   for everyone and update `docs/GRID.md`. Plain `.table` is only for short fixed
+   for everyone and update `lattice/help/developer/building-apps/grids.md`. Plain `.table` is only for short fixed
    lists inside a card (≤ ~10 rows, no selection, e.g. a user's sessions).
 2. **Every page goes through `render_page(request, template, nav_key, **ctx)`**
    (partials: `render(request, template, **ctx)`; both take context as keyword

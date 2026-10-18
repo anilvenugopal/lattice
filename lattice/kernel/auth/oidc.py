@@ -1,7 +1,7 @@
 """OpenID Connect sign-in: authorization code flow with PKCE.
 
 Works with any provider that publishes `/.well-known/openid-configuration`
-(Entra ID, Okta, Keycloak, Auth0, Google). Setup steps: docs/AUTH.md.
+(Entra ID, Okta, Keycloak, Auth0, Google). Setup steps: lattice/help/developer/running/sign-in.md.
 
 The state, nonce and PKCE verifier travel in a signed, 10-minute cookie, so the
 flow needs no server-side storage before the user exists.

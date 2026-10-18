@@ -1,5 +1,5 @@
 // Alpine component for components/grid.html. Server config comes from
-// lattice/components/grid/render.py build_grid() (`config`). See docs/GRID.md.
+// lattice/components/grid/render.py build_grid() (`config`). See lattice/help/developer/building-apps/grids.md.
 //
 // State that survives body reloads lives here: selection, cursor, panel,
 // dialogs. The table body is re-rendered by the server on every change.

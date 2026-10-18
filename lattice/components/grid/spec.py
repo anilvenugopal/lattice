@@ -6,7 +6,7 @@ narrow them (`search`, `filters`, `views`) and what users can do with a selectio
 selection, the action bar, confirm and input dialogs, the side panel, CSV export,
 column visibility, keyboard control, URL state and Ctrl+J search entries.
 
-Reference: docs/GRID.md.
+Guide: lattice/help/developer/building-apps/grids.md.
 """
 
 from __future__ import annotations

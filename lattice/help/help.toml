@@ -1,0 +1,15 @@
+# F1 on Lattice's own pages: nav key = topic, optionally #heading.
+[pages]
+"home" = "user-guide/finding-your-way#home"
+"account" = "user-guide/your-account"
+"account.preferences" = "user-guide/your-account#preferences"
+"account.profile" = "user-guide/your-account#profile"
+"account.security" = "user-guide/your-account#security"
+"admin" = "user-guide/administration"
+"admin.users" = "user-guide/administration#users"
+"admin.user" = "user-guide/administration#users"
+"admin.roles" = "user-guide/administration#roles"
+"admin.sessions" = "user-guide/administration#sessions"
+"admin.audit" = "user-guide/administration#audit-log"
+"admin.system" = "user-guide/administration#system"
+"admin.uikit" = "developer/building-apps/ui-components"

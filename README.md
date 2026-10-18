@@ -39,9 +39,10 @@ Sign in as `admin@example.com` / `Admin12345!` (also `editor@…`/`Editor12345!`
 - [AGENTS.md](AGENTS.md) — rules and recipes (read this first)
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — where Lattice is going: kernel, components, apps, hosts
 - [docs/adr/](docs/adr/README.md) — architecture decisions
-- [docs/GRID.md](docs/GRID.md) — the grid contract
-- [docs/UI_STANDARDS.md](docs/UI_STANDARDS.md) — page patterns and components
-- [docs/AUTH.md](docs/AUTH.md) — sign-in, OIDC setup, roles, sessions
+- **In the app:** press F1 or open `/help`. The developer guide (overview,
+  getting started, architecture, building apps, running Lattice, reference) is
+  in [lattice/help/developer/](lattice/help/developer/index.md), the user guide in
+  [lattice/help/user-guide/](lattice/help/user-guide/index.md)
 
 ## Layout
 
@@ -54,6 +55,7 @@ lattice/                 the core package
   host.py                create_app and the app checks
   cli.py                 lattice migrate | create-user | seed | dev
   testing.py             pytest fixtures for core and app tests
+  help/                  the user guide and developer guide, served at /help
   templates/  static/    shell layout, macros; five CSS layers, JS
 apps/demo/               lattice-demo: the example app and its tests
 hosts/demo/              lattice-demo-host: runs Lattice with the demo app
