@@ -72,10 +72,6 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `audit` | module | Audit trail. |
 | `users` | module | User lookup and creation. Every caller (admin UI, SSO, scripts, tests) goes through here. |
 | [`settings`](settings.md) | value | The running configuration, read from `LATTICE_*` environment variables. |
-| `Base` | class | Base class for every SQLAlchemy model, Lattice's and the apps'. |
-| `SessionLocal` `(**local_kw)` | function | A configurable :class:`.Session` factory. |
-| `User` | class | A person who can sign in. Apps refer to users by `User.id`. |
-| `utcnow` `()` | function | The current time as naive UTC, the form every timestamp column stores. |
 
 ## Development data
 

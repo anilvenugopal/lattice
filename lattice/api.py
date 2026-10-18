@@ -25,9 +25,7 @@ from lattice.kernel.auth.deps import current_user, require_roles
 from lattice.kernel.auth.roles import ADMINS, EDITORS
 from lattice.kernel.config import settings
 from lattice.kernel.database import Db, NotFound, get_db, transaction
-from lattice.kernel.db import Base, SessionLocal  # ORM, removed in step 2 stage 5
 from lattice.kernel.dev_seed import DEV_USERS
-from lattice.kernel.models import User, utcnow  # ORM, removed in step 2 stage 5
 from lattice.kernel.nav import NavNode
 from lattice.kernel.services import audit, users
 from lattice.kernel.sql import Query, sql_queries
@@ -46,7 +44,6 @@ __all__ = [
     # Data
     "Db", "get_db", "transaction", "NotFound", "Query", "sql_queries",
     "audit", "users", "settings",
-    "Base", "SessionLocal", "User", "utcnow",
     # Development data
     "DEV_USERS",
 ]

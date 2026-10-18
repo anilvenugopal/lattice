@@ -16,7 +16,6 @@ dependencies = [
     "itsdangerous",
     "pydantic-settings",
     "sqlalchemy>=2.0",
-    "alembic",
     "bcrypt",
     "httpx",
     "pyjwt[crypto]",
@@ -55,8 +54,12 @@ target-version = "py314"
 known-first-party = ["lattice", "lattice_demo", "demo_host"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "UP", "B", "SIM"]
+select = ["E", "F", "I", "UP", "B", "SIM", "TID251"]
 ignore = ["E501", "B008"]
+
+# No ORM: every SQL statement is a named query in a .sql file (step 2 plan).
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"sqlalchemy.orm".msg = "No ORM in Lattice: write a named query in a sql/*.sql file and run it with Db."
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "apps/demo/tests"]
@@ -71,6 +74,7 @@ filterwarnings = [
 # Import contracts (ADR 0002), checked by tests/test_import_contracts.py.
 [tool.importlinter]
 root_packages = ["lattice", "lattice_demo", "demo_host"]
+include_external_packages = true
 
 [[tool.importlinter.contracts]]
 name = "Lattice layers: each imports only the layers below it"
@@ -92,4 +96,11 @@ source_modules = ["lattice_demo"]
 forbidden_modules = [
     "lattice.kernel", "lattice.components", "lattice.platform", "lattice.host", "lattice.testing",
 ]
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Apps reach the database only through lattice.api"
+type = "forbidden"
+source_modules = ["lattice_demo", "demo_host"]
+forbidden_modules = ["sqlalchemy", "psycopg"]
 allow_indirect_imports = true

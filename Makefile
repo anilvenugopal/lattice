@@ -1,4 +1,4 @@
-.PHONY: help db-up db-down setup dev migrate revision seed reset test lint format
+.PHONY: help db-up db-down setup dev migrate migration seed reset test lint format
 
 COMPOSE ?= podman-compose
 
@@ -23,16 +23,14 @@ dev:  ## Run the host with reload on http://localhost:8000
 migrate:  ## Apply pending migrations
 	uv run lattice migrate
 
-revision:  ## New migration from model changes: make revision m="add widget table"
-	uv run alembic revision --autogenerate -m "$(m)" --rev-id $$(printf "%04d" $$(( $$(ls alembic/versions/[0-9]*.py | wc -l) + 1 )))
+migration:  ## New migration file: make migration schema=demo m="add ticket table"
+	uv run lattice new-migration $(schema) "$(m)"
 
 seed:  ## Add development users and each app's example data (skips if users exist)
 	uv run lattice seed
 
-reset:  ## DESTRUCTIVE: delete the SQLite development database, migrate and seed
-	rm -f data/lattice.db data/lattice.db-wal data/lattice.db-shm
-	uv run lattice migrate
-	uv run lattice seed
+reset:  ## DESTRUCTIVE: drop Lattice's and the apps' schemas, migrate and seed (not in production)
+	uv run lattice reset
 
 test:  ## Run the test suite (core and apps)
 	uv run pytest -q

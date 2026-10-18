@@ -18,6 +18,27 @@ Apply database migrations.
 lattice migrate [-h]
 ```
 
+## new-migration
+
+Create the next numbered migration file for a schema.
+
+```text
+lattice new-migration [-h] schema description
+```
+
+| Argument | Description |
+|---|---|
+| `schema` | Lattice, or an app's key such as demo. |
+| `description` | What changes, e.g. "add ticket table". |
+
+## reset
+
+Drop and rebuild the development database, then seed it (refused in production).
+
+```text
+lattice reset [-h]
+```
+
 ## create-user
 
 Create or update a user (first admin).

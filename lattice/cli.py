@@ -1,6 +1,8 @@
 """The `lattice` command line.
 
     lattice migrate                      apply database migrations
+    lattice new-migration SCHEMA "what"  create the next numbered migration file
+    lattice reset                        drop, migrate and seed the development database
     lattice create-user EMAIL NAME [--role R]... [--no-password] [--keep-password]
     lattice seed                         development users, then each app's seed (not in production)
     lattice dev [--port 8000]            run the host with reload
@@ -19,8 +21,8 @@ from lattice.kernel.auth.passwords import hash_password, policy_errors
 from lattice.kernel.config import settings
 from lattice.kernel.database import transaction
 from lattice.kernel.dev_seed import DEV_USERS
+from lattice.kernel.migrate import drop_schemas, new_migration, sources_for
 from lattice.kernel.migrate import migrate as run_migrations
-from lattice.kernel.migrate import sources_for
 from lattice.kernel.queries import SQL
 from lattice.kernel.services import users
 
@@ -34,6 +36,23 @@ def migrate(_args) -> None:
     host = _load_host()
     applied = run_migrations(sources_for(host.state.apps))
     print("Applied: " + ", ".join(applied) if applied else "Nothing to apply.")
+
+
+def create_migration(args) -> None:
+    folders = dict(sources_for(_load_host().state.apps))
+    if args.schema not in folders:
+        raise SystemExit(f"No schema {args.schema!r}. Schemas: {', '.join(folders)}")
+    print(f"Created {new_migration(folders[args.schema], args.description)}")
+
+
+def reset(_args) -> None:
+    if settings.is_production:
+        raise SystemExit("Refusing to reset a production database.")
+    sources = sources_for(_load_host().state.apps)
+    drop_schemas(sources)
+    print("Dropped schemas: " + ", ".join(schema for schema, _ in sources))
+    migrate(_args)
+    seed(_args)
 
 
 def create_user(args) -> None:
@@ -90,6 +109,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="lattice", description="The Lattice command line.")
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("migrate", help="apply database migrations").set_defaults(run=migrate)
+    p = sub.add_parser("new-migration", help="create the next numbered migration file for a schema")
+    p.add_argument("schema", help="lattice, or an app's key such as demo")
+    p.add_argument("description", help='what changes, e.g. "add ticket table"')
+    p.set_defaults(run=create_migration)
+    sub.add_parser("reset", help="drop and rebuild the development database, then seed it "
+                                 "(refused in production)").set_defaults(run=reset)
     p = sub.add_parser("create-user", help="create or update a user (first admin)")
     p.add_argument("email", help="sign-in email; an existing user with it is updated")
     p.add_argument("name", help="display name")

@@ -56,3 +56,23 @@ def migrate(sources: list[tuple[str, Path]]) -> list[str]:
                              {"v": path.stem})
                 applied.append(f"{schema}/{path.name}")
     return applied
+
+
+def drop_schemas(sources: list[tuple[str, Path]]) -> None:
+    """Drop every schema in `sources`, with all its tables and data. Development only."""
+    with engine().begin() as conn:
+        for schema, _folder in reversed(sources):
+            if not _SCHEMA.match(schema):
+                raise MigrationError(f"Schema name {schema!r} must be lower_case_with_underscores")
+            conn.exec_driver_sql(f'DROP SCHEMA IF EXISTS "{schema}" CASCADE')
+
+
+def new_migration(folder: Path, description: str) -> Path:
+    """Create the next numbered migration file in `folder`: 0002_add_tickets.sql."""
+    slug = re.sub(r"[^a-z0-9]+", "_", description.lower()).strip("_")
+    if not slug:
+        raise MigrationError("Describe the change, e.g. \"add ticket table\"")
+    numbers = [int(p.stem[:4]) for p in folder.glob("[0-9][0-9][0-9][0-9]_*.sql")]
+    path = folder / f"{max(numbers, default=0) + 1:04d}_{slug}.sql"
+    path.write_text(f"-- {description}\n\n", encoding="utf-8")
+    return path

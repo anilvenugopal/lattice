@@ -1,4 +1,4 @@
-"""Built-in role codes. The role table rows are created in alembic/versions/0001."""
+"""Built-in role codes. The role table rows are created in lattice/sql/schema/0001_lattice.sql."""
 
 ADMIN = "admin"
 EDITOR = "editor"
