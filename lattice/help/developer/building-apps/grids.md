@@ -183,7 +183,8 @@ the same with a grouped subquery of each user's roles.
 - **One database.** Everything is in one database today, so any table can be
   joined.
 - **Speed.** The query runs for every page, count and export. Index the
-  columns you filter, sort and join on.
+  columns you filter, sort and join on. See [Grid performance](grid-performance.md)
+  for what the database runs and what gets expensive on large tables.
 
 ## Columns
 

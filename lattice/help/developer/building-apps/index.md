@@ -51,6 +51,7 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 |---|---|
 | [Pages and navigation](pages-and-navigation.md) | `NavNode`, `render_page`, page types, detail pages, breadcrumbs |
 | [Grids](grids.md) | `GridSpec` in depth: columns, filters, views, actions, panels, layouts, embedding |
+| [Grid performance](grid-performance.md) | What the database runs for a grid, what is expensive on large tables, and how to keep grids fast |
 | [Forms and feedback](forms-and-feedback.md) | Form posts, validation, CSRF, toasts and flash messages |
 | [UI components](ui-components.md) | Macros, buttons, tones, icons, keyboard and accessibility |
 | [Styling](styling.md) | The five CSS layers, tokens, light and dark, an app's own stylesheet |

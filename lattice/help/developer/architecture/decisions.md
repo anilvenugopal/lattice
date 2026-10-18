@@ -52,9 +52,12 @@ before the next starts.
    `lattice.api`, `AppManifest`, the demo as its own app, theming rules, the
    `lattice` command.
 2. **Postgres and bindings**: per-app schemas and migrations; SQLite removed.
+   Trigram indexes for grid search, a time limit on grid queries, and the
+   query plans of the demo grids checked on Postgres.
 3. **Permissions** replace role checks.
 4. **References, record panels and events**, and the record view.
-5. **Grid data sources** with keyset paging.
+5. **Grid data sources** with keyset paging, an optional estimated count for
+   large lists, and streaming CSV export.
 6. **Taskline app** spike: runs, run detail, queues, cancel and retry.
 7. **Charts.**
 8. **Graph** component spike.

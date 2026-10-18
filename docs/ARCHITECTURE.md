@@ -522,9 +522,13 @@ before the next starts.
    - Per-app schemas and migrations.
    - Postgres in a container for development, and test databases per test.
    - SQLite removed.
+   - Grid performance on Postgres: trigram indexes (`pg_trgm`) so `contains`
+     search can use an index, a statement time limit on grid queries, and the
+     demo grids' query plans checked with `EXPLAIN ANALYZE`.
 3. **Permissions** replace role checks.
 4. **References, record panels, events,** and the record view.
-5. **Grid data sources** with keyset paging and async sources.
+5. **Grid data sources** with keyset paging and async sources, an optional
+   estimated count for large lists, and CSV export streamed from the database.
 6. **`lattice-taskline` spike** against strategiq's taskline:
    - runs grid and run detail with the stepper;
    - queues;
