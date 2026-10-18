@@ -22,6 +22,7 @@ from starlette.exceptions import HTTPException
 
 from lattice.components import tiles
 from lattice.components.grid import router as grid_router
+from lattice.components.grid.engine import GridTimeout
 from lattice.components.help import content as help_content
 from lattice.components.help import provider as help_provider
 from lattice.components.help import router as help_router
@@ -229,6 +230,12 @@ def _add_error_handlers(web: FastAPI) -> None:
     @web.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException):
         return _error_response(request, exc.status_code, exc.detail, getattr(exc, "headers", None))
+
+    @web.exception_handler(GridTimeout)
+    async def grid_timeout(request: Request, exc: GridTimeout):
+        if _wants_json(request) or is_htmx(request):
+            return JSONResponse({"detail": exc.message}, status_code=503)
+        return _error_response(request, 503, exc.message)
 
     @web.exception_handler(NotFound)
     async def not_found(request: Request, exc: NotFound):

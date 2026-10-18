@@ -16,14 +16,19 @@ boundary: a row the query does not return cannot be shown, exported or acted on.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from math import ceil
 
+from psycopg.errors import QueryCanceled
 from psycopg.postgres import types as pg_types
 from sqlalchemy import ColumnElement, String, and_, cast, column, false, func, or_, select, text
+from sqlalchemy.exc import DBAPIError
 
 from lattice.components.grid.spec import GridSpec
+from lattice.kernel.config import settings
 from lattice.kernel.database import Db
 from lattice.kernel.services import preferences
 
@@ -215,13 +220,44 @@ def _ordered(stmt, g: _Wrapped, spec: GridSpec, gq: GridQuery):
     return stmt
 
 
+class GridTimeout(Exception):
+    """A grid query ran longer than LATTICE_GRID_QUERY_TIMEOUT_SECONDS and was cancelled."""
+
+    message = "This list took too long to load. Narrow the search or filters and try again."
+
+
+@contextmanager
+def _time_limit(db: Db) -> Iterator[None]:
+    """Run grid reads in a savepoint with Postgres's statement_timeout set to the limit.
+
+    Grid reads change nothing, so the savepoint is always rolled back: that also puts
+    statement_timeout back. A cancelled query leaves the request's transaction usable.
+    """
+    if db.conn.connection.driver_connection.autocommit:
+        yield                                   # no transaction (the tests' Db): no limit
+        return
+    savepoint = db.conn.begin_nested()
+    try:
+        db.conn.execute(text("SELECT set_config('statement_timeout', :ms, true)"),
+                        {"ms": str(int(settings.grid_query_timeout_seconds * 1000))})
+        yield
+    except DBAPIError as exc:
+        if isinstance(exc.orig, QueryCanceled):
+            raise GridTimeout(GridTimeout.message) from exc
+        raise
+    finally:
+        savepoint.rollback()
+
+
 def _run(db: Db, stmt, user) -> list[dict]:
-    return [dict(r) for r in db.conn.execute(stmt, {"user_id": user.id}).mappings()]
+    with _time_limit(db):
+        return [dict(r) for r in db.conn.execute(stmt, {"user_id": user.id}).mappings()]
 
 
 def _count(db: Db, stmt, user) -> int:
     counted = select(func.count()).select_from(stmt.subquery())
-    return db.conn.execute(counted, {"user_id": user.id}).scalar_one()
+    with _time_limit(db):
+        return db.conn.execute(counted, {"user_id": user.id}).scalar_one()
 
 
 def count(spec: GridSpec, db: Db, user, gq: GridQuery) -> int:

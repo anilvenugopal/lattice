@@ -36,3 +36,12 @@ SELECT action FROM lattice.audit_event;
 -- name: user_list
 -- A minimal grid query for test apps.
 SELECT id, email FROM lattice.app_user;
+
+-- name: slow_list
+-- A grid query that takes half a second, to test the time limit.
+WITH pause AS (SELECT pg_sleep(0.5))
+SELECT u.id, u.email FROM lattice.app_user u, pause;
+
+-- name: statement_timeout
+-- The time limit in force for the current transaction.
+SELECT current_setting('statement_timeout');

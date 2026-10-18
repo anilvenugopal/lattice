@@ -51,7 +51,8 @@ def migrate(sources: list[tuple[str, Path]]) -> list[str]:
                 "version text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())")
             done = {r[0] for r in conn.execute(text(f'SELECT version FROM "{schema}"._schema_version'))}
             for path in pending(folder, done):
-                conn.exec_driver_sql(path.read_text(encoding="utf-8"))
+                # A plain cursor with no parameters: `%` in a file is SQL, not a placeholder.
+                conn.connection.cursor().execute(path.read_text(encoding="utf-8"))
                 conn.execute(text(f'INSERT INTO "{schema}"._schema_version (version) VALUES (:v)'),
                              {"v": path.stem})
                 applied.append(f"{schema}/{path.name}")

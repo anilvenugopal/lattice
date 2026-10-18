@@ -148,6 +148,15 @@ def test_migration_runner_applies_new_files_in_order(db, tmp_path):
     assert db.conn.exec_driver_sql("SELECT count(*) FROM extra.t").scalar() == 2
 
 
+def test_migrations_may_contain_percent_signs(db, tmp_path):
+    folder = tmp_path / "schema"
+    folder.mkdir()
+    (folder / "0001_percent.sql").write_text(
+        "CREATE TABLE extra.t (n int, s text); INSERT INTO extra.t VALUES (7 % 3, '50%');")
+    migrate([("extra", folder)])
+    assert db.conn.exec_driver_sql("SELECT n, s FROM extra.t").one() == (1, "50%")
+
+
 def test_a_failing_migration_changes_nothing(db, tmp_path):
     folder = tmp_path / "schema"
     folder.mkdir()
