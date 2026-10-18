@@ -3,7 +3,7 @@ title: Administration
 summary: Manage users and their roles, sign people out, read the audit log, and check the system. For administrators.
 order: 50
 keywords: admin administration users roles grant revoke deactivate reset password sessions audit log system ui kit
-roles: [admin]
+permission: lattice.users.manage
 ---
 
 **Administration** (the shield icon in the rail) is visible only to

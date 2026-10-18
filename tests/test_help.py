@@ -33,7 +33,7 @@ BASIC = {
     "more/index.md": topic("More", "A section.", "order: 5\n"),
     "more/advanced.md": topic("Advanced", "![diagram](../images/d.png) Back to [home](../index.md).",
                               "order: 1\n"),
-    "secret.md": topic("Admin only", "Hidden.", "roles: [admin]\norder: 9\n"),
+    "secret.md": topic("Admin only", "Hidden.", "permission: lattice.users.manage\norder: 9\n"),
     "images/d.png": "PNGDATA",
     "help.toml": '[pages]\n"notes" = "writing#save-a-note"\n"notes.other" = "index"\n',
 }
@@ -89,6 +89,8 @@ def test_callouts_code_and_mermaid_render(db, users, tmp_path):
     ({"help.toml": '[pages]\n"admin.users" = "writing"\n'}, "not a page of this app"),
     ({"help.toml": '[pages]\n"notes" = "nowhere"\n'}, "which is no topic"),
     ({"help.toml": '[pages]\n"notes" = "writing#no-such-heading"\n'}, "no heading"),
+    ({"writing.md": topic("W", "x", "roles: [admin]\n")}, "replaced by 'permission:'"),
+    ({"more/advanced.md": topic("A", "x", "permission: notes.nope\n")}, "no app declares"),
 ])
 def test_help_rules_stop_the_host(tmp_path, change, message):
     files = {k: v for k, v in {**BASIC, **change}.items() if v is not None}

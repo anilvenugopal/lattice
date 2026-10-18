@@ -21,8 +21,8 @@ from lattice.components.manifest import AppManifest
 from lattice.components.search.providers import SearchProvider, SearchResult
 from lattice.components.tiles import HomeTile
 from lattice.kernel.auth.csrf import csrf_protect
-from lattice.kernel.auth.deps import current_user, require_roles
-from lattice.kernel.auth.roles import ADMINS, EDITORS
+from lattice.kernel.auth.deps import current_user, require
+from lattice.kernel.auth.permissions import Permission
 from lattice.kernel.config import settings
 from lattice.kernel.database import Db, NotFound, get_db, transaction
 from lattice.kernel.dev_seed import DEV_USERS
@@ -40,7 +40,7 @@ __all__ = [
     # Pages and feedback
     "render", "render_page", "flash", "toast",
     # Requests and access
-    "csrf_protect", "current_user", "require_roles", "ADMINS", "EDITORS",
+    "csrf_protect", "current_user", "require", "Permission",
     # Data
     "Db", "get_db", "transaction", "NotFound", "Query", "sql_queries",
     "audit", "users", "settings",

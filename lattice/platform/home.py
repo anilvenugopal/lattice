@@ -24,7 +24,7 @@ def health(db: Db = Depends(get_db)):
 
 @router.get("/")
 def home(request: Request, db: Db = Depends(get_db), user=Depends(current_user)):
-    recent = audit.history(db, limit=8) if user.is_admin else []
+    recent = audit.history(db, limit=8) if user.can("lattice.audit.view") else []
     return render_page(request, "pages/home.html", "home", tiles=home_tiles.tiles_for(db, user),
                        recent=recent)
 

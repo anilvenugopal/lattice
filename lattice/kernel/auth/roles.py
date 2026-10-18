@@ -4,5 +4,3 @@ ADMIN = "admin"
 EDITOR = "editor"
 VIEWER = "viewer"
 
-ADMINS = (ADMIN,)
-EDITORS = (ADMIN, EDITOR)

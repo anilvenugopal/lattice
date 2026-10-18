@@ -135,7 +135,7 @@ class Action:
     confirm: str = ""               # "{count}" is replaced with the selection size
     tone: Literal["default", "primary", "danger"] = "default"  # button style
     icon: str = ""                  # icon name, see Slots and icons
-    roles: tuple[str, ...] = ()     # empty = every user who can see the grid
+    permission: str = ""            # who may run it; empty = every user who can see the grid
     # inputs asked for in a dialog before the action runs
     fields: list[Field] = field(default_factory=list)
     # row values the action applies to, e.g. {"status": ["failed"]}
@@ -187,7 +187,7 @@ class GridSpec:
     row_class: Callable[[dict], str] | None = None  # extra CSS class per row, e.g. unread
     poll_seconds: int = 0           # reload rows every n seconds; 0 = never
     export: bool = True             # offer CSV download of the filtered rows
-    roles: tuple[str, ...] = ()     # who may open the grid; empty = every signed-in user
+    permission: str = ""            # who may open the grid; empty = every signed-in user
     search_placeholder: str = "Search"  # search box hint
     empty_title: str = "Nothing here yet"  # shown when no rows match
     empty_text: str = ""            # second line under empty_title
@@ -206,7 +206,7 @@ class GridSpec:
 
     def actions_for(self, user) -> list[Action]:
         """Actions the user's roles allow. The server checks this; hiding a button is not enough."""
-        return [a for a in self.actions if user.has_any(a.roles)]
+        return [a for a in self.actions if user.can(a.permission)]
 
     @staticmethod
     def when_keys(actions: list[Action]) -> list[str]:

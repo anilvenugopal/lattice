@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from fastapi import HTTPException, Request
 
+from lattice.kernel.auth import permissions
 from lattice.kernel.auth.sessions import CurrentUser
 
 
@@ -21,21 +22,10 @@ def require(permission: str):
     Usage: `@router.get(..., dependencies=[Depends(require("demo.work.edit"))])`
     """
     def check(request: Request) -> CurrentUser:
+        if permission not in permissions.CATALOGUE:
+            raise RuntimeError(f"require({permission!r}): no app declares this permission")
         user = current_user(request)
         if not user.can(permission):
-            raise HTTPException(status_code=403, detail="You do not have access to this page.")
-        return user
-    return check
-
-
-def require_roles(*roles: str):
-    """Route dependency: 403 unless the user holds one of `roles`.
-
-    Usage: `@router.get(..., dependencies=[Depends(require_roles("admin"))])`
-    """
-    def check(request: Request) -> CurrentUser:
-        user = current_user(request)
-        if not user.has_any(roles):
             raise HTTPException(status_code=403, detail="You do not have access to this page.")
         return user
     return check

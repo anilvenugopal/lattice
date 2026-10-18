@@ -46,10 +46,6 @@ class CurrentUser:
         signed-in user; the admin role has every permission."""
         return not permission or self.is_admin or permission in self.permissions
 
-    def has_any(self, roles) -> bool:
-        """True when `roles` is empty or shares a role with the user."""
-        return not roles or any(r in self.roles for r in roles)
-
     @property
     def initials(self) -> str:
         return initials(self.display_name, self.email)

@@ -18,7 +18,7 @@ Every topic starts with front matter:
     summary: One sentence.
     order: 10                    (sorting inside its section; default 100)
     keywords: words searched but not shown
-    roles: [admin]               (only these roles see the topic; default everyone)
+    permission: lattice.users.manage   (only users with it see the topic; default everyone)
     ---
 
 Problems (no title, broken links between topics, a page map to a missing topic
@@ -62,7 +62,7 @@ class Topic:
     summary: str
     order: int
     keywords: str
-    roles: tuple[str, ...]
+    permission: str                          # "" = every signed-in user
     html: str
     toc: list[tuple[int, str, str]]          # (level, anchor, text) for h2 and h3
     text: str                                # plain text, for search
@@ -78,7 +78,7 @@ class Topic:
         return f"/help/{self.app}/{self.slug}".rstrip("/")
 
     def visible_to(self, user) -> bool:
-        return user.has_any(self.roles)
+        return user.can(self.permission)
 
 
 @dataclass
@@ -265,11 +265,12 @@ def load_help(key: str, label: str, root: Path, owned_nav_keys: set[str]) -> App
             order = int(meta.get("order", DEFAULT_ORDER))
         except ValueError as exc:
             raise HelpError(f"{where}: order must be a whole number") from exc
-        roles = meta.get("roles", ())
+        if "roles" in meta:
+            raise HelpError(f"{where}: 'roles:' is replaced by 'permission:' (one permission key)")
         app.topics[slug] = Topic(
             app=key, slug=slug, title=meta["title"], summary=meta.get("summary", ""),
             order=order, keywords=meta.get("keywords", ""),
-            roles=roles if isinstance(roles, tuple) else (roles,),
+            permission=str(meta.get("permission", "")),
             html=MD.renderer.render(tokens, MD.options, env), toc=toc, text=text,
             updated=datetime.fromtimestamp(path.stat().st_mtime, UTC).replace(tzinfo=None))
     app.pages = _load_page_map(key, root, app.topics, owned_nav_keys)

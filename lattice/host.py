@@ -135,6 +135,20 @@ def _load_help(ordered: list[tuple[AppManifest, str]], platform: list[AppManifes
     search_providers.register_provider(help_provider.PROVIDER)
 
 
+def _check_permissions() -> None:
+    """Every permission a page, grid, action, Ctrl+J source or help topic names is declared."""
+    named = [(f"nav node {n.key!r}", n.permission) for n in nav.NODES]
+    for spec in grid_router.REGISTRY.values():
+        named.append((f"grid {spec.key!r}", spec.permission))
+        named += [(f"action {spec.key}.{a.key}", a.permission) for a in spec.actions]
+    named += [(f"Ctrl+J source {p.key!r}", p.permission) for p in search_providers.registered()]
+    named += [(f"help topic {t.url}", t.permission)
+              for app in help_content.HELP.values() for t in app.topics.values()]
+    for where, permission in named:
+        if permission and permission not in permissions.CATALOGUE:
+            raise AppError(f"{where} names permission {permission!r}, which no app declares")
+
+
 def _reset_registries() -> None:
     permissions.reset()
     nav.reset()
@@ -174,6 +188,7 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
     for app, _mount in ordered:
         _register(app, platform=app in platform_first + platform_last)
     _load_help(ordered, platform_first + platform_last)
+    _check_permissions()
     icons.set_host_icons(icons_override or {})
     for slot_name, template in (slot_templates or {}).items():
         slots.add(slot_name, template)

@@ -39,7 +39,7 @@ with a selection.
 | `row_class` | `Callable[[dict], str] \| None` | `None` | extra CSS class per row, e.g. unread |
 | `poll_seconds` | `int` | `0` | reload rows every n seconds; 0 = never |
 | `export` | `bool` | `True` | offer CSV download of the filtered rows |
-| `roles` | `tuple[str, ...]` | `()` | who may open the grid; empty = every signed-in user |
+| `permission` | `str` | `''` | who may open the grid; empty = every signed-in user |
 | `search_placeholder` | `str` | `'Search'` | search box hint |
 | `empty_title` | `str` | `'Nothing here yet'` | shown when no rows match |
 | `empty_text` | `str` | `''` | second line under empty_title |
@@ -114,7 +114,7 @@ raises, nothing is saved.
 | `confirm` | `str` | `''` | "{count}" is replaced with the selection size |
 | `tone` | `Literal['default', 'primary', 'danger']` | `'default'` | button style |
 | `icon` | `str` | `''` | icon name, see Slots and icons |
-| `roles` | `tuple[str, ...]` | `()` | empty = every user who can see the grid |
+| `permission` | `str` | `''` | who may run it; empty = every user who can see the grid |
 | `fields` | `list[Field]` | `[]` | inputs asked for in a dialog before the action runs |
 | `when` | `dict[str, list[Any]]` | `{}` | row values the action applies to, e.g. {"status": ["failed"]} |
 | `in_row_menu` | `bool` | `True` | also list the action in each row's ⋯ menu |

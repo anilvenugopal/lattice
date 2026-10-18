@@ -38,7 +38,7 @@ def tiles_for(db: Db, user) -> list[dict]:
     rank = {node.route: i for i, node in reversed(list(enumerate(NODES)))}
     out = []
     for tile in sorted(TILES, key=lambda t: rank.get(t.spec.path, len(rank))):
-        if not user.has_any(tile.spec.roles):
+        if not user.can(tile.spec.permission):
             continue
         count = engine.count(tile.spec, db, user,
                              engine.GridQuery(view=tile.view, filters=tile.filters))

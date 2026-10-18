@@ -17,16 +17,16 @@ VIEWER = CurrentUser(id=1, email="v@x", display_name="V", roles=("viewer",),
                      must_change_password=False, has_password=True, session_id="s")
 
 
-def t(slug, title, text="", keywords="", roles=(), summary=""):
+def t(slug, title, text="", keywords="", permission="", summary=""):
     return Topic(app="notes", slug=slug, title=title, summary=summary, order=1, keywords=keywords,
-                 roles=roles, html="", toc=[], text=text, updated=datetime(2026, 1, 1))
+                 permission=permission, html="", toc=[], text=text, updated=datetime(2026, 1, 1))
 
 
 TOPICS = [
     t("approve", "Approving items", "Select items and choose Approve. Approved items move on."),
     t("assign", "Assigning owners", "To approve faster, assign an owner first."),
     t("export", "Exporting", "Download the list as CSV.", keywords="spreadsheet excel"),
-    t("admin", "Approval policy", "Approve rules for admins.", roles=("admin",)),
+    t("admin", "Approval policy", "Approve rules for admins.", permission="lattice.users.manage"),
 ]
 
 

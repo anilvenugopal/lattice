@@ -17,7 +17,7 @@
       </ul>
       <p class="u-muted u-small">Press <kbd>Ctrl</kbd> <kbd>J</kbd> anywhere to search pages and records, or <kbd>?</kbd> for shortcuts.</p>
     {% endcall %}
-    {% if current_user.is_admin %}
+    {% if current_user.can("lattice.audit.view") %}
       {% call card("Recent activity") %}{{ timeline(recent) }}{% endcall %}
     {% endif %}
   </div>

@@ -47,7 +47,7 @@ A page in the navigation. Top-level nodes are rail icons; their children are the
 | `route` | `str` | required | URL of the page |
 | `parent` | `str \| None` | `None` | key of the parent node; None for a rail icon |
 | `icon` | `str \| None` | `None` | rail icon name, see lattice/kernel/icons.py |
-| `roles` | `tuple[str, ...]` | `()` | empty = every signed-in user |
+| `permission` | `str` | `''` | who may open it; empty = every signed-in user |
 | `hidden` | `bool` | `False` | routing/breadcrumb only |
 | `bottom` | `bool` | `False` | rail bottom group |
 | `keywords` | `str` | `''` | extra Ctrl+J match terms |
@@ -78,7 +78,7 @@ A Ctrl+J source: answers a query and renders a preview of one result.
 | `search` | `Callable[[Db, object, str, int], list[SearchResult]]` | required | (db, user, query, limit) -> results |
 | `count` | `Callable[[Db, object, str], int]` | required | (db, user, query) -> number of matches, for the filter chip |
 | `preview` | `Callable[[Request, Db, str], object]` | required | (request, db, result id) -> HTML for the preview pane |
-| `roles` | `tuple[str, ...]` | `()` | who sees the source; empty = everyone |
+| `permission` | `str` | `''` | who sees the source; empty = every signed-in user |
 
 ## SearchResult
 

@@ -53,3 +53,11 @@ SELECT permission FROM lattice.role_permission WHERE role_code = :role ORDER BY 
 -- name: take_permission
 -- Take a permission away from a role, as an administrator would.
 DELETE FROM lattice.role_permission WHERE role_code = :role AND permission = :permission;
+
+-- name: add_role
+-- A role made by an administrator.
+INSERT INTO lattice.role (code, label) VALUES (:code, :label);
+
+-- name: grant_permission
+-- Give a role a permission.
+INSERT INTO lattice.role_permission (role_code, permission) VALUES (:role, :permission);

@@ -24,10 +24,10 @@ from lattice.components.grid import (
 )
 from lattice.components.manifest import AppManifest
 from lattice.kernel.auth.csrf import csrf_protect
-from lattice.kernel.auth.deps import current_user, require_roles
+from lattice.kernel.auth.deps import current_user, require
 from lattice.kernel.auth.passwords import hash_password, policy_errors
 from lattice.kernel.auth.permissions import Permission
-from lattice.kernel.auth.roles import ADMIN, ADMINS
+from lattice.kernel.auth.roles import ADMIN
 from lattice.kernel.auth.sessions import AUTH_METHOD_LABELS, revoke_sessions, revoke_user_sessions
 from lattice.kernel.auth.sessions import active as active_sessions
 from lattice.kernel.database import Db, engine, get_db
@@ -36,7 +36,10 @@ from lattice.kernel.queries import SQL
 from lattice.kernel.services import audit, users
 from lattice.kernel.web import flash, render_page
 
-router = APIRouter(dependencies=[Depends(csrf_protect), Depends(require_roles(*ADMINS))])
+router = APIRouter(dependencies=[Depends(csrf_protect)])
+USERS_MANAGE, ROLES_MANAGE = "lattice.users.manage", "lattice.roles.manage"
+SESSIONS_MANAGE, AUDIT_VIEW, SYSTEM_VIEW = ("lattice.sessions.manage", "lattice.audit.view",
+                                            "lattice.system.view")
 
 
 # ── Users ────────────────────────────────────────────────────────────────────
@@ -90,7 +93,7 @@ USERS = GridSpec(
     key="users",
     title="Users",
     path="/admin/users",
-    roles=ADMINS,
+    permission=USERS_MANAGE,
     query=SQL.admin.users_grid,
     columns=[
         Column("display_name", "Name", kind="user", secondary="email", required=True),
@@ -132,19 +135,19 @@ USERS = GridSpec(
 )
 
 
-@router.get("/users")
+@router.get("/users", dependencies=[Depends(require(USERS_MANAGE))])
 def users_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, USERS, "admin.users",
                             subtitle="Accounts, roles and access.")
 
 
-@router.get("/users/new")
+@router.get("/users/new", dependencies=[Depends(require(USERS_MANAGE))])
 def new_user_form(request: Request, db: Db = Depends(get_db)):
     return render_page(request, "admin/user_form.html", "admin.user", target=None,
                        roles=users.role_options(db), errors={}, values={}, crumb="New user")
 
 
-@router.post("/users/new")
+@router.post("/users/new", dependencies=[Depends(require(USERS_MANAGE))])
 async def create_user(request: Request, db: Db = Depends(get_db),
                       user=Depends(current_user)):
     form = await request.form()
@@ -183,12 +186,12 @@ def _user_detail_page(request: Request, db: Db, target: dict, errors: dict | Non
                        errors=errors or {}, crumb=target["display_name"])
 
 
-@router.get("/users/{user_id}")
+@router.get("/users/{user_id}", dependencies=[Depends(require(USERS_MANAGE))])
 def user_detail(user_id: int, request: Request, db: Db = Depends(get_db)):
     return _user_detail_page(request, db, users.by_id(db, user_id))
 
 
-@router.post("/users/{user_id}")
+@router.post("/users/{user_id}", dependencies=[Depends(require(USERS_MANAGE))])
 async def update_user(user_id: int, request: Request, db: Db = Depends(get_db),
                       user=Depends(current_user)):
     target = users.by_id(db, user_id)
@@ -216,7 +219,8 @@ async def update_user(user_id: int, request: Request, db: Db = Depends(get_db),
 # ── Roles ────────────────────────────────────────────────────────────────────
 
 ROLES = GridSpec(
-    key="roles", title="Roles", path="/admin/roles", roles=ADMINS, query=SQL.admin.roles_grid,
+    key="roles", title="Roles", path="/admin/roles", permission=ROLES_MANAGE,
+    query=SQL.admin.roles_grid,
     columns=[Column("id", "Code", kind="mono", width="120px"),
              Column("label", "Role", kind="strong"),
              Column("description", "Grants"),
@@ -226,7 +230,7 @@ ROLES = GridSpec(
 )
 
 
-@router.get("/roles")
+@router.get("/roles", dependencies=[Depends(require(ROLES_MANAGE))])
 def roles_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, ROLES, "admin.roles",
                             subtitle="Roles gate pages, menus and actions. "
@@ -243,7 +247,8 @@ def revoke_selected_sessions(ctx):
 
 
 SESSIONS = GridSpec(
-    key="sessions", title="Sessions", path="/admin/sessions", roles=ADMINS, query=SQL.sessions.grid,
+    key="sessions", title="Sessions", path="/admin/sessions", permission=SESSIONS_MANAGE,
+    query=SQL.sessions.grid,
     columns=[Column("user", "User", kind="user", secondary="email"),
              Column("email", "Email", hidden=True),
              Column("auth_method", "Method", kind="badge",
@@ -262,7 +267,7 @@ SESSIONS = GridSpec(
 )
 
 
-@router.get("/sessions")
+@router.get("/sessions", dependencies=[Depends(require(SESSIONS_MANAGE))])
 def sessions_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, SESSIONS, "admin.sessions",
                             subtitle="Active sign-ins across all users.")
@@ -275,7 +280,8 @@ def _options(db: Db, query) -> list[tuple[str, str]]:
 
 
 AUDIT = GridSpec(
-    key="audit", title="Audit log", path="/admin/audit", roles=ADMINS, query=SQL.audit.grid,
+    key="audit", title="Audit log", path="/admin/audit", permission=AUDIT_VIEW,
+    query=SQL.audit.grid,
     columns=[Column("at", "When", kind="datetime", width="180px"),
              Column("actor", "Actor", kind="user", width="180px"),
              Column("action", "Event", kind="mono", width="220px"),
@@ -289,7 +295,7 @@ AUDIT = GridSpec(
 )
 
 
-@router.get("/audit")
+@router.get("/audit", dependencies=[Depends(require(AUDIT_VIEW))])
 def audit_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, AUDIT, "admin.audit",
                             subtitle="Sign-ins, account changes and every grid action.")
@@ -297,7 +303,7 @@ def audit_page(request: Request, db: Db = Depends(get_db)):
 
 # ── System and UI kit ────────────────────────────────────────────────────────
 
-@router.get("/system")
+@router.get("/system", dependencies=[Depends(require(SYSTEM_VIEW))])
 def system_page(request: Request, db: Db = Depends(get_db)):
     url = engine().url
     totals = db.one(SQL.admin.counts)
@@ -309,23 +315,23 @@ def system_page(request: Request, db: Db = Depends(get_db)):
                        nodes=NODES)
 
 
-@router.get("/ui-kit")
+@router.get("/ui-kit", dependencies=[Depends(require(SYSTEM_VIEW))])
 def ui_kit(request: Request):
     return render_page(request, "admin/ui_kit.html", "admin.uikit")
 
 
 
 PERMISSIONS = [
-    Permission("lattice.users.manage", "Manage users",
+    Permission(USERS_MANAGE, "Manage users",
                "Administration › Users: create and edit users, grant roles, deactivate, "
                "reset passwords."),
-    Permission("lattice.roles.manage", "Manage roles",
+    Permission(ROLES_MANAGE, "Manage roles",
                "Administration › Roles: create and edit roles and their permissions."),
-    Permission("lattice.sessions.manage", "Manage sessions",
+    Permission(SESSIONS_MANAGE, "Manage sessions",
                "Administration › Sessions: see and revoke anyone's sessions."),
-    Permission("lattice.audit.view", "Read the audit log",
+    Permission(AUDIT_VIEW, "Read the audit log",
                "Administration › Audit log: every change, by anyone."),
-    Permission("lattice.system.view", "See system information",
+    Permission(SYSTEM_VIEW, "See system information",
                "Administration › System and UI kit."),
 ]
 
@@ -333,20 +339,21 @@ APP = AppManifest(
     key="admin", label="Administration", routers=[router], permissions=PERMISSIONS,
     grids=[USERS, ROLES, SESSIONS, AUDIT],
     nav=[
-        NavNode("admin", "Administration", "/admin/users", icon="shield", roles=ADMINS,
+        NavNode("admin", "Administration", "/admin/users", icon="shield",
                 description="Users, roles, sessions, audit log and system settings"),
-        NavNode("admin.users", "Users", "/admin/users", parent="admin", roles=ADMINS,
+        NavNode("admin.users", "Users", "/admin/users", parent="admin", permission=USERS_MANAGE,
                 keywords="accounts people"),
-        NavNode("admin.user", "User", "/admin/users", parent="admin.users", roles=ADMINS,
+        NavNode("admin.user", "User", "/admin/users", parent="admin.users", permission=USERS_MANAGE,
                 hidden=True),
-        NavNode("admin.roles", "Roles", "/admin/roles", parent="admin", roles=ADMINS,
+        NavNode("admin.roles", "Roles", "/admin/roles", parent="admin", permission=ROLES_MANAGE,
                 keywords="permissions"),
-        NavNode("admin.sessions", "Sessions", "/admin/sessions", parent="admin", roles=ADMINS),
-        NavNode("admin.audit", "Audit log", "/admin/audit", parent="admin", roles=ADMINS,
+        NavNode("admin.sessions", "Sessions", "/admin/sessions", parent="admin",
+                permission=SESSIONS_MANAGE),
+        NavNode("admin.audit", "Audit log", "/admin/audit", parent="admin", permission=AUDIT_VIEW,
                 keywords="history events"),
-        NavNode("admin.system", "System", "/admin/system", parent="admin", roles=ADMINS,
+        NavNode("admin.system", "System", "/admin/system", parent="admin", permission=SYSTEM_VIEW,
                 keywords="configuration settings health"),
-        NavNode("admin.uikit", "UI kit", "/admin/ui-kit", parent="admin", roles=ADMINS,
+        NavNode("admin.uikit", "UI kit", "/admin/ui-kit", parent="admin", permission=SYSTEM_VIEW,
                 keywords="components styles gallery"),
     ],
 )

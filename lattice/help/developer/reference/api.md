@@ -55,9 +55,8 @@ from lattice.api import AppManifest, GridSpec, render_page
 |---|---|---|
 | `csrf_protect` `(request)` | function | Router dependency. Raises 403 when an unsafe request lacks the matching token. |
 | `current_user` `(request)` | function | Route dependency: the signed-in user (401 when nobody is signed in). |
-| `require_roles` `(*roles)` | function | Route dependency: 403 unless the user holds one of `roles`. |
-| `ADMINS` | value | `('admin',)` |
-| `EDITORS` | value | `('admin', 'editor')` |
+| `require` `(permission)` | function | Route dependency: 403 unless the user has `permission`. |
+| `Permission` | class |  |
 
 ## Data
 

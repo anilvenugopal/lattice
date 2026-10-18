@@ -11,7 +11,7 @@ from lattice.kernel.auth.deps import current_user
 from lattice.kernel.auth.sessions import active as active_sessions
 from lattice.kernel.auth.sessions import revoke_sessions, revoke_user_sessions
 from lattice.kernel.database import Db, get_db
-from lattice.kernel.nav import NODES, NavNode
+from lattice.kernel.nav import NODES, NavNode, can_open
 from lattice.kernel.queries import SQL
 from lattice.kernel.services import audit, preferences, users
 from lattice.kernel.web import render_page, toast
@@ -21,7 +21,7 @@ router = APIRouter(dependencies=[Depends(csrf_protect)])
 
 def _landing_choices(user) -> list[tuple[str, str]]:
     return [(n.route, n.label) for n in NODES
-            if n.parent is None and not n.bottom and user.has_any(n.roles)]
+            if n.parent is None and not n.bottom and can_open(user, n)]
 
 
 @router.get("/preferences")

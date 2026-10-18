@@ -12,8 +12,6 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 
 from lattice.api import (
-    ADMINS,
-    EDITORS,
     Action,
     ActionContext,
     Column,
@@ -23,6 +21,7 @@ from lattice.api import (
     GridSpec,
     HomeTile,
     Palette,
+    Permission,
     View,
     audit,
     build_grid,
@@ -31,12 +30,19 @@ from lattice.api import (
     get_db,
     render_grid_page,
     render_page,
-    require_roles,
+    require,
     sql_queries,
     users,
 )
 
 SQL = sql_queries(Path(__file__).parent / "sql").work_items
+EDIT, DELETE = "demo.work.edit", "demo.work.delete"
+PERMISSIONS = [
+    Permission(EDIT, "Edit work items",
+               "Create, edit, assign, set the status of and approve work items.",
+               default_roles=("editor",)),
+    Permission(DELETE, "Delete work items", "Delete work items for good."),
+]
 
 STATUSES = [("new", "New"), ("in_review", "In review"), ("approved", "Approved"),
             ("declined", "Declined")]
@@ -105,18 +111,18 @@ GRID = GridSpec(
     ],
     actions=[
         Action("new", "New item", scope="none", href="/demo/work/new", tone="primary", icon="plus",
-               roles=EDITORS),
+               permission=EDIT),
         Action("open", "Open", scope="single", href="/demo/work/{id}", icon="external"),
-        Action("assign", "Assign", handler=assign, icon="assign", roles=EDITORS,
+        Action("assign", "Assign", handler=assign, icon="assign", permission=EDIT,
                fields=[Field("owner_id", "Owner", kind="select",
                              options=lambda db, u: [("", "Unassigned"), *users.options(db)])]),
-        Action("status", "Set status", handler=set_status, icon="flag", roles=EDITORS,
+        Action("status", "Set status", handler=set_status, icon="flag", permission=EDIT,
                fields=[Field("status", "Status", kind="select", options=STATUSES,
                              required=True)]),
-        Action("approve", "Approve", handler=approve, icon="check", roles=EDITORS,
+        Action("approve", "Approve", handler=approve, icon="check", permission=EDIT,
                when={"status": OPEN}, confirm="Approve {count} item(s)?"),
         Action("delete", "Delete", handler=remove, tone="danger", icon="trash",
-               roles=ADMINS, confirm="Delete {count} item(s)? This cannot be undone."),
+               permission=DELETE, confirm="Delete {count} item(s)? This cannot be undone."),
     ],
     default_sort="-received_at",
     row_href="/demo/work/{id}",
@@ -170,12 +176,12 @@ def _read_form(form) -> tuple[dict, dict]:
 FIELDS = ("title", "account", "status", "priority", "owner_id", "amount", "description")
 
 
-@router.get("/work/new", dependencies=[Depends(require_roles(*EDITORS))])
+@router.get("/work/new", dependencies=[Depends(require(EDIT))])
 def new_form(request: Request, db: Db = Depends(get_db)):
     return render_page(request, "demo/work_item_form.html", "work.new", **_form_ctx(db, None))
 
 
-@router.post("/work/new", dependencies=[Depends(require_roles(*EDITORS))])
+@router.post("/work/new", dependencies=[Depends(require(EDIT))])
 async def create(request: Request, db: Db = Depends(get_db), user=Depends(current_user)):
     data, errors = _read_form(await request.form())
     if errors:
@@ -193,18 +199,18 @@ def detail(item_id: int, request: Request, db: Db = Depends(get_db)):
     related = build_grid(request, db, GRID, sync_url=False, fixed={"account": item["account"]})
     return render_page(request, "demo/work_item_detail.html", "work.detail",
                        item=item, events=audit.history(db, "demo.work_items", item_id),
-                       spec=GRID, can_edit=request.state.user.has_any(EDITORS),
+                       spec=GRID, can_edit=request.state.user.can(EDIT),
                        related=related, crumb=item["ref"])
 
 
-@router.get("/work/{item_id}/edit", dependencies=[Depends(require_roles(*EDITORS))])
+@router.get("/work/{item_id}/edit", dependencies=[Depends(require(EDIT))])
 def edit_form(item_id: int, request: Request, db: Db = Depends(get_db)):
     item = db.one(SQL.by_id, id=item_id)
     return render_page(request, "demo/work_item_form.html", "work.detail",
                        **_form_ctx(db, item), crumb=item["ref"])
 
 
-@router.post("/work/{item_id}/edit", dependencies=[Depends(require_roles(*EDITORS))])
+@router.post("/work/{item_id}/edit", dependencies=[Depends(require(EDIT))])
 async def save(item_id: int, request: Request, db: Db = Depends(get_db),
                user=Depends(current_user)):
     item = db.one(SQL.by_id, id=item_id)

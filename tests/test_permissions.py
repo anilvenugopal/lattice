@@ -12,7 +12,7 @@ from lattice.kernel.auth import permissions
 from lattice.kernel.auth.deps import require
 from lattice.kernel.auth.permissions import Permission
 from lattice.kernel.sql import sql_queries
-from lattice.testing import current, login
+from lattice.testing import current, login, make_user
 
 CHECK = sql_queries(Path(__file__).parent / "sql").checks
 EDIT = Permission("notes.edit", "Edit notes", "Write and change notes.", default_roles=("editor",))
@@ -88,3 +88,24 @@ def test_require_on_a_route_uses_the_signed_in_users_permissions(db, users, host
         c.cookies.clear()
         login(c, "admin@test.io")
         assert c.get("/notes/write").status_code == 200
+
+
+def test_an_auditor_sees_only_the_audit_log(db, users):
+    db.run(CHECK.add_role, code="auditor", label="Auditor")
+    db.run(CHECK.grant_permission, role="auditor", permission="lattice.audit.view")
+    make_user(db, "audrey@test.io", roles=("auditor",))
+    with TestClient(create_app(apps=[])) as c:
+        login(c, "audrey@test.io")
+        assert c.get("/admin/audit").status_code == 200
+        for refused in ("/admin/users", "/admin/roles", "/admin/sessions", "/admin/system",
+                        "/_grid/users/rows"):
+            assert c.get(refused).status_code == 403, refused
+        page = c.get("/admin/audit").text
+        assert 'class="rail__btn is-active" href="/admin/audit"' in page   # the icon leads here
+        assert 'href="/admin/users"' not in page and ">Audit log<" in page
+        assert "Recent activity" in c.get("/").text                        # lattice.audit.view
+
+
+def test_without_any_administration_permission_there_is_no_administration(as_user):
+    page = as_user("editor").get("/").text
+    assert 'aria-label="Administration"' not in page and "Recent activity" not in page

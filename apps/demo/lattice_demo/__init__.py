@@ -22,6 +22,7 @@ APP = AppManifest(
     stylesheets=["demo.css"],
     routers=[work_items.router, jobs.router, inbox.router],
     grids=[work_items.GRID, jobs.GRID, inbox.GRID],
+    permissions=work_items.PERMISSIONS,
     tiles=[*work_items.TILES, *jobs.TILES, *inbox.TILES],
     background=jobs.background,
     seed=seed,
@@ -33,7 +34,8 @@ APP = AppManifest(
                 keywords="submissions cases requests tickets",
                 description="Table grid with views, bulk actions, side panel and detail pages"),
         NavNode("work.items", "Items", "/demo/work", parent="work"),
-        NavNode("work.new", "New item", "/demo/work/new", parent="work", keywords="create add"),
+        NavNode("work.new", "New item", "/demo/work/new", parent="work", keywords="create add",
+                permission=work_items.EDIT),
         NavNode("work.detail", "Detail", "/demo/work", parent="work.items", hidden=True),
         # Jobs has no children, so its pages render without a sidebar.
         NavNode("jobs", "Jobs", "/demo/jobs", icon="activity", keywords="tasks runs background",

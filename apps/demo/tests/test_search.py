@@ -39,7 +39,8 @@ def test_previews_for_record_page_and_command(as_user, items):
     assert "WI-00002" in record and ">Open</a>" in record
     assert "closePanel()" not in record and "runForPanel" not in record   # read-only
     page = c.get("/_search/preview/pages/work").text
-    assert "Work Queue" in page and 'href="/demo/work/new"' in page
+    assert "Work Queue" in page and 'href="/demo/work/new"' not in page   # needs demo.work.edit
+    assert 'href="/demo/work/new"' in as_user("editor").get("/_search/preview/pages/work").text
     command = c.get("/_search/preview/commands/signout").text
     assert "End this session" in command
 

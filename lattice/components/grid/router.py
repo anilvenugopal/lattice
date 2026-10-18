@@ -44,7 +44,7 @@ def _spec(key: str, user) -> GridSpec:
     spec = REGISTRY.get(key)
     if spec is None:
         raise HTTPException(404)
-    if not user.has_any(spec.roles):
+    if not user.can(spec.permission):
         raise HTTPException(403)
     return spec
 

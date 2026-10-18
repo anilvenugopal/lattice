@@ -11,14 +11,14 @@ filters with counts, the results, and a preview of the highlighted result.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from fastapi import HTTPException, Request
 
 from lattice.components.grid import REGISTRY, GridSpec, engine
 from lattice.components.grid.render import render_panel
 from lattice.kernel.database import Db
-from lattice.kernel.nav import NODES, search_nodes
+from lattice.kernel.nav import NODES, can_open, search_nodes
 from lattice.kernel.nav.manifest import BY_KEY
 from lattice.kernel.web import fmt, fmt_url, render
 
@@ -47,7 +47,7 @@ class SearchProvider:
     count: Callable[[Db, object, str], int]
     # (request, db, result id) -> HTML for the preview pane
     preview: Callable[[Request, Db, str], object]
-    roles: tuple[str, ...] = field(default=())  # who sees the source; empty = everyone
+    permission: str = ""            # who sees the source; empty = every signed-in user
 
 
 # ── Pages ────────────────────────────────────────────────────────────────────
@@ -55,7 +55,7 @@ class SearchProvider:
 def _visible_pages(user, q: str):
     if q:
         return search_nodes(user, q)
-    return [n for n in NODES if not n.hidden and user.has_any(n.roles)]
+    return [n for n in NODES if not n.hidden and can_open(user, n)]
 
 
 def _page_result(node) -> SearchResult:
@@ -68,12 +68,12 @@ def _page_result(node) -> SearchResult:
 def _page_preview(request: Request, db: Db, key: str):
     node = BY_KEY.get(key)
     user = request.state.user
-    if node is None or node.hidden or not user.has_any(node.roles):
+    if node is None or node.hidden or not can_open(user, node):
         raise HTTPException(404)
     chain = [node]
     while chain[0].parent:
         chain.insert(0, BY_KEY[chain[0].parent])
-    children = [n for n in NODES if n.parent == key and not n.hidden and user.has_any(n.roles)]
+    children = [n for n in NODES if n.parent == key and not n.hidden and user.can(n.permission)]
     return render(request, "components/search_preview_page.html", node=node, chain=chain,
                   children=children)
 
@@ -134,7 +134,7 @@ def grid_provider(spec: GridSpec) -> SearchProvider:
                              href=fmt_url(spec.palette.href, r)) for r in rows]
 
     return SearchProvider(
-        key=f"grid.{spec.key}", label=spec.title, icon=spec.palette.icon, roles=spec.roles,
+        key=f"grid.{spec.key}", label=spec.title, icon=spec.palette.icon, permission=spec.permission,
         search=search,
         count=lambda db, user, q: engine.count(spec, db, user, engine.GridQuery(q=q)) if q else 0,
         preview=lambda request, db, row_id: render_panel(request, db, spec, row_id, preview=True),
@@ -156,13 +156,18 @@ def register_provider(provider: SearchProvider) -> SearchProvider:
     return provider
 
 
+def registered() -> list[SearchProvider]:
+    """Sources added with register_provider (apps' `search=` and Help)."""
+    return list(_EXTRA)
+
+
 def providers_for(user) -> list[SearchProvider]:
     """Pages, then grids in navigation order, then registered providers, then Commands."""
     rank = {node.route: i for i, node in reversed(list(enumerate(NODES)))}
     grids = sorted((s for s in REGISTRY.values() if s.palette),
                    key=lambda s: rank.get(s.path, len(rank)))
     all_providers = [PAGES, *map(grid_provider, grids), *_EXTRA, COMMANDS_PROVIDER]
-    return [p for p in all_providers if user.has_any(p.roles)]
+    return [p for p in all_providers if user.can(p.permission)]
 
 
 def provider_for(user, key: str) -> SearchProvider:

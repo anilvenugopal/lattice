@@ -24,7 +24,7 @@ class NavNode:
     route: str                      # URL of the page
     parent: str | None = None       # key of the parent node; None for a rail icon
     icon: str | None = None          # rail icon name, see lattice/kernel/icons.py
-    roles: tuple[str, ...] = ()      # empty = every signed-in user
+    permission: str = ""             # who may open it; empty = every signed-in user
     hidden: bool = False             # routing/breadcrumb only
     bottom: bool = False             # rail bottom group
     keywords: str = ""               # extra Ctrl+J match terms
@@ -65,23 +65,42 @@ def _chain(key: str) -> list[NavNode]:
     return chain
 
 
+def _pages(node: NavNode, user=None) -> list[NavNode]:
+    """A section's menu pages, those `user` may open when given."""
+    return [n for n in NODES if n.parent == node.key and not n.hidden
+            and (user is None or user.can(n.permission))]
+
+
+def can_open(user, node: NavNode) -> bool:
+    """The user has the node's permission and, for a section, may open one of its pages."""
+    return user.can(node.permission) and (not _pages(node) or bool(_pages(node, user)))
+
+
+def _entry(user, node: NavNode) -> NavNode:
+    """A rail icon leads to the first page of its section the user may open."""
+    pages = _pages(node, user)
+    return replace(node, route=pages[0].route) if pages else node
+
+
 def nav_context(user, active_key: str) -> dict:
     """Everything base/shell.html needs to draw rail, sidebar and breadcrumb."""
     chain = _chain(active_key)
     section = chain[0]
-    visible = [n for n in NODES if user.has_any(n.roles)]
+    visible = [n for n in NODES if can_open(user, n)]
     sidebar = [n for n in visible if n.parent == section.key and not n.hidden]
     # The highlighted sidebar entry is the nearest visible ancestor of the active node.
     sidebar_keys = {n.key for n in sidebar}
     active_item = next((n.key for n in reversed(chain) if n.key in sidebar_keys), None)
     return {
-        "rail": [n for n in visible if n.parent is None and not n.bottom and not n.hidden],
-        "rail_bottom": [n for n in visible if n.parent is None and n.bottom and not n.hidden],
+        "rail": [_entry(user, n) for n in visible
+                 if n.parent is None and not n.bottom and not n.hidden],
+        "rail_bottom": [_entry(user, n) for n in visible
+                        if n.parent is None and n.bottom and not n.hidden],
         "section": section,
         "sidebar": sidebar,
         "active_key": active_key,
         "active_item": active_item,
-        "breadcrumb": chain,
+        "breadcrumb": [_entry(user, chain[0]), *chain[1:]],
         "title": chain[-1].label,
         "app": chain[-1].app,                       # <main data-app="…"> (ADR 0010)
     }
@@ -91,7 +110,7 @@ def search_nodes(user, q: str) -> list[NavNode]:
     q = q.lower().strip()
     hits = []
     for n in NODES:
-        if n.hidden or not user.has_any(n.roles):
+        if n.hidden or not can_open(user, n):
             continue
         parent = BY_KEY[n.parent].label if n.parent else ""
         hay = f"{n.label} {parent} {n.keywords} {n.description}".lower()
