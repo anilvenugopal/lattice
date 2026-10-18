@@ -14,30 +14,92 @@ import os
 
 os.environ.setdefault("LATTICE_APP_ENV", "test")
 os.environ.setdefault("LATTICE_BCRYPT_ROUNDS", "4")
-os.environ.setdefault("LATTICE_DATABASE_URL", "sqlite:///./data/test-unused.db")
+# The Postgres server tests run against. Each test gets its own database on it.
+TEST_SERVER_URL = os.environ.get("LATTICE_TEST_DATABASE_URL",
+                                 "postgresql+psycopg://lattice:lattice@127.0.0.1:5436/lattice")
+os.environ.setdefault("LATTICE_DATABASE_URL", TEST_SERVER_URL)
+
+import hashlib  # noqa: E402
+from pathlib import Path  # noqa: E402
+from uuid import uuid4  # noqa: E402
 
 import pytest  # noqa: E402
-from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import create_engine, make_url  # noqa: E402
+from sqlalchemy.pool import NullPool  # noqa: E402
 
-from alembic import command  # noqa: E402
 from lattice.host import create_app  # noqa: E402
-from lattice.kernel import db as app_db  # noqa: E402
+from lattice.kernel import database  # noqa: E402
 from lattice.kernel.auth import csrf as csrf_cookie  # noqa: E402
 from lattice.kernel.auth.sessions import CurrentUser  # noqa: E402
+from lattice.kernel.database import Db  # noqa: E402
+from lattice.kernel.migrate import migrate  # noqa: E402
 from lattice.kernel.models import User  # noqa: E402
 from lattice.kernel.services import users as users_service  # noqa: E402
 
 PASSWORD = "Passw0rd-Long!"
 
 
+CORE_SCHEMA = Path(__file__).parent / "sql" / "schema"
+
+
+def migration_sources(apps) -> list[tuple[str, Path]]:
+    """Lattice's migrations, then each app's: what `lattice migrate` runs for a host."""
+    return [("lattice", CORE_SCHEMA)] + [(a.key, a.sql / "schema") for a in apps if a.sql]
+
+
+def _url(name: str) -> str:
+    return make_url(TEST_SERVER_URL).set(database=name).render_as_string(hide_password=False)
+
+
+@pytest.fixture(scope="session")
+def _pg_server():
+    """A connection to the test server for creating and dropping databases."""
+    server = create_engine(TEST_SERVER_URL, isolation_level="AUTOCOMMIT", poolclass=NullPool)
+    templates: dict[tuple, str] = {}
+    yield server, templates
+    with server.connect() as conn:
+        for name in templates.values():
+            conn.exec_driver_sql(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+    server.dispose()
+
+
+def _template(server, templates, sources) -> str:
+    """A database migrated once per test run for this set of migrations; tests copy it."""
+    key = tuple((schema, str(folder)) for schema, folder in sources)
+    if key not in templates:
+        digest = hashlib.sha1(repr(key).encode()).hexdigest()[:10]
+        name = f"lattice_test_template_{digest}"
+        with server.connect() as conn:
+            conn.exec_driver_sql(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
+            conn.exec_driver_sql(f'CREATE DATABASE "{name}"')
+        database.configure(_url(name))
+        migrate(sources)
+        database.engine().dispose()      # a template must have no open connections
+        templates[key] = name
+    return templates[key]
+
+
 @pytest.fixture
-def db(tmp_path):
-    """A fresh database per test, built by the Alembic migrations."""
-    app_db.configure(f"sqlite:///{tmp_path / 'test.db'}")
-    command.upgrade(Config("alembic.ini"), "head")
-    with app_db.SessionLocal() as session:
-        yield session
+def db(_pg_server, host_apps):
+    """A fresh Postgres database per test, already migrated, and a `Db` on it.
+
+    Every call commits at once, so rows a test adds are visible to the test client.
+    """
+    server, templates = _pg_server
+    template = _template(server, templates, migration_sources(host_apps))
+    name = f"lattice_test_{uuid4().hex[:12]}"
+    with server.connect() as conn:
+        conn.exec_driver_sql(f'CREATE DATABASE "{name}" TEMPLATE "{template}"')
+    database.configure(_url(name))
+    conn = database.engine().connect().execution_options(isolation_level="AUTOCOMMIT")
+    try:
+        yield Db(conn)
+    finally:
+        conn.close()
+        database.engine().dispose()
+        with server.connect() as admin:
+            admin.exec_driver_sql(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
 
 
 def make_user(db, email, roles=("viewer",), password=PASSWORD, **kw) -> User:

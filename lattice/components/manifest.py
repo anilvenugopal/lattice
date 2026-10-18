@@ -41,6 +41,9 @@ class AppManifest:
     stylesheets: list[str] = field(default_factory=list)  # file names inside `static`
     # Icons the app adds, used as icon("{key}:name"). Values are SVG path markup.
     icons: dict[str, str] = field(default_factory=dict)
+    # Folder of the app's SQL: named queries in *.sql, migrations in schema/*.sql.
+    # The migrations create and fill the Postgres schema named after the app's key.
+    sql: Path | None = None
     # Folder of Markdown help topics with index.md and an optional help.toml page map.
     help: Path | None = None
     # Slot name -> template in the app's own folder ("{key}/…").

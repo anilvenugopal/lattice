@@ -1,0 +1,20 @@
+# Postgres for development and tests. Start it with `make db-up`
+# (podman compose or docker compose); data stays in the lattice-pg volume.
+services:
+  postgres:
+    image: docker.io/library/postgres:17
+    environment:
+      POSTGRES_USER: lattice
+      POSTGRES_PASSWORD: lattice
+      POSTGRES_DB: lattice
+    ports:
+      - "127.0.0.1:5436:5432"
+    volumes:
+      - lattice-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lattice"]
+      interval: 2s
+      retries: 30
+
+volumes:
+  lattice-pg:

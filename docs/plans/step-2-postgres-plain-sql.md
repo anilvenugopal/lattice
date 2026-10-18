@@ -160,5 +160,5 @@ This is the largest step so far:
 ## To approve
 
 1. This plan as written, or with changes.
-2. Postgres 17 on port **5435**, so it does not clash with strategiq's 5434 or
+2. Postgres 17 on port **5436**, so it does not clash with strategiq's 5434, taskline's 5435 or
    a default 5432.

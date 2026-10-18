@@ -33,6 +33,7 @@ from lattice.kernel import css_rules, icons, nav, slots
 from lattice.kernel.auth import routes as auth_routes
 from lattice.kernel.auth.middleware import AuthMiddleware, is_htmx
 from lattice.kernel.config import settings
+from lattice.kernel.database import NotFound
 from lattice.kernel.web import render, set_host_assets
 from lattice.platform import account, admin, home
 
@@ -228,6 +229,10 @@ def _add_error_handlers(web: FastAPI) -> None:
     @web.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException):
         return _error_response(request, exc.status_code, exc.detail, getattr(exc, "headers", None))
+
+    @web.exception_handler(NotFound)
+    async def not_found(request: Request, exc: NotFound):
+        return _error_response(request, 404, "Not found.")
 
     @web.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError):

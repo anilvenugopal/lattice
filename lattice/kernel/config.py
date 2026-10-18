@@ -21,7 +21,8 @@ class Settings(BaseSettings):
     brand_logo_dark: str = Field("/static/brand/logo-dark.svg", description="Logo for dark mode.")
     brand_show_name: bool = Field(True, description="Show the app name next to the logo. Set false when the logo images already contain the name.")
     secret_key: str = Field("dev-secret-change-me", description="Signs the flash and OIDC cookies. Set a long random value in production.")
-    database_url: str = Field("sqlite:///./data/lattice.db", description="SQLAlchemy database URL.")
+    database_url: str = Field("postgresql+psycopg://lattice:lattice@127.0.0.1:5436/lattice",
+                              description="The Postgres database, as a SQLAlchemy URL with the psycopg driver.")
     host: str = Field("demo_host.main:app", description="The host the `lattice` command line runs and seeds, as `module:attribute`.")
 
     session_idle_minutes: int = Field(480, description="A session ends after this many minutes without a request.")

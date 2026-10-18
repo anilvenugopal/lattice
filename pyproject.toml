@@ -23,6 +23,7 @@ dependencies = [
     "markdown-it-py>=4.2.0",
     "mdit-py-plugins>=0.6.1",
     "pygments>=2.21.0",
+    "psycopg[binary]>=3.2",
 ]
 
 [project.scripts]
@@ -60,7 +61,12 @@ ignore = ["E501", "B008"]
 [tool.pytest.ini_options]
 testpaths = ["tests", "apps/demo/tests"]
 addopts = "--import-mode=importlib"
-filterwarnings = ["ignore::DeprecationWarning"]
+# Deprecations fail the tests, so they are fixed when they appear. The one exception
+# is in Starlette's own test client, which Lattice does not control.
+filterwarnings = [
+    "error::DeprecationWarning",
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated",
+]
 
 # Import contracts (ADR 0002), checked by tests/test_import_contracts.py.
 [tool.importlinter]

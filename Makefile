@@ -1,7 +1,16 @@
-.PHONY: help setup dev migrate revision seed reset test lint format
+.PHONY: help db-up db-down setup dev migrate revision seed reset test lint format
+
+COMPOSE ?= podman-compose
 
 help:  ## Show targets
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-10s\033[0m %s\n", $$1, $$2}'
+
+db-up:  ## Start Postgres (compose.yaml, port 5436) and wait until it accepts connections
+	$(COMPOSE) up -d
+	@until pg_isready -q -h 127.0.0.1 -p 5436; do sleep 1; done; echo "Postgres is ready on 5436"
+
+db-down:  ## Stop Postgres; the data stays in its volume
+	$(COMPOSE) down
 
 setup:  ## Install all workspace packages, migrate, seed development data
 	uv sync --all-packages
