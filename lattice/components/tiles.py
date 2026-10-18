@@ -9,9 +9,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from urllib.parse import urlencode
 
-from sqlalchemy.orm import Session
-
 from lattice.components.grid import GridSpec, engine
+from lattice.kernel.database import Db
 from lattice.kernel.nav import NODES
 
 
@@ -34,7 +33,7 @@ def register_tile(tile: HomeTile) -> HomeTile:
     return tile
 
 
-def tiles_for(db: Session, user) -> list[dict]:
+def tiles_for(db: Db, user) -> list[dict]:
     """Tiles the user may see, in navigation order (the order of their grid's page in NODES)."""
     rank = {node.route: i for i, node in reversed(list(enumerate(NODES)))}
     out = []

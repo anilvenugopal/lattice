@@ -24,7 +24,7 @@ with a selection.
 | `key` | `str` | required | unique: "{app}.{name}" |
 | `title` | `str` | required | heading and Ctrl+J source name |
 | `path` | `str` | required | page that hosts the grid |
-| `query` | `Callable[[Session, Any], Select]` | required | labeled columns, must include "id" |
+| `query` | `Query` | required | A named query (sql/<area>.sql) returning the rows, with an "id" column. It may use :user_id (the signed-in user) to scope rows. |
 | `columns` | `list[Column]` | required | in display order |
 | `search` | `list[str]` | `[]` | columns matched by the search box (ILIKE) |
 | `filters` | `list[Filter]` | `[]` | dropdowns in the filter bar |
@@ -33,7 +33,7 @@ with a selection.
 | `selection` | `Literal['multi', 'single', 'none']` | `'multi'` | how many rows can be selected |
 | `default_sort` | `str` | `'-id'` | "-" prefix sorts descending |
 | `row_href` | `str` | `''` | Enter / double-click target |
-| `panel` | `Callable[[Session, Any, dict], dict] \| None` | `None` | (db, user, row) -> context for the side panel; None: no panel (db, user, row) -> context for the side panel; None: no panel |
+| `panel` | `Callable[[Db, Any, dict], dict] \| None` | `None` | (db, user, row) -> context for the side panel; None: no panel |
 | `panel_title` | `str` | `'{id}'` | side panel heading, formatted with the row |
 | `layout` | `Literal['table', 'split']` | `'table'` | split: list + reading pane |
 | `row_class` | `Callable[[dict], str] \| None` | `None` | extra CSS class per row, e.g. unread |
@@ -101,7 +101,8 @@ Either `handler` runs server-side, or `href` navigates ("/work/{id}" for single)
 disabled unless at least one selected row matches, and the server drops rows
 that do not match before calling the handler (the toast reports them as
 skipped). `when` keys must hold plain JSON values (str, int, bool, None).
-The handler must not commit; the grid commits after writing the audit event.
+The handler runs in the request's transaction, with the grid's audit events; if it
+raises, nothing is saved.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
@@ -127,7 +128,7 @@ An input collected in a dialog before an action runs.
 | `name` | `str` | required | key in ActionContext.values |
 | `label` | `str` | required | input label |
 | `kind` | `Literal['text', 'textarea', 'select', 'number', 'date']` | `'text'` | input type |
-| `options` | `Options` | `[]` | kind="select": (value, label) pairs or a function (db, user) kind="select": (value, label) pairs or a function (db, user) |
+| `options` | `Options` | `[]` | kind="select": (value, label) pairs or a function (db, user) |
 | `required` | `bool` | `False` | the dialog will not submit without it |
 | `default` | `str` | `''` | initial value |
 | `placeholder` | `str` | `''` | hint inside the empty input |
@@ -138,7 +139,7 @@ What an action handler receives.
 
 | Field | Type | Default | Description |
 |---|---|---|---|
-| `db` | `Session` | required | the request's session; the grid commits after the handler |
+| `db` | `Db` | required | the request's Db, in the request's transaction |
 | `user` | `Any` | required | CurrentUser |
 | `ids` | `list[Any]` | required | eligible ids, already scoped by GridSpec.query |
 | `rows` | `list[dict]` | required | the eligible rows as the grid query returns them |

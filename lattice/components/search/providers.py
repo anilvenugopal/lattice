@@ -14,10 +14,10 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 
 from fastapi import HTTPException, Request
-from sqlalchemy.orm import Session
 
 from lattice.components.grid import REGISTRY, GridSpec, engine
 from lattice.components.grid.render import render_panel
+from lattice.kernel.database import Db
 from lattice.kernel.nav import NODES, search_nodes
 from lattice.kernel.nav.manifest import BY_KEY
 from lattice.kernel.web import fmt, fmt_url, render
@@ -42,14 +42,11 @@ class SearchProvider:
     label: str                      # filter chip text
     icon: str                       # icon shown on its results
     # (db, user, query, limit) -> results
-    # (db, user, query, limit) -> results
-    search: Callable[[Session, object, str, int], list[SearchResult]]
+    search: Callable[[Db, object, str, int], list[SearchResult]]
     # (db, user, query) -> number of matches, for the filter chip
-    # (db, user, query) -> number of matches, for the filter chip
-    count: Callable[[Session, object, str], int]
+    count: Callable[[Db, object, str], int]
     # (request, db, result id) -> HTML for the preview pane
-    # (request, db, result id) -> HTML for the preview pane
-    preview: Callable[[Request, Session, str], object]
+    preview: Callable[[Request, Db, str], object]
     roles: tuple[str, ...] = field(default=())  # who sees the source; empty = everyone
 
 
@@ -68,7 +65,7 @@ def _page_result(node) -> SearchResult:
                         href=node.route)
 
 
-def _page_preview(request: Request, db: Session, key: str):
+def _page_preview(request: Request, db: Db, key: str):
     node = BY_KEY.get(key)
     user = request.state.user
     if node is None or node.hidden or not user.has_any(node.roles):
@@ -107,7 +104,7 @@ def _matching_commands(q: str):
     return [c for c in COMMANDS if all(w in f"{c[1]} {c[2]}".lower() for w in words)]
 
 
-def _command_preview(request: Request, db: Session, key: str):
+def _command_preview(request: Request, db: Db, key: str):
     command = next((c for c in COMMANDS if c[0] == key), None)
     if command is None:
         raise HTTPException(404)

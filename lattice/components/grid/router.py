@@ -17,7 +17,6 @@ from urllib.parse import parse_qsl
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
-from sqlalchemy.orm import Session
 from starlette.datastructures import QueryParams
 
 from lattice.components.grid import engine
@@ -25,8 +24,7 @@ from lattice.components.grid.render import build_grid, render_panel, resolve_opt
 from lattice.components.grid.spec import ActionContext, ActionResult, GridSpec
 from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.auth.deps import current_user
-from lattice.kernel.db import get_db
-from lattice.kernel.models import utcnow
+from lattice.kernel.database import Db, get_db
 from lattice.kernel.services import audit, preferences
 from lattice.kernel.web import render
 
@@ -61,7 +59,7 @@ def _bad_state():
 
 
 @router.get("/{key}/rows")
-def rows(key: str, request: Request, db: Session = Depends(get_db),
+def rows(key: str, request: Request, db: Db = Depends(get_db),
          user=Depends(current_user)):
     spec = _spec(key, user)
     with _bad_state():
@@ -71,12 +69,12 @@ def rows(key: str, request: Request, db: Session = Depends(get_db),
 
 
 @router.get("/{key}/panel/{row_id}")
-def panel(key: str, row_id: str, request: Request, db: Session = Depends(get_db),
+def panel(key: str, row_id: str, request: Request, db: Db = Depends(get_db),
           user=Depends(current_user)):
     return render_panel(request, db, _spec(key, user), row_id)
 
 
-def _validated_values(action, raw: dict, db: Session, user) -> dict[str, str]:
+def _validated_values(action, raw: dict, db: Db, user) -> dict[str, str]:
     """Values for the action's declared fields, checked against each field's kind and options.
 
     Raises 400 on a missing required value or a value the field does not allow.
@@ -105,7 +103,7 @@ def _validated_values(action, raw: dict, db: Session, user) -> dict[str, str]:
 
 @router.post("/{key}/action/{action_key}")
 async def run_action(key: str, action_key: str, request: Request,
-                     db: Session = Depends(get_db), user=Depends(current_user)):
+                     db: Db = Depends(get_db), user=Depends(current_user)):
     spec = _spec(key, user)
     action = spec.action(action_key)
     if action is None or action.handler is None:
@@ -146,30 +144,25 @@ async def run_action(key: str, action_key: str, request: Request,
 
     # One audit event per row, so each row's history shows bulk actions too.
     bulk = f" (bulk of {ctx.count})" if ctx.count > 1 else ""
-    now = utcnow()
-    for row_id in ctx.ids or [""]:
-        audit.record(db, user.id, f"{spec.key}.{action.key}", f"{action.label}{bulk}",
-                     target_type=spec.key, target_id=row_id, at=now,
-                     detail={"values": values} if values else None)
-    db.commit()
+    audit.record_many(db, user.id, f"{spec.key}.{action.key}", f"{action.label}{bulk}",
+                      spec.key, ctx.ids or [""], {"values": values} if values else None)
     return JSONResponse({"message": result.message, "tone": result.tone,
                          "refresh": result.refresh, "clear": result.clear_selection,
                          "redirect": result.redirect})
 
 
 @router.post("/{key}/columns")
-async def save_columns(key: str, request: Request, db: Session = Depends(get_db),
+async def save_columns(key: str, request: Request, db: Db = Depends(get_db),
                        user=Depends(current_user)):
     spec = _spec(key, user)
     hidden = (await request.json()).get("hidden", [])
     valid = [k for k in hidden if spec.column(k) and not spec.column(k).required]
     preferences.set_pref(db, user.id, f"grid.{spec.key}.hidden", valid)
-    db.commit()
     return JSONResponse({"hidden": valid})
 
 
 @router.get("/{key}/export.csv")
-def export_csv(key: str, request: Request, db: Session = Depends(get_db),
+def export_csv(key: str, request: Request, db: Db = Depends(get_db),
                user=Depends(current_user)):
     spec = _spec(key, user)
     if not spec.export:

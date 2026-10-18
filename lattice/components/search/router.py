@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy.orm import Session
 
 from lattice.components.search import providers as search_providers
 from lattice.kernel.auth.deps import current_user
-from lattice.kernel.db import get_db
+from lattice.kernel.database import Db, get_db
 from lattice.kernel.web import render
 
 router = APIRouter()
@@ -17,7 +16,7 @@ RESULTS_ONE_PROVIDER = 30
 
 
 @router.get("/_search")
-def search(request: Request, q: str = "", provider: str = "", db: Session = Depends(get_db),
+def search(request: Request, q: str = "", provider: str = "", db: Db = Depends(get_db),
            user=Depends(current_user)):
     """Ctrl+J body: provider filters with counts, and results (all providers, or one)."""
     q = q.strip()
@@ -34,6 +33,6 @@ def search(request: Request, q: str = "", provider: str = "", db: Session = Depe
 
 
 @router.get("/_search/preview/{provider}/{item_id:path}")
-def search_preview(provider: str, item_id: str, request: Request, db: Session = Depends(get_db),
+def search_preview(provider: str, item_id: str, request: Request, db: Db = Depends(get_db),
                    user=Depends(current_user)):
     return search_providers.provider_for(user, provider).preview(request, db, item_id)

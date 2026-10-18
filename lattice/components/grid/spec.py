@@ -15,15 +15,15 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
-from sqlalchemy import Select
-from sqlalchemy.orm import Session
+from lattice.kernel.database import Db
+from lattice.kernel.sql import Query
 
 ColumnKind = Literal[
     "text", "strong", "mono", "number", "money", "percent", "date", "datetime", "ago",
     "badge", "bool", "tags", "progress", "user", "star", "template",
 ]
 Tone = Literal["neutral", "info", "success", "warning", "danger", "accent"]
-Options = list[tuple[str, str]] | Callable[[Session, Any], list[tuple[str, str]]]
+Options = list[tuple[str, str]] | Callable[[Db, Any], list[tuple[str, str]]]
 
 
 @dataclass
@@ -76,7 +76,6 @@ class Field:
     label: str                      # input label
     kind: Literal["text", "textarea", "select", "number", "date"] = "text"  # input type
     # kind="select": (value, label) pairs or a function (db, user)
-    # kind="select": (value, label) pairs or a function (db, user)
     options: Options = field(default_factory=list)
     required: bool = False          # the dialog will not submit without it
     default: str = ""               # initial value
@@ -87,7 +86,7 @@ class Field:
 class ActionContext:
     """What an action handler receives."""
 
-    db: Session                     # the request's session; the grid commits after the handler
+    db: Db                          # the request's Db, in the request's transaction
     user: Any                       # CurrentUser
     ids: list[Any]                  # eligible ids, already scoped by GridSpec.query
     rows: list[dict]                # the eligible rows as the grid query returns them
@@ -124,7 +123,8 @@ class Action:
     disabled unless at least one selected row matches, and the server drops rows
     that do not match before calling the handler (the toast reports them as
     skipped). `when` keys must hold plain JSON values (str, int, bool, None).
-    The handler must not commit; the grid commits after writing the audit event.
+    The handler runs in the request's transaction, with the grid's audit events; if it
+    raises, nothing is saved.
     """
 
     key: str  # unique in the grid; the audit event is "{grid key}.{action key}"
@@ -169,7 +169,9 @@ class GridSpec:
     key: str                        # unique: "{app}.{name}"
     title: str                      # heading and Ctrl+J source name
     path: str                                          # page that hosts the grid
-    query: Callable[[Session, Any], Select]            # labeled columns, must include "id"
+    # A named query (sql/<area>.sql) returning the rows, with an "id" column.
+    # It may use :user_id (the signed-in user) to scope rows.
+    query: Query
     columns: list[Column]           # in display order
     search: list[str] = field(default_factory=list)  # columns matched by the search box (ILIKE)
     filters: list[Filter] = field(default_factory=list)  # dropdowns in the filter bar
@@ -179,8 +181,7 @@ class GridSpec:
     default_sort: str = "-id"                          # "-" prefix sorts descending
     row_href: str = ""                                 # Enter / double-click target
     # (db, user, row) -> context for the side panel; None: no panel
-    # (db, user, row) -> context for the side panel; None: no panel
-    panel: Callable[[Session, Any, dict], dict] | None = None
+    panel: Callable[[Db, Any, dict], dict] | None = None
     panel_title: str = "{id}"       # side panel heading, formatted with the row
     layout: Literal["table", "split"] = "table"        # split: list + reading pane
     row_class: Callable[[dict], str] | None = None  # extra CSS class per row, e.g. unread

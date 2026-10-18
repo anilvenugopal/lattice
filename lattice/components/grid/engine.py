@@ -1,8 +1,17 @@
 """Turns a GridSpec plus request parameters into SQL and rows.
 
-Every read and every action goes through `GridSpec.query`, so the query is the
-grid's access boundary: a row the query does not return cannot be shown,
-exported or acted on.
+`GridSpec.query` is a named query (a `.sql` file). The engine wraps it as a
+subquery `g` and adds the view, filters, search, sort and paging around it:
+
+    SELECT g.* FROM (<the named query>) AS g WHERE … ORDER BY … LIMIT … OFFSET …
+
+This module and the migration runner are the only code in Lattice that builds SQL.
+Column names come from the query itself (asked of Postgres once per query), and
+values are always bound. The query may use `:user_id`, the signed-in user, to
+scope rows.
+
+Every read and every action goes through the query, so it is the grid's access
+boundary: a row the query does not return cannot be shown, exported or acted on.
 """
 
 from __future__ import annotations
@@ -11,10 +20,11 @@ from dataclasses import dataclass, field
 from datetime import date, datetime
 from math import ceil
 
-from sqlalchemy import ColumnElement, String, and_, cast, false, func, or_, select
-from sqlalchemy.orm import Session
+from psycopg.postgres import types as pg_types
+from sqlalchemy import ColumnElement, String, and_, cast, column, false, func, or_, select, text
 
 from lattice.components.grid.spec import GridSpec
+from lattice.kernel.database import Db
 from lattice.kernel.services import preferences
 
 PAGE_SIZES = preferences.PAGE_SIZES
@@ -93,118 +103,150 @@ class GridPage:
         return min(self.total, self.page * self.size)
 
 
-def coerce(column: ColumnElement, value):
+# Postgres type name -> the Python type a query-string value is converted to.
+_PY_TYPES: dict[str, type] = {
+    "int2": int, "int4": int, "int8": int, "bool": bool,
+    "float4": float, "float8": float, "numeric": float,
+    "timestamp": datetime, "timestamptz": datetime, "date": date,
+}
+
+
+@dataclass(frozen=True)
+class Shape:
+    """The columns a grid's query returns, and the Python type of each."""
+
+    names: tuple[str, ...]
+    types: dict[str, type | None]
+
+
+_SHAPES: dict[str, Shape] = {}
+
+
+def shape(spec: GridSpec, db: Db) -> Shape:
+    """Asked of Postgres once per query: `SELECT * FROM (query) AS g LIMIT 0`."""
+    key = spec.query.key
+    if key not in _SHAPES:
+        probe = text(f"SELECT * FROM ({spec.query.sql}) AS g LIMIT 0")
+        description = db.conn.execute(probe, {"user_id": None}).cursor.description
+        info = {d.name: pg_types.get(d.type_code) for d in description}
+        _SHAPES[key] = Shape(names=tuple(info),
+                             types={n: _PY_TYPES.get(t.name) if t else None for n, t in info.items()})
+    return _SHAPES[key]
+
+
+def coerce(py: type | None, value):
     """Convert a query-string value to the column's Python type. Raises ValueError."""
-    if value is None:
-        return None
-    try:
-        py = column.type.python_type
-    except NotImplementedError:
+    if value is None or py is None:
         return value
     if py is bool:
         return str(value).lower() in ("1", "true", "yes", "on")
-    if py is int:
-        return int(value)
-    if py is float:
-        return float(value)
-    if py is datetime:
-        return datetime.fromisoformat(value)
-    if py is date:
-        return date.fromisoformat(value)
-    return value
+    if py in (datetime, date):
+        return py.fromisoformat(str(value))
+    return py(value)
 
 
-def _coerce_all(column, values: list) -> list:
+def _coerce_all(py: type | None, values: list) -> list:
     """Values converted to the column's type; values that do not convert are dropped."""
     out = []
     for v in values:
         try:
-            out.append(coerce(column, v))
+            out.append(coerce(py, v))
         except (ValueError, TypeError):
             continue
     return out
 
 
-def _match(column, values: list) -> ColumnElement:
-    values = _coerce_all(column, values)
-    if not values:
-        return false()
-    return column == values[0] if len(values) == 1 else column.in_(values)
+class _Wrapped:
+    """The named query as subquery `g`, with its column types."""
+
+    def __init__(self, spec: GridSpec, db: Db):
+        self.shape = shape(spec, db)
+        self.sq = (spec.query.statement.columns(*(column(n) for n in self.shape.names))
+                   .subquery("g"))
+        self.c = self.sq.c
+
+    def match(self, key: str, values: list) -> ColumnElement:
+        values = _coerce_all(self.shape.types.get(key), values)
+        col = self.c[key]
+        if not values:
+            return false()
+        return col == values[0] if len(values) == 1 else col.in_(values)
 
 
 def _escape_like(term: str) -> str:
     return term.replace("\\", "\\\\").replace("%", r"\%").replace("_", r"\_")
 
 
-def filtered(spec: GridSpec, db: Session, user, gq: GridQuery):
-    """The spec query narrowed by view, filters and search, as (select, subquery)."""
-    sq = spec.query(db, user).subquery("g")
+def filtered(spec: GridSpec, db: Db, user, gq: GridQuery):
+    """The spec query narrowed by fixed filters, view, filters and search, as (select, wrapped)."""
+    g = _Wrapped(spec, db)
     conds = []
     for key, values in gq.fixed.items():
-        if key not in sq.c:
+        if key not in g.c:
             raise ValueError(f"Grid {spec.key!r} has no column {key!r} to fix")
-        conds.append(_match(sq.c[key], values))
+        conds.append(g.match(key, values))
     view = spec.view(gq.view)
     if view:
         for key, val in view.where.items():
             val = user.id if val == "$me" else val
-            conds.append(_match(sq.c[key], val if isinstance(val, list) else [val]))
+            conds.append(g.match(key, val if isinstance(val, list) else [val]))
     for key, values in gq.filters.items():
-        conds.append(_match(sq.c[key], values))
+        conds.append(g.match(key, values))
     for term in gq.q.split():
         pattern = f"%{_escape_like(term)}%"
         conds.append(or_(*(
-            cast(sq.c[k], String).ilike(pattern, escape="\\") for k in spec.search)))
-    stmt = select(sq)
+            cast(g.c[k], String).ilike(pattern, escape="\\") for k in spec.search)))
+    stmt = select(g.sq)
     if conds:
         stmt = stmt.where(and_(*conds))
-    return stmt, sq
+    return stmt, g
 
 
-def _ordered(stmt, sq, spec: GridSpec, gq: GridQuery):
+def _ordered(stmt, g: _Wrapped, spec: GridSpec, gq: GridQuery):
     sort = gq.effective_sort(spec)
     desc = sort.startswith("-")
     key = sort.lstrip("-")
-    if key not in sq.c:
+    if key not in g.c:
         key, desc = "id", True
-    col = sq.c[key]
+    col = g.c[key]
     stmt = stmt.order_by(col.desc() if desc else col.asc())
     if key != "id":
-        stmt = stmt.order_by(sq.c.id.desc() if desc else sq.c.id.asc())
+        stmt = stmt.order_by(g.c.id.desc() if desc else g.c.id.asc())
     return stmt
 
 
-def _count(db: Session, stmt) -> int:
-    return db.execute(select(func.count()).select_from(stmt.subquery())).scalar_one()
+def _run(db: Db, stmt, user) -> list[dict]:
+    return [dict(r) for r in db.conn.execute(stmt, {"user_id": user.id}).mappings()]
 
 
-def count(spec: GridSpec, db: Session, user, gq: GridQuery) -> int:
+def _count(db: Db, stmt, user) -> int:
+    counted = select(func.count()).select_from(stmt.subquery())
+    return db.conn.execute(counted, {"user_id": user.id}).scalar_one()
+
+
+def count(spec: GridSpec, db: Db, user, gq: GridQuery) -> int:
     """Rows matching the grid state, through the spec query (so it respects row scoping)."""
-    return _count(db, filtered(spec, db, user, gq)[0])
+    return _count(db, filtered(spec, db, user, gq)[0], user)
 
 
-def fetch_page(spec: GridSpec, db: Session, user, gq: GridQuery) -> GridPage:
-    stmt, sq = filtered(spec, db, user, gq)
-    page = GridPage(rows=[], total=_count(db, stmt), page=gq.page, size=gq.size)
+def fetch_page(spec: GridSpec, db: Db, user, gq: GridQuery) -> GridPage:
+    stmt, g = filtered(spec, db, user, gq)
+    page = GridPage(rows=[], total=_count(db, stmt, user), page=gq.page, size=gq.size)
     page.page = gq.page = min(gq.page, page.pages)
-    stmt = _ordered(stmt, sq, spec, gq).limit(gq.size).offset((gq.page - 1) * gq.size)
-    page.rows = [dict(r) for r in db.execute(stmt).mappings()]
+    stmt = _ordered(stmt, g, spec, gq).limit(gq.size).offset((gq.page - 1) * gq.size)
+    page.rows = _run(db, stmt, user)
     return page
 
 
-def fetch_all(spec: GridSpec, db: Session, user, gq: GridQuery, limit: int) -> list[dict]:
-    stmt, sq = filtered(spec, db, user, gq)
-    stmt = _ordered(stmt, sq, spec, gq).limit(limit)
-    return [dict(r) for r in db.execute(stmt).mappings()]
+def fetch_all(spec: GridSpec, db: Db, user, gq: GridQuery, limit: int) -> list[dict]:
+    stmt, g = filtered(spec, db, user, gq)
+    return _run(db, _ordered(stmt, g, spec, gq).limit(limit), user)
 
 
-def fetch_by_ids(spec: GridSpec, db: Session, user, ids: list) -> list[dict]:
+def fetch_by_ids(spec: GridSpec, db: Db, user, ids: list) -> list[dict]:
     """Rows for `ids` that the spec query returns for this user. Unknown ids are dropped."""
+    g = _Wrapped(spec, db)
+    ids = _coerce_all(g.shape.types.get("id"), ids)
     if not ids:
         return []
-    sq = spec.query(db, user).subquery("g")
-    ids = _coerce_all(sq.c.id, ids)
-    if not ids:
-        return []
-    stmt = select(sq).where(sq.c.id.in_(ids))
-    return [dict(r) for r in db.execute(stmt).mappings()]
+    return _run(db, select(g.sq).where(g.c.id.in_(ids)), user)

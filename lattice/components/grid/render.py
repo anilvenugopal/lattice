@@ -5,11 +5,11 @@ from __future__ import annotations
 import json
 
 from fastapi import HTTPException, Request
-from sqlalchemy.orm import Session
 from starlette.datastructures import QueryParams
 
 from lattice.components.grid import engine
 from lattice.components.grid.spec import Field, Filter, GridSpec
+from lattice.kernel.database import Db
 from lattice.kernel.services import preferences
 from lattice.kernel.web import fmt, render, render_page
 
@@ -20,7 +20,7 @@ def hidden_columns(spec: GridSpec, user) -> set[str]:
     return {k for k in hidden if not (spec.column(k) and spec.column(k).required)}
 
 
-def resolve_options(options, db: Session, user) -> list[tuple[str, str]]:
+def resolve_options(options, db: Db, user) -> list[tuple[str, str]]:
     return options(db, user) if callable(options) else options
 
 
@@ -30,7 +30,7 @@ def _field_config(fld: Field, db, user) -> dict:
             "options": [list(o) for o in resolve_options(fld.options, db, user)]}
 
 
-def build_grid(request: Request, db: Session, spec: GridSpec, *, views_in_nav: bool = False,
+def build_grid(request: Request, db: Db, spec: GridSpec, *, views_in_nav: bool = False,
                sync_url: bool = True, fixed: dict | None = None) -> dict:
     """Template context for components/grid.html: render it with `data_grid(grid)`.
 
@@ -98,7 +98,7 @@ def build_grid(request: Request, db: Session, spec: GridSpec, *, views_in_nav: b
     }
 
 
-def render_grid_page(request: Request, db: Session, spec: GridSpec, nav_key: str, *,
+def render_grid_page(request: Request, db: Db, spec: GridSpec, nav_key: str, *,
                      title: str = "", subtitle: str = "", views_in_nav: bool = False):
     """A full page holding one grid: the standard list screen."""
     grid = build_grid(request, db, spec, views_in_nav=views_in_nav)
@@ -106,7 +106,7 @@ def render_grid_page(request: Request, db: Session, spec: GridSpec, nav_key: str
                        title=title or spec.title, subtitle=subtitle)
 
 
-def render_panel(request: Request, db: Session, spec: GridSpec, row_id, *, preview: bool = False):
+def render_panel(request: Request, db: Db, spec: GridSpec, row_id, *, preview: bool = False):
     """The side panel / reading pane for one row (components/grid_panel.html).
 
     preview=True is the read-only form the Ctrl+J preview pane shows: no actions, no close
