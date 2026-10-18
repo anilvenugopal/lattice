@@ -6,12 +6,10 @@ fields, a side panel, a detail page, and create/edit forms.
 
 from __future__ import annotations
 
-from uuid import uuid4
+from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import delete, select, update
-from sqlalchemy.orm import Session, aliased
 
 from lattice.api import (
     ADMINS,
@@ -19,12 +17,12 @@ from lattice.api import (
     Action,
     ActionContext,
     Column,
+    Db,
     Field,
     Filter,
     GridSpec,
     HomeTile,
     Palette,
-    User,
     View,
     audit,
     build_grid,
@@ -34,10 +32,11 @@ from lattice.api import (
     render_grid_page,
     render_page,
     require_roles,
+    sql_queries,
     users,
-    utcnow,
 )
-from lattice_demo.models import WorkItem
+
+SQL = sql_queries(Path(__file__).parent / "sql").work_items
 
 STATUSES = [("new", "New"), ("in_review", "In review"), ("approved", "Approved"),
             ("declined", "Declined")]
@@ -47,45 +46,30 @@ PRIORITY_TONES = {"low": "neutral", "normal": "neutral", "high": "warning", "urg
 OPEN = ["new", "in_review"]
 
 
-def query(db: Session, user):
-    owner = aliased(User)
-    return (
-        select(WorkItem.id, WorkItem.ref, WorkItem.title, WorkItem.account, WorkItem.status,
-               WorkItem.priority, WorkItem.owner_id, owner.display_name.label("owner"),
-               WorkItem.amount, WorkItem.received_at, WorkItem.updated_at)
-        .outerjoin(owner, owner.id == WorkItem.owner_id)
-    )
-
-
-def _update(ctx: ActionContext, **values) -> None:
-    ctx.db.execute(update(WorkItem).where(WorkItem.id.in_(ctx.ids))
-                   .values(**values, updated_at=utcnow()))
-
-
 def assign(ctx: ActionContext) -> str:
     owner_id = int(ctx.values["owner_id"]) if ctx.values.get("owner_id") else None
-    _update(ctx, owner_id=owner_id)
+    ctx.db.run(SQL.assign, ids=ctx.ids, owner_id=owner_id)
     return f"Assigned {ctx.count} item(s)."
 
 
 def set_status(ctx: ActionContext) -> str:
-    _update(ctx, status=ctx.values["status"])
+    ctx.db.run(SQL.set_status, ids=ctx.ids, status=ctx.values["status"])
     return f"Updated status on {ctx.count} item(s)."
 
 
 def approve(ctx: ActionContext) -> str:
-    _update(ctx, status="approved")
+    ctx.db.run(SQL.set_status, ids=ctx.ids, status="approved")
     return f"Approved {ctx.count} item(s)."
 
 
 def remove(ctx: ActionContext) -> str:
-    ctx.db.execute(delete(WorkItem).where(WorkItem.id.in_(ctx.ids)))
+    ctx.db.run(SQL.delete, ids=ctx.ids)
     return f"Deleted {ctx.count} item(s)."
 
 
-def panel(db: Session, user, row: dict) -> dict:
+def panel(db: Db, user, row: dict) -> dict:
     return {"template": "demo/work_item_panel.html",
-            "item": db.get(WorkItem, row["id"]),
+            "item": db.one(SQL.by_id, id=row["id"]),
             "events": audit.history(db, "demo.work_items", row["id"], limit=5)}
 
 
@@ -93,7 +77,7 @@ GRID = GridSpec(
     key="demo.work_items",
     title="Work items",
     path="/demo/work",
-    query=query,
+    query=SQL.grid,
     columns=[
         Column("ref", "Ref", kind="mono", width="110px", required=True),
         Column("title", "Title", kind="strong", secondary="account", required=True),
@@ -155,12 +139,12 @@ router = APIRouter(dependencies=[Depends(csrf_protect)])
 
 
 @router.get("/work")
-def work_list(request: Request, db: Session = Depends(get_db)):
+def work_list(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, GRID, "work.items",
                             subtitle="Cases waiting for review and decision.")
 
 
-def _form_ctx(db: Session, item: WorkItem | None, errors: dict | None = None) -> dict:
+def _form_ctx(db: Db, item: dict | None, errors: dict | None = None) -> dict:
     return {"item": item, "errors": errors or {}, "statuses": STATUSES,
             "priorities": PRIORITIES, "owners": users.options(db)}
 
@@ -183,67 +167,55 @@ def _read_form(form) -> tuple[dict, dict]:
     return data, errors
 
 
+FIELDS = ("title", "account", "status", "priority", "owner_id", "amount", "description")
+
+
 @router.get("/work/new", dependencies=[Depends(require_roles(*EDITORS))])
-def new_form(request: Request, db: Session = Depends(get_db)):
+def new_form(request: Request, db: Db = Depends(get_db)):
     return render_page(request, "demo/work_item_form.html", "work.new", **_form_ctx(db, None))
 
 
 @router.post("/work/new", dependencies=[Depends(require_roles(*EDITORS))])
-async def create(request: Request, db: Session = Depends(get_db), user=Depends(current_user)):
+async def create(request: Request, db: Db = Depends(get_db), user=Depends(current_user)):
     data, errors = _read_form(await request.form())
     if errors:
         return render_page(request, "demo/work_item_form.html", "work.new",
                            status_code=400, **_form_ctx(db, None, errors), values=data)
-    # The ref comes from the id, so it is set after the insert assigns one.
-    item = WorkItem(ref=f"new-{uuid4().hex}", **data)
-    db.add(item)
-    db.flush()
-    item.ref = f"WI-{item.id:05d}"
-    audit.record(db, user.id, "demo.work_items.create", "Created", "demo.work_items", item.id)
-    db.commit()
-    return RedirectResponse(f"/demo/work/{item.id}", status_code=303)
-
-
-def _get(db: Session, item_id: int) -> WorkItem:
-    item = db.get(WorkItem, item_id)
-    if item is None:
-        raise HTTPException(404)
-    return item
+    item_id = db.value(SQL.create, **data)
+    audit.record(db, user.id, "demo.work_items.create", "Created", "demo.work_items", item_id)
+    return RedirectResponse(f"/demo/work/{item_id}", status_code=303)
 
 
 @router.get("/work/{item_id}")
-def detail(item_id: int, request: Request, db: Session = Depends(get_db)):
-    item = _get(db, item_id)
-    owner = db.get(User, item.owner_id) if item.owner_id else None
+def detail(item_id: int, request: Request, db: Db = Depends(get_db)):
+    item = db.one(SQL.by_id, id=item_id)
     # The same grid, embedded and fixed to this item's account.
-    related = build_grid(request, db, GRID, sync_url=False, fixed={"account": item.account})
+    related = build_grid(request, db, GRID, sync_url=False, fixed={"account": item["account"]})
     return render_page(request, "demo/work_item_detail.html", "work.detail",
-                       item=item, owner=owner, events=audit.history(db, "demo.work_items", item.id),
+                       item=item, events=audit.history(db, "demo.work_items", item_id),
                        spec=GRID, can_edit=request.state.user.has_any(EDITORS),
-                       related=related, crumb=item.ref)
+                       related=related, crumb=item["ref"])
 
 
 @router.get("/work/{item_id}/edit", dependencies=[Depends(require_roles(*EDITORS))])
-def edit_form(item_id: int, request: Request, db: Session = Depends(get_db)):
-    item = _get(db, item_id)
+def edit_form(item_id: int, request: Request, db: Db = Depends(get_db)):
+    item = db.one(SQL.by_id, id=item_id)
     return render_page(request, "demo/work_item_form.html", "work.detail",
-                       **_form_ctx(db, item), crumb=item.ref)
+                       **_form_ctx(db, item), crumb=item["ref"])
 
 
 @router.post("/work/{item_id}/edit", dependencies=[Depends(require_roles(*EDITORS))])
-async def save(item_id: int, request: Request, db: Session = Depends(get_db),
+async def save(item_id: int, request: Request, db: Db = Depends(get_db),
                user=Depends(current_user)):
-    item = _get(db, item_id)
+    item = db.one(SQL.by_id, id=item_id)
     data, errors = _read_form(await request.form())
     if errors:
         return render_page(request, "demo/work_item_form.html", "work.detail",
                            status_code=400, **_form_ctx(db, item, errors), values=data,
-                           crumb=item.ref)
-    changed = {k: v for k, v in data.items() if getattr(item, k) != v}
-    for key, value in changed.items():
-        setattr(item, key, value)
+                           crumb=item["ref"])
+    changed = sorted(k for k in FIELDS if item[k] != data[k])
     if changed:
-        audit.record(db, user.id, "demo.work_items.edit", "Edited " + ", ".join(sorted(changed)),
-                     "demo.work_items", item.id)
-    db.commit()
-    return RedirectResponse(f"/demo/work/{item.id}", status_code=303)
+        db.run(SQL.update, id=item_id, **data)
+        audit.record(db, user.id, "demo.work_items.edit", "Edited " + ", ".join(changed),
+                     "demo.work_items", item_id)
+    return RedirectResponse(f"/demo/work/{item_id}", status_code=303)

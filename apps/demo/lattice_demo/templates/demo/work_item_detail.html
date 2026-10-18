@@ -16,7 +16,7 @@
           ("Reference", item.ref),
           ("Status", badge_for(status_col, item.status)),
           ("Priority", badge_for(spec.column("priority"), item.priority)),
-          ("Owner", user_chip(owner.display_name if owner else None)),
+          ("Owner", user_chip(item.owner)),
           ("Amount", item.amount | money),
           ("Account", item.account),
           ("Received", time_tag(item.received_at, "datetime")),

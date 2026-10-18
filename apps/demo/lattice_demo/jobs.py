@@ -9,12 +9,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import random
-from datetime import timedelta
+from datetime import UTC, datetime
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import select, update
-from sqlalchemy.orm import Session
 from starlette.concurrency import run_in_threadpool
 
 from lattice.api import (
@@ -22,21 +20,22 @@ from lattice.api import (
     ActionContext,
     ActionResult,
     Column,
+    Db,
     Field,
     Filter,
     GridSpec,
     HomeTile,
     Palette,
-    SessionLocal,
-    User,
     View,
     csrf_protect,
     get_db,
     render_grid_page,
     settings,
-    utcnow,
+    sql_queries,
+    transaction,
 )
-from lattice_demo.models import Job
+
+SQL = sql_queries(Path(__file__).parent / "sql").jobs
 
 STATUSES = [("queued", "Queued"), ("running", "Running"), ("succeeded", "Succeeded"),
             ("failed", "Failed"), ("cancelled", "Cancelled")]
@@ -49,40 +48,27 @@ ACTIVE = ["queued", "running"]
 log = logging.getLogger(__name__)
 
 
-def query(db: Session, user):
-    return (
-        select(Job.id, Job.name, Job.job_type, Job.status, Job.progress, Job.attempts,
-               Job.error, User.display_name.label("submitted_by"), Job.created_at,
-               Job.started_at, Job.finished_at)
-        .outerjoin(User, User.id == Job.submitted_by)
-    )
-
-
 def create_job(ctx: ActionContext) -> ActionResult:
-    job = Job(name=ctx.values["name"], job_type=ctx.values.get("job_type") or "sync",
-              submitted_by=ctx.user.id)
-    ctx.db.add(job)
-    ctx.db.flush()
-    return ActionResult(f"Queued job #{job.id}.")
+    job_id = ctx.db.value(SQL.create, name=ctx.values["name"],
+                          job_type=ctx.values.get("job_type") or "sync", submitted_by=ctx.user.id)
+    return ActionResult(f"Queued job #{job_id}.")
 
 
 def retry(ctx: ActionContext) -> str:
-    ctx.db.execute(update(Job).where(Job.id.in_(ctx.ids)).values(
-        status="queued", progress=0, error="", started_at=None, finished_at=None,
-        attempts=Job.attempts + 1))
+    ctx.db.run(SQL.retry, ids=ctx.ids)
     return f"Re-queued {ctx.count} job(s)."
 
 
 def cancel(ctx: ActionContext) -> str:
-    ctx.db.execute(update(Job).where(Job.id.in_(ctx.ids)).values(
-        status="cancelled", finished_at=utcnow()))
+    ctx.db.run(SQL.cancel, ids=ctx.ids)
     return f"Cancelled {ctx.count} job(s)."
 
 
-def panel(db: Session, user, row: dict) -> dict:
+def panel(db: Db, user, row: dict) -> dict:
     duration = None
     if row["started_at"]:
-        duration = (row["finished_at"] or utcnow()) - row["started_at"]
+        now = datetime.now(UTC).replace(tzinfo=None)
+        duration = (row["finished_at"] or now) - row["started_at"]
     return {"template": "demo/job_panel.html", "duration": duration}
 
 
@@ -90,7 +76,7 @@ GRID = GridSpec(
     key="demo.jobs",
     title="Jobs",
     path="/demo/jobs",
-    query=query,
+    query=SQL.grid,
     columns=[
         Column("id", "#", kind="mono", width="70px", required=True),
         Column("name", "Job", kind="strong", secondary="job_type", required=True),
@@ -140,7 +126,7 @@ router = APIRouter(dependencies=[Depends(csrf_protect)])
 
 
 @router.get("/jobs")
-def jobs_page(request: Request, db: Session = Depends(get_db)):
+def jobs_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, GRID, "jobs",
                             subtitle="Background work. The list refreshes every 5 seconds.")
 
@@ -151,7 +137,7 @@ async def background() -> None:
         return
 
     def tick():
-        with SessionLocal() as db:
+        with transaction() as db:
             simulate(db)
 
     while True:
@@ -162,19 +148,7 @@ async def background() -> None:
             log.exception("job simulation tick failed")
 
 
-def simulate(db: Session) -> None:
-    """Development only: move queued jobs to running and running jobs toward done."""
-    now = utcnow()
-    for job in db.scalars(select(Job).where(Job.status.in_(ACTIVE))).all():
-        if job.status == "queued":
-            job.status, job.started_at = "running", now
-        else:
-            job.progress = min(100, job.progress + random.randint(5, 25))
-            if job.progress >= 100:
-                job.status, job.finished_at = "succeeded", now
-            elif random.random() < 0.03:
-                job.status, job.finished_at = "failed", now
-                job.error = "TimeoutError: upstream service did not respond within 30s"
-        if job.started_at and now - job.started_at > timedelta(hours=1):
-            job.status, job.finished_at = "failed", now
-    db.commit()
+def simulate(db: Db) -> None:
+    """Development only: move running jobs toward done, then start queued jobs."""
+    db.run(SQL.advance_running)
+    db.run(SQL.start_queued)

@@ -1,12 +1,13 @@
 """The standard grid on the demo app's grids: engine, endpoints, actions, scoping."""
 
-from sqlalchemy import select
+from pathlib import Path
 
+from lattice.api import sql_queries
 from lattice.components.grid import engine
-from lattice.kernel.models import AuditEvent, UserPreference
 from lattice.testing import current, post_json
 from lattice_demo import inbox, work_items
-from lattice_demo.models import Message, WorkItem
+
+CHECK = sql_queries(Path(__file__).parent / "sql").checks
 
 
 def q(**kw):
@@ -46,10 +47,9 @@ def test_action_skips_ineligible_rows_and_audits_each_row(as_user, items, db):
     resp = post_json(c, "/_grid/demo.work_items/action/approve", {"ids": ids})
     body = resp.json()
     assert "Approved 2" in body["message"] and "2 skipped" in body["message"]
-    db.expire_all()
-    assert [db.get(WorkItem, i).status for i in ids] == ["approved"] * 3 + ["declined"]
-    events = db.scalars(select(AuditEvent).where(AuditEvent.action == "demo.work_items.approve")).all()
-    assert sorted(e.target_id for e in events) == sorted(str(i) for i in ids[:2])
+    assert [db.one(CHECK.work_item, id=i)["status"] for i in ids] == ["approved"] * 3 + ["declined"]
+    events = db.all(CHECK.audit_events, action="demo.work_items.approve")
+    assert sorted(e["target_id"] for e in events) == sorted(str(i) for i in ids[:2])
 
 
 def test_action_roles_and_required_fields(as_user, items):
@@ -65,28 +65,26 @@ def test_action_on_all_matching_rows(as_user, items, users, db):
     resp = post_json(c, "/_grid/demo.work_items/action/assign", {
         "all": True, "params": "view=all&f_status=new", "values": {"owner_id": str(users["viewer"].id)}})
     assert "Assigned 3" in resp.json()["message"]
-    owners = db.scalars(select(WorkItem.owner_id).where(WorkItem.status == "new")).all()
-    assert set(owners) == {users["viewer"].id}
+    owners = {r["owner_id"] for r in db.all(CHECK.owners_with_status, status="new")}
+    assert owners == {users["viewer"].id}
 
 
 def test_query_scopes_rows_per_user(as_user, items, users, db):
-    viewer_msg = db.scalar(select(Message.id).where(Message.owner_id == users["viewer"].id))
+    viewer_msg = db.value(CHECK.first_message_of, owner_id=users["viewer"].id)
     c = as_user("editor")
     assert c.get(f"/_grid/demo.inbox/panel/{viewer_msg}").status_code == 404
     resp = post_json(c, "/_grid/demo.inbox/action/delete", {"ids": [viewer_msg]})
     assert resp.status_code == 400
-    db.expire_all()
-    assert db.get(Message, viewer_msg) is not None
+    assert db.first(CHECK.message, id=viewer_msg) is not None
     assert "Hello viewer" not in c.get("/_grid/demo.inbox/rows").text
 
 
 def test_opening_unread_message_marks_it_read_and_refreshes(as_user, users, items, db):
-    msg = db.scalar(select(Message).where(Message.owner_id == users["editor"].id))
+    msg = db.value(CHECK.first_message_of, owner_id=users["editor"].id)
     c = as_user("editor")
-    resp = c.get(f"/_grid/demo.inbox/panel/{msg.id}")
+    resp = c.get(f"/_grid/demo.inbox/panel/{msg}")
     assert "gridrefresh" in resp.headers.get("HX-Trigger", "")
-    db.expire_all()
-    assert db.get(Message, msg.id).is_read
+    assert db.one(CHECK.message, id=msg)["is_read"]
     assert inbox.GRID.row_class({"is_read": False}) == "is-unread"
 
 
@@ -94,8 +92,8 @@ def test_column_preferences_and_export(as_user, users, items, db):
     c = as_user("viewer")
     resp = post_json(c, "/_grid/demo.work_items/columns", {"hidden": ["owner", "ref", "bogus"]})
     assert resp.json()["hidden"] == ["owner"]            # required and unknown columns ignored
-    pref = db.get(UserPreference, (users["viewer"].id, "grid.demo.work_items.hidden"))
-    assert pref.value == ["owner"]
+    pref = db.one(CHECK.preference, user_id=users["viewer"].id, key="grid.demo.work_items.hidden")
+    assert pref["value"] == ["owner"]
     assert ">Owner<" not in c.get("/_grid/demo.work_items/rows").text
 
     csv = c.get("/_grid/demo.work_items/export.csv?view=all&f_status=new").text.splitlines()
@@ -108,8 +106,7 @@ def test_action_rejects_values_outside_field_options(as_user, items, db):
     resp = post_json(editor, "/_grid/demo.work_items/action/status",
                      {"ids": [items[0].id], "values": {"status": "hacked"}})
     assert resp.status_code == 400 and "Invalid value for Status" in resp.json()["detail"]
-    db.expire_all()
-    assert db.get(WorkItem, items[0].id).status == "new"
+    assert db.one(CHECK.work_item, id=items[0].id)["status"] == "new"
     admin = as_user("admin")
     resp = post_json(admin, "/_grid/users/action/grant", {"ids": [1], "values": {"role": "root"}})
     assert resp.status_code == 400
@@ -128,9 +125,7 @@ def test_values_that_do_not_fit_the_column_match_nothing(as_user, items):
 
 
 def test_secondary_line_uses_its_own_column_labels(as_user, db, users):
-    from lattice_demo.models import Job
-    db.add(Job(name="Nightly", job_type="sync", status="queued"))
-    db.commit()
+    db.value(CHECK.add_job, name="Nightly", job_type="sync", status="queued")
     html = as_user("viewer").get("/_grid/demo.jobs/rows").text
     assert '<div class="dg__secondary">Sync</div>' in html
 

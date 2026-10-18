@@ -1,8 +1,10 @@
 """Ctrl+J: providers, filters, counts, previews, and access rules."""
 
-from sqlalchemy import select
+from pathlib import Path
 
-from lattice_demo.models import Message
+from lattice.api import sql_queries
+
+CHECK = sql_queries(Path(__file__).parent / "sql").checks
 
 
 def test_all_providers_with_counts(as_user, items):
@@ -44,7 +46,7 @@ def test_previews_for_record_page_and_command(as_user, items):
 
 def test_search_respects_roles_and_row_scoping(as_user, users, items, db):
     c = as_user("editor")
-    other = db.scalar(select(Message.id).where(Message.owner_id == users["viewer"].id))
+    other = db.value(CHECK.first_message_of, owner_id=users["viewer"].id)
     assert "Hello viewer" not in c.get("/_search?q=hello").text
     assert c.get(f"/_search/preview/grid.demo.inbox/{other}").status_code == 404
     viewer = as_user("viewer")

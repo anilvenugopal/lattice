@@ -6,15 +6,15 @@ star toggle, row styling for unread rows, and folder views driven from the sideb
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import delete, func, select, update
-from sqlalchemy.orm import Session
 
 from lattice.api import (
     Action,
-    ActionContext,
     ActionResult,
     Column,
+    Db,
     Filter,
     GridSpec,
     HomeTile,
@@ -23,31 +23,19 @@ from lattice.api import (
     csrf_protect,
     get_db,
     render_grid_page,
+    sql_queries,
 )
-from lattice_demo.models import Message
 
-
-def query(db: Session, user):
-    return (
-        select(Message.id, Message.is_starred, Message.sender_name, Message.sender_email,
-               Message.subject, func.substr(Message.body, 1, 160).label("snippet"),
-               Message.labels, Message.has_attachment, Message.is_read, Message.folder,
-               Message.received_at)
-        .where(Message.owner_id == user.id)
-    )
-
-
-def _set(ctx: ActionContext, **values) -> None:
-    ctx.db.execute(update(Message).where(Message.id.in_(ctx.ids)).values(**values))
+SQL = sql_queries(Path(__file__).parent / "sql").inbox
 
 
 def mark_read(ctx):
-    _set(ctx, is_read=True)
+    ctx.db.run(SQL.set_read, ids=ctx.ids, is_read=True)
     return ActionResult(f"Marked {ctx.count} read.", clear_selection=False)
 
 
 def mark_unread(ctx):
-    _set(ctx, is_read=False)
+    ctx.db.run(SQL.set_read, ids=ctx.ids, is_read=False)
     return ActionResult(f"Marked {ctx.count} unread.", clear_selection=False)
 
 
@@ -55,32 +43,32 @@ def toggle_star(ctx):
     starred = sum(1 for r in ctx.rows if r["is_starred"])
     # Star all unless every selected message is already starred.
     value = starred < ctx.count
-    _set(ctx, is_starred=value)
+    ctx.db.run(SQL.set_starred, ids=ctx.ids, is_starred=value)
     return ActionResult("Starred." if value else "Star removed.", clear_selection=False)
 
 
 def archive(ctx):
-    _set(ctx, folder="archive")
+    ctx.db.run(SQL.move, ids=ctx.ids, folder="archive")
     return f"Archived {ctx.count} message(s)."
 
 
 def move_to_inbox(ctx):
-    _set(ctx, folder="inbox")
+    ctx.db.run(SQL.move, ids=ctx.ids, folder="inbox")
     return f"Moved {ctx.count} message(s) to Inbox."
 
 
 def remove(ctx):
-    ctx.db.execute(delete(Message).where(Message.id.in_(ctx.ids)))
+    ctx.db.run(SQL.delete, ids=ctx.ids)
     return f"Deleted {ctx.count} message(s)."
 
 
-def panel(db: Session, user, row: dict) -> dict:
-    msg = db.get(Message, row["id"])
-    refresh = not msg.is_read
-    if refresh:
-        msg.is_read = True
-        db.commit()
-    return {"template": "demo/message_panel.html", "message": msg, "refresh_grid": refresh}
+def panel(db: Db, user, row: dict) -> dict:
+    """Opening a message marks it read; the grid then refreshes to show it."""
+    message = db.one(SQL.by_id, id=row["id"])
+    if not message["is_read"]:
+        db.run(SQL.set_read, ids=[row["id"]], is_read=True)
+    return {"template": "demo/message_panel.html", "message": message,
+            "refresh_grid": not message["is_read"]}
 
 
 LABELS = [("finance", "Finance"), ("ops", "Operations"), ("customer", "Customer"),
@@ -90,7 +78,7 @@ GRID = GridSpec(
     key="demo.inbox",
     title="Inbox",
     path="/demo/inbox",
-    query=query,
+    query=SQL.grid,
     columns=[
         Column("is_starred", "", kind="star", star_action="star", sortable=False, width="34px",
                required=True),
@@ -139,7 +127,7 @@ router = APIRouter(dependencies=[Depends(csrf_protect)])
 
 
 @router.get("/inbox")
-def inbox_page(request: Request, db: Session = Depends(get_db)):
+def inbox_page(request: Request, db: Db = Depends(get_db)):
     view = request.query_params.get("view") or "inbox"
     nav_key = f"inbox.{view}" if view in ("inbox", "starred", "archive") else "inbox.inbox"
     return render_grid_page(request, db, GRID, nav_key, views_in_nav=True,

@@ -27,6 +27,7 @@ APP = AppManifest(
     seed=seed,
     templates=Path(__file__).parent / "templates",
     help=Path(__file__).parent / "help",
+    sql=Path(__file__).parent / "sql",
     nav=[
         NavNode("work", "Work Queue", "/demo/work", icon="queue",
                 keywords="submissions cases requests tickets",
