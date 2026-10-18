@@ -8,12 +8,6 @@ SELECT u.id, u.display_name, u.email, u.is_active, u.must_change_password,
        u.oidc_subject IS NOT NULL AS sso, u.created_at, u.last_login_at
 FROM lattice.app_user u;
 
--- name: roles_grid
--- Administration › Roles: every role with its number of members.
-SELECT r.code AS id, r.label, r.description, r.sort_order,
-       (SELECT count(*) FROM lattice.user_role m WHERE m.role_code = r.code) AS members
-FROM lattice.role r;
-
 -- name: counts
 -- Totals for the System page.
 SELECT (SELECT count(*) FROM lattice.app_user) AS users,

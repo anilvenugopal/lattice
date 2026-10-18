@@ -5,9 +5,10 @@ Every route requires the admin role. The lists use the standard grid.
 
 from __future__ import annotations
 
+import re
 import secrets
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from lattice.components.grid import (
@@ -23,6 +24,7 @@ from lattice.components.grid import (
     render_grid_page,
 )
 from lattice.components.manifest import AppManifest
+from lattice.kernel.auth import permissions
 from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.auth.deps import current_user, require
 from lattice.kernel.auth.passwords import hash_password, policy_errors
@@ -218,23 +220,125 @@ async def update_user(user_id: int, request: Request, db: Db = Depends(get_db),
 
 # ── Roles ────────────────────────────────────────────────────────────────────
 
+ROLE_CODE = re.compile(r"^[a-z][a-z0-9_]{1,31}$")
+
+
+def delete_roles(ctx):
+    deleted = ctx.db.run(SQL.roles.delete, codes=ctx.ids)
+    return f"Deleted {deleted} role(s)."
+
+
 ROLES = GridSpec(
     key="roles", title="Roles", path="/admin/roles", permission=ROLES_MANAGE,
-    query=SQL.admin.roles_grid,
-    columns=[Column("id", "Code", kind="mono", width="120px"),
-             Column("label", "Role", kind="strong"),
-             Column("description", "Grants"),
-             Column("members", "Members", kind="number", align="right", width="100px")],
-    selection="none", default_sort="sort_order", export=False, search=["id", "label"],
-    panel_title="{label}",
+    query=SQL.roles.grid,
+    columns=[Column("label", "Role", kind="strong", secondary="description", required=True),
+             Column("id", "Code", kind="mono", width="140px"),
+             Column("permissions", "Permissions", kind="number", align="right", width="120px"),
+             Column("members", "Members", kind="number", align="right", width="110px"),
+             Column("built_in", "Built in", kind="bool", width="100px")],
+    actions=[
+        Action("new", "New role", scope="none", href="/admin/roles/new", tone="primary",
+               icon="plus"),
+        Action("open", "Open", scope="single", href="/admin/roles/{id}", icon="external"),
+        Action("delete", "Delete", handler=delete_roles, icon="trash", tone="danger",
+               when={"built_in": [False], "members": [0]},
+               confirm="Delete {count} role(s)? Built-in roles and roles with members are kept."),
+    ],
+    default_sort="sort_order", export=False, search=["id", "label", "description"],
+    row_href="/admin/roles/{id}", empty_title="No roles",
 )
 
 
 @router.get("/roles", dependencies=[Depends(require(ROLES_MANAGE))])
 def roles_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, ROLES, "admin.roles",
-                            subtitle="Roles gate pages, menus and actions. "
-                                     "Add a role in a migration, then reference it in roles=.")
+                            subtitle="A role is a set of permissions. Give roles to people "
+                                     "in Users.")
+
+
+def _permission_groups(request: Request) -> list[tuple[str, list[Permission]]]:
+    """The permission catalogue grouped by app, Lattice first, then the host's app order."""
+    labels = {"lattice": "Lattice"} | {a.key: a.label for a in request.app.state.apps}
+    groups: dict[str, list[Permission]] = {key: [] for key in labels}
+    for key, permission in sorted(permissions.CATALOGUE.items()):
+        groups.setdefault(key.split(".")[0], []).append(permission)
+    return [(labels.get(app, app), perms) for app, perms in groups.items() if perms]
+
+
+def _role_page(request: Request, db: Db, role: dict | None, values: dict, errors: dict,
+               status_code: int = 200):
+    code = role["code"] if role else None
+    return render_page(
+        request, "admin/role_form.html", "admin.role", status_code=status_code,
+        role=role, values=values, errors=errors, groups=_permission_groups(request),
+        members=db.all(SQL.roles.members, code=code) if role else [],
+        crumb=role["label"] if role else "New role")
+
+
+def _read_role_form(form) -> dict:
+    return {"code": (form.get("code") or "").strip().lower(),
+            "label": (form.get("label") or "").strip(),
+            "description": (form.get("description") or "").strip(),
+            "permissions": sorted(set(form.getlist("permissions")) & set(permissions.CATALOGUE))}
+
+
+def _save_permissions(db: Db, code: str, wanted: list[str]) -> None:
+    db.run(SQL.roles.keep_only_permissions, code=code, permissions=wanted)
+    db.run(SQL.roles.add_permissions, code=code, permissions=wanted)
+
+
+@router.get("/roles/new", dependencies=[Depends(require(ROLES_MANAGE))])
+def new_role_form(request: Request, db: Db = Depends(get_db)):
+    return _role_page(request, db, None, {"permissions": []}, {})
+
+
+@router.post("/roles/new", dependencies=[Depends(require(ROLES_MANAGE))])
+async def create_role(request: Request, db: Db = Depends(get_db), user=Depends(current_user)):
+    values = _read_role_form(await request.form())
+    errors = {}
+    if not ROLE_CODE.match(values["code"]):
+        errors["code"] = "2 to 32 lower-case letters, digits or underscores, starting with a letter."
+    elif db.first(SQL.roles.by_code, code=values["code"]):
+        errors["code"] = "A role with this code exists."
+    if not values["label"]:
+        errors["label"] = "Name is required."
+    if errors:
+        return _role_page(request, db, None, values, errors, 400)
+    db.run(SQL.roles.create, code=values["code"], label=values["label"],
+           description=values["description"])
+    _save_permissions(db, values["code"], values["permissions"])
+    audit.record(db, user.id, "role.created", f"Created role {values['label']}", "roles",
+                 values["code"], {"permissions": values["permissions"]})
+    response = RedirectResponse(f"/admin/roles/{values['code']}", status_code=303)
+    flash(response, request, "Role created.")
+    return response
+
+
+@router.get("/roles/{code}", dependencies=[Depends(require(ROLES_MANAGE))])
+def role_detail(code: str, request: Request, db: Db = Depends(get_db)):
+    role = db.one(SQL.roles.by_code, code=code)
+    have = [r["permission"] for r in db.all(SQL.roles.permissions_of, code=code)]
+    return _role_page(request, db, role, {**role, "permissions": have}, {})
+
+
+@router.post("/roles/{code}", dependencies=[Depends(require(ROLES_MANAGE))])
+async def update_role(code: str, request: Request, db: Db = Depends(get_db),
+                      user=Depends(current_user)):
+    role = db.one(SQL.roles.by_code, code=code)
+    if code == ADMIN:
+        raise HTTPException(400, detail="The admin role has every permission and is not edited.")
+    values = {**_read_role_form(await request.form()), "code": code}
+    if not values["label"]:
+        return _role_page(request, db, role, values, {"label": "Name is required."}, 400)
+    before = {r["permission"] for r in db.all(SQL.roles.permissions_of, code=code)}
+    db.run(SQL.roles.update, code=code, label=values["label"], description=values["description"])
+    _save_permissions(db, code, values["permissions"])
+    after = set(values["permissions"])
+    audit.record(db, user.id, "role.updated", f"Updated role {values['label']}", "roles", code,
+                 {"added": sorted(after - before), "removed": sorted(before - after)})
+    response = RedirectResponse(f"/admin/roles/{code}", status_code=303)
+    flash(response, request, "Role saved.")
+    return response
 
 
 # ── Sessions ─────────────────────────────────────────────────────────────────
@@ -347,6 +451,8 @@ APP = AppManifest(
                 hidden=True),
         NavNode("admin.roles", "Roles", "/admin/roles", parent="admin", permission=ROLES_MANAGE,
                 keywords="permissions"),
+        NavNode("admin.role", "Role", "/admin/roles", parent="admin.roles",
+                permission=ROLES_MANAGE, hidden=True),
         NavNode("admin.sessions", "Sessions", "/admin/sessions", parent="admin",
                 permission=SESSIONS_MANAGE),
         NavNode("admin.audit", "Audit log", "/admin/audit", parent="admin", permission=AUDIT_VIEW,

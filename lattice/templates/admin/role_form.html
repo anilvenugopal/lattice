@@ -1,0 +1,72 @@
+{# A role: its name, its permissions grouped by app, and its members. New roles use the same page. #}
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, field, checkbox, alert, badge, user_chip, empty_state %}
+{% block main %}
+{% set is_admin_role = role and role.code == 'admin' %}
+<div class="page page--narrow stack-lg">
+  {% if role %}
+    {{ page_header(role.label, role.code, "Built in" if role.built_in else "", "neutral") }}
+  {% else %}
+    {{ page_header("New role", "A role is a set of permissions. Give it to people in Users.") }}
+  {% endif %}
+  <form method="post" action="{{ '/admin/roles/%s' % role.code if role else '/admin/roles/new' }}" class="stack-lg">
+    {{ csrf_field() }}
+    {% call card("Details") %}
+      <div class="stack">
+        {% if not role %}
+          {{ field("code", "Code", values.code, error=errors.code, required=True,
+                   hint="Lower case, e.g. auditor. It cannot be changed later.") }}
+        {% endif %}
+        {{ field("label", "Name", values.label, error=errors.label, required=True,
+                 attrs="disabled" if is_admin_role else "") }}
+        {{ field("description", "Description", values.description,
+                 hint="What people with this role do.", attrs="disabled" if is_admin_role else "") }}
+      </div>
+    {% endcall %}
+
+    {% call card("Permissions") %}
+      {% if is_admin_role %}
+        {{ alert("info", "The admin role has every permission, always, including those a new app adds. It cannot be edited.") }}
+      {% else %}
+        <div class="stack-lg">
+          {% for app_label, perms in groups %}
+          <fieldset class="field">
+            <legend class="field__label">{{ app_label }}</legend>
+            {% for p in perms %}
+              {{ checkbox("permissions", p.label, p.key in values.permissions, value=p.key,
+                          hint=p.description ~ " (" ~ p.key ~ ")") }}
+            {% endfor %}
+          </fieldset>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endcall %}
+
+    {% if not is_admin_role %}
+    <div class="form-actions">
+      <a class="btn btn--ghost" href="/admin/roles">Cancel</a>
+      <button class="btn btn--primary" type="submit">{{ 'Save role' if role else 'Create role' }}</button>
+    </div>
+    {% endif %}
+  </form>
+
+  {% if role %}
+    {% call card("Members", members | length ~ " people", flush=True) %}
+      {% if members %}
+      <table class="table">
+        <tbody>
+        {% for m in members %}
+          <tr>
+            <td><a href="/admin/users/{{ m.id }}">{{ user_chip(m.display_name, m.email) }}</a></td>
+            <td class="u-text-right">{% if not m.is_active %}{{ badge("Inactive", "neutral") }}{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        {{ empty_state("No members", "Give this role to people in Administration › Users.", "users") }}
+      {% endif %}
+    {% endcall %}
+  {% endif %}
+</div>
+{% endblock %}

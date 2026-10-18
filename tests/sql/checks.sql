@@ -61,3 +61,11 @@ INSERT INTO lattice.role (code, label) VALUES (:code, :label);
 -- name: grant_permission
 -- Give a role a permission.
 INSERT INTO lattice.role_permission (role_code, permission) VALUES (:role, :permission);
+
+-- name: role
+-- One role.
+SELECT code, label, description FROM lattice.role WHERE code = :code;
+
+-- name: audit_detail
+-- The detail of the latest audit event with this action.
+SELECT detail FROM lattice.audit_event WHERE action = :action ORDER BY id DESC LIMIT 1;
