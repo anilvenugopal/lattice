@@ -59,6 +59,7 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 | [Ctrl+J search](search.md) | Making pages and records findable, custom sources, commands |
 | [Writing help](writing-help.md) | Help topics, sections, callouts, diagrams and the F1 map |
 | [Testing](testing.md) | The fixtures, what to test and how |
+| [Not built yet](not-built-yet.md) | Charts, graphs and generated forms: planned, not available yet, and what to use meanwhile |
 
 ## Working examples
 

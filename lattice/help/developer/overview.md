@@ -129,6 +129,11 @@ Lattice ships three apps of its own, built with the same `AppManifest` as yours:
 
 Every host runs them.
 
+## Not built yet
+
+Charts, graphs and forms generated from JSON Schema are planned but do not
+exist yet. See [Not built yet](building-apps/not-built-yet.md).
+
 ## The stack
 
 Python 3.14, FastAPI, Jinja2 templates, HTMX and Alpine.js (vendored, no npm),
