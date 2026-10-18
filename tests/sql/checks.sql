@@ -45,3 +45,11 @@ SELECT u.id, u.email FROM lattice.app_user u, pause;
 -- name: statement_timeout
 -- The time limit in force for the current transaction.
 SELECT current_setting('statement_timeout');
+
+-- name: role_permissions
+-- The permissions granted to one role.
+SELECT permission FROM lattice.role_permission WHERE role_code = :role ORDER BY permission;
+
+-- name: take_permission
+-- Take a permission away from a role, as an administrator would.
+DELETE FROM lattice.role_permission WHERE role_code = :role AND permission = :permission;

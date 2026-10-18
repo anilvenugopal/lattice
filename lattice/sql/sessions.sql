@@ -12,7 +12,10 @@ SELECT s.id AS session_id, s.last_seen_at < lattice.utc_now() - interval '60 sec
        u.id, u.email, u.display_name, u.must_change_password,
        u.password_hash IS NOT NULL AS has_password,
        ARRAY(SELECT r.role_code FROM lattice.user_role r
-             WHERE r.user_id = u.id ORDER BY r.role_code) AS roles
+             WHERE r.user_id = u.id ORDER BY r.role_code) AS roles,
+       ARRAY(SELECT DISTINCT p.permission FROM lattice.user_role r
+             JOIN lattice.role_permission p ON p.role_code = r.role_code
+             WHERE r.user_id = u.id) AS permissions
 FROM lattice.user_session s
 JOIN lattice.app_user u ON u.id = s.user_id
 WHERE s.id = :id

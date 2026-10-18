@@ -11,6 +11,7 @@ from fastapi import APIRouter
 from lattice.components.grid import GridSpec
 from lattice.components.search.providers import SearchProvider
 from lattice.components.tiles import HomeTile
+from lattice.kernel.auth.permissions import Permission
 from lattice.kernel.database import Db
 from lattice.kernel.nav import NavNode
 
@@ -39,6 +40,8 @@ class AppManifest:
     stylesheets: list[str] = field(default_factory=list)  # file names inside `static`
     # Icons the app adds, used as icon("{key}:name"). Values are SVG path markup.
     icons: dict[str, str] = field(default_factory=dict)
+    # What the app's users may do: checked with require(), permission=, can().
+    permissions: list[Permission] = field(default_factory=list)
     # Folder of the app's SQL: named queries in *.sql, migrations in schema/*.sql.
     # The migrations create and fill the Postgres schema named after the app's key.
     sql: Path | None = None

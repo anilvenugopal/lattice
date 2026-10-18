@@ -17,6 +17,7 @@ import argparse
 import getpass
 import importlib
 
+from lattice.kernel.auth import permissions
 from lattice.kernel.auth.passwords import hash_password, policy_errors
 from lattice.kernel.config import settings
 from lattice.kernel.database import transaction
@@ -36,6 +37,10 @@ def migrate(_args) -> None:
     host = _load_host()
     applied = run_migrations(sources_for(host.state.apps))
     print("Applied: " + ", ".join(applied) if applied else "Nothing to apply.")
+    with transaction() as db:
+        new = permissions.sync(db)
+    if new:
+        print("New permissions: " + ", ".join(new))
 
 
 def create_migration(args) -> None:

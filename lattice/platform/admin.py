@@ -26,6 +26,7 @@ from lattice.components.manifest import AppManifest
 from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.auth.deps import current_user, require_roles
 from lattice.kernel.auth.passwords import hash_password, policy_errors
+from lattice.kernel.auth.permissions import Permission
 from lattice.kernel.auth.roles import ADMIN, ADMINS
 from lattice.kernel.auth.sessions import AUTH_METHOD_LABELS, revoke_sessions, revoke_user_sessions
 from lattice.kernel.auth.sessions import active as active_sessions
@@ -314,8 +315,22 @@ def ui_kit(request: Request):
 
 
 
+PERMISSIONS = [
+    Permission("lattice.users.manage", "Manage users",
+               "Administration › Users: create and edit users, grant roles, deactivate, "
+               "reset passwords."),
+    Permission("lattice.roles.manage", "Manage roles",
+               "Administration › Roles: create and edit roles and their permissions."),
+    Permission("lattice.sessions.manage", "Manage sessions",
+               "Administration › Sessions: see and revoke anyone's sessions."),
+    Permission("lattice.audit.view", "Read the audit log",
+               "Administration › Audit log: every change, by anyone."),
+    Permission("lattice.system.view", "See system information",
+               "Administration › System and UI kit."),
+]
+
 APP = AppManifest(
-    key="admin", label="Administration", routers=[router],
+    key="admin", label="Administration", routers=[router], permissions=PERMISSIONS,
     grids=[USERS, ROLES, SESSIONS, AUDIT],
     nav=[
         NavNode("admin", "Administration", "/admin/users", icon="shield", roles=ADMINS,

@@ -15,6 +15,19 @@ def current_user(request: Request) -> CurrentUser:
     return user
 
 
+def require(permission: str):
+    """Route dependency: 403 unless the user has `permission`.
+
+    Usage: `@router.get(..., dependencies=[Depends(require("demo.work.edit"))])`
+    """
+    def check(request: Request) -> CurrentUser:
+        user = current_user(request)
+        if not user.can(permission):
+            raise HTTPException(status_code=403, detail="You do not have access to this page.")
+        return user
+    return check
+
+
 def require_roles(*roles: str):
     """Route dependency: 403 unless the user holds one of `roles`.
 

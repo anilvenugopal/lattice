@@ -31,6 +31,7 @@ from lattice.components.manifest import AppManifest
 from lattice.components.search import providers as search_providers
 from lattice.components.search import router as search_router
 from lattice.kernel import css_rules, icons, nav, slots
+from lattice.kernel.auth import permissions
 from lattice.kernel.auth import routes as auth_routes
 from lattice.kernel.auth.middleware import AuthMiddleware, is_htmx
 from lattice.kernel.config import settings
@@ -103,6 +104,10 @@ def _check_host(host_dir: Path) -> None:
 
 
 def _register(app: AppManifest, platform: bool) -> None:
+    try:
+        permissions.register(app.permissions, "lattice." if platform else f"{app.key}.")
+    except permissions.BadPermission as exc:
+        raise AppError(f"App {app.key!r}: {exc}") from exc
     nav.add(app.nav, "" if platform else app.key)
     icons.add_app_icons(app.key, app.icons)
     for slot_name, template in app.slots.items():
@@ -131,6 +136,7 @@ def _load_help(ordered: list[tuple[AppManifest, str]], platform: list[AppManifes
 
 
 def _reset_registries() -> None:
+    permissions.reset()
     nav.reset()
     help_content.reset()
     icons.reset()

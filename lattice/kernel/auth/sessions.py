@@ -35,10 +35,16 @@ class CurrentUser:
     has_password: bool
     session_id: str
     prefs: dict = field(default_factory=dict)
+    permissions: frozenset[str] = frozenset()
 
     @property
     def is_admin(self) -> bool:
         return ADMIN in self.roles
+
+    def can(self, permission: str) -> bool:
+        """True when the user has `permission`. No permission (empty) means every
+        signed-in user; the admin role has every permission."""
+        return not permission or self.is_admin or permission in self.permissions
 
     def has_any(self, roles) -> bool:
         """True when `roles` is empty or shares a role with the user."""
@@ -77,7 +83,7 @@ def load_session(db: Db, token: str) -> CurrentUser | None:
         id=row["id"], email=row["email"], display_name=row["display_name"],
         roles=tuple(row["roles"]), must_change_password=row["must_change_password"],
         has_password=row["has_password"], session_id=session_id,
-        prefs=preferences.load(db, row["id"]),
+        prefs=preferences.load(db, row["id"]), permissions=frozenset(row["permissions"]),
     )
 
 

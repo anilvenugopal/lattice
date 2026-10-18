@@ -31,8 +31,9 @@ from sqlalchemy.pool import NullPool  # noqa: E402
 from lattice.host import create_app  # noqa: E402
 from lattice.kernel import database  # noqa: E402
 from lattice.kernel.auth import csrf as csrf_cookie  # noqa: E402
+from lattice.kernel.auth import permissions  # noqa: E402
 from lattice.kernel.auth.sessions import CurrentUser  # noqa: E402
-from lattice.kernel.database import Db  # noqa: E402
+from lattice.kernel.database import Db, transaction  # noqa: E402
 from lattice.kernel.migrate import migrate, sources_for  # noqa: E402
 from lattice.kernel.services import users as users_service  # noqa: E402
 
@@ -55,10 +56,13 @@ def _pg_server():
     server.dispose()
 
 
-def _template(server, templates, sources) -> str:
-    """A database migrated once per test run for this set of migrations; tests copy it."""
-    key = tuple((schema, str(folder)) for schema, folder in sources)
+def _template(server, templates, apps) -> str:
+    """A database migrated once per test run for these apps; tests copy it."""
+    sources = sources_for(apps)
+    key = (tuple((schema, str(folder)) for schema, folder in sources),
+           tuple(sorted((p.key, p.default_roles) for a in apps for p in a.permissions)))
     if key not in templates:
+        create_app(apps=apps)              # fills the permission catalogue to sync
         digest = hashlib.sha1(repr(key).encode()).hexdigest()[:10]
         name = f"lattice_test_template_{digest}"
         with server.connect() as conn:
@@ -66,6 +70,8 @@ def _template(server, templates, sources) -> str:
             conn.exec_driver_sql(f'CREATE DATABASE "{name}"')
         database.configure(_url(name))
         migrate(sources)
+        with transaction() as db:          # grants as `lattice migrate` makes them
+            permissions.sync(db)
         database.engine().dispose()      # a template must have no open connections
         templates[key] = name
     return templates[key]
@@ -78,7 +84,7 @@ def db(_pg_server, host_apps):
     Every call commits at once, so rows a test adds are visible to the test client.
     """
     server, templates = _pg_server
-    template = _template(server, templates, sources_for(host_apps))
+    template = _template(server, templates, host_apps)
     name = f"lattice_test_{uuid4().hex[:12]}"
     with server.connect() as conn:
         conn.exec_driver_sql(f'CREATE DATABASE "{name}" TEMPLATE "{template}"')
@@ -155,8 +161,8 @@ def post_json(client, url, body):
     return client.post(url, json=body, headers={"X-CSRF-Token": csrf(client)})
 
 
-def current(user, roles=None) -> CurrentUser:
+def current(user, roles=None, permissions=()) -> CurrentUser:
     """A CurrentUser for calling grid code directly, without a request."""
     return CurrentUser(id=user.id, email=user.email, display_name=user.display_name,
                        roles=tuple(roles or user.roles), must_change_password=False,
-                       has_password=True, session_id="test")
+                       has_password=True, session_id="test", permissions=frozenset(permissions))
