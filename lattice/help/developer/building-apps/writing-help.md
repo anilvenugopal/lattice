@@ -47,7 +47,7 @@ title: Closing tickets
 summary: Close one ticket or many, and reopen a ticket closed by mistake.
 order: 20
 keywords: resolve done finish
-roles: [editor, admin]
+permission: helpdesk.tickets.edit
 ---
 ```
 
@@ -57,7 +57,7 @@ roles: [editor, admin]
 | `summary` | One sentence under the title, in search results and in section lists |
 | `order` | Sorts topics within a section; lower first. Default 100, then by title |
 | `keywords` | Words searched but not shown: synonyms users might type |
-| `roles` | Only users with one of these roles see the topic. Default: everyone |
+| `permission` | Only users with this permission see the topic. Default: everyone |
 
 ## Writing
 

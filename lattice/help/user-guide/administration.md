@@ -1,13 +1,14 @@
 ---
 title: Administration
-summary: Manage users and their roles, sign people out, read the audit log, and check the system. For administrators.
+summary: Manage users, make roles and choose their permissions, sign people out, read the audit log, and check the system. For administrators.
 order: 50
-keywords: admin administration users roles grant revoke deactivate reset password sessions audit log system ui kit
+keywords: admin administration users roles permissions grant revoke deactivate reset password sessions audit log system ui kit
 permission: lattice.users.manage
 ---
 
-**Administration** (the shield icon in the rail) is visible only to
-administrators.
+**Administration** (the shield icon in the rail) shows the parts you have
+permission for. Administrators see all of it; someone allowed only to read the
+audit log sees just **Audit log**.
 
 ## Users
 
@@ -32,16 +33,32 @@ role or wait on **Access pending** until you grant one.
 
 ## Roles
 
-**Roles** lists the roles and what each allows. The built-in roles are:
+A **role** is a named set of **permissions**: the things its members may do,
+such as "Edit work items" or "Read the audit log". Each app adds its own
+permissions. A user can have several roles; they get every permission of every
+one.
 
-| Role | Can |
+**Roles** lists every role with its number of permissions and members.
+
+| Role | Has |
 |---|---|
-| Administrator | Everything, plus Administration |
-| Editor | Create and change records; run bulk actions |
-| Viewer | Read every page outside Administration |
+| Administrator | Every permission, always. It cannot be edited |
+| Editor | What the apps give it, such as editing work items. You can change it |
+| Viewer | Reading, with no extra permissions. You can change it |
 
-A user can hold several roles. New roles are added by the developers of your
-site.
+| To | Do |
+|---|---|
+| Make a role | **New role**: a code such as `auditor`, a name and a description, then tick its permissions |
+| Change what a role allows | Open the role, tick or untick permissions, and choose **Save role** |
+| See who has a role | Open the role: its members are listed at the bottom |
+| Give a role to people | In **Users**, select them and choose **Grant role** |
+| Delete a role | Select it and choose **Delete**. Built-in roles, and roles that people still have, are kept |
+
+Changes to roles take effect at each person's next page load, and are recorded
+in the audit log.
+
+For example, to let someone read the audit log without managing users: make an
+**Auditor** role with only **Read the audit log** ticked, and grant it to them.
 
 ## Sessions
 

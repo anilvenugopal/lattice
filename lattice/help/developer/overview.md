@@ -27,7 +27,7 @@ When an app is added to a host, it gets all of this without writing it:
 | Area | What the app gets |
 |---|---|
 | Sign-in | Password and OIDC single sign-on (Entra ID, Okta, Keycloak…), forced password change, a waiting page for users with no role |
-| Users and access | Users, roles and sessions, managed in Administration; `require_roles` on routes, `roles=` on pages, grids and actions |
+| Users and access | Users, roles and sessions, managed in Administration. Apps declare permissions; administrators group them into roles; `require` on routes, `permission=` on pages, grids and actions |
 | Shell | An icon rail, a section sidebar, breadcrumbs, page titles and a status bar, all built from the app's list of pages |
 | Search | Ctrl+J finds the app's pages, its records and its help topics, each with a preview |
 | Lists | The standard grid: search, filters, views, sorting, paging, multi-select, bulk and row actions with confirm and input dialogs, a side panel, column chooser, CSV export, live refresh and keyboard control |

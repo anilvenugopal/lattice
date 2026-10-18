@@ -22,9 +22,10 @@ nav=[
     NavNode("tickets.open", "Open", "/helpdesk/tickets?view=open", parent="tickets"),
     NavNode("tickets.all", "All tickets", "/helpdesk/tickets", parent="tickets"),
     NavNode("tickets.new", "New ticket", "/helpdesk/tickets/new", parent="tickets",
-            roles=EDITORS),
+            permission="helpdesk.tickets.edit"),
     NavNode("tickets.detail", "Ticket", "/helpdesk/tickets", parent="tickets.all", hidden=True),
-    NavNode("reports", "Reports", "/helpdesk/reports", icon="activity", roles=ADMINS),
+    NavNode("reports", "Reports", "/helpdesk/reports", icon="activity",
+            permission="helpdesk.reports.view"),
 ]
 ```
 
@@ -39,8 +40,9 @@ Each part of the shell comes from these nodes:
 | **Ctrl+J pages** | Every visible node the user may open, matched on label, `keywords` and `description` |
 | **F1** | The node's key, looked up in the app's `help.toml` |
 
-`roles=` hides a node from users without one of the roles. Hiding a node does
-not protect its route: protect the route with `require_roles` too (see
+`permission=` hides a node from users without that permission. A section's
+rail icon shows when the user may open at least one of its pages. Hiding a node
+does not protect its route: protect the route with `require(…)` too (see
 [Access control](access-control.md)).
 
 `hidden=True` makes a node that never shows in a menu but still resolves the
@@ -82,7 +84,7 @@ Templates can always use these globals:
 
 | Global | Is |
 |---|---|
-| `current_user` | The signed-in `CurrentUser` (`display_name`, `email`, `roles`, `has_any(roles)`) |
+| `current_user` | The signed-in `CurrentUser` (`display_name`, `email`, `roles`, `can(permission)`) |
 | `csrf_field()` | The hidden CSRF input for forms |
 | `icon(name, size)` | An inline SVG icon |
 | `time_tag(value, mode)` | A `<time>` element the browser formats in the user's time zone |

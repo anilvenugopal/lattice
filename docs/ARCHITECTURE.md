@@ -218,9 +218,10 @@ and the event is sent from it. Add that only for an event that needs it.
 ### 4.5 Permissions
 
 Apps declare permissions (`taskline.operate`). Roles are named sets of
-permissions that administrators edit. Routes, nav nodes, grid actions, search
-providers and record panels check permissions, never role names.
-[ADR 0009](adr/0009-permissions.md).
+permissions that administrators edit in Administration › Roles; the admin role
+has every permission. Routes, nav nodes, grids, grid actions, search providers,
+help topics and record panels check permissions, never role names.
+[ADR 0009](adr/0009-permissions.md). Built in step 3, without binding scopes.
 
 Some permissions apply per instance. In the Ops console, a user may operate the
 dev taskline but only view prod, so permissions can be scoped to a binding:
@@ -502,7 +503,7 @@ Step 1 (kernel restructure) is done. What remains:
 | Package | `lattice` core, `apps/demo`, `hosts/demo`, `lattice.api`, import contracts | Unchanged |
 | Apps | `AppManifest` and `create_app(apps=[…])` with namespace checks | + settings, bindings, permissions, references, panels, events per manifest |
 | Database | Postgres 17; one database, a schema and SQL migrations per app; named SQL queries, no ORM | Unchanged; bindings to separate databases when an app needs one |
-| Permissions | Roles only (`admin`, `editor`, `viewer`) | Permissions grouped into roles; per-binding scopes |
+| Permissions | Declared by apps, grouped into roles that administrators edit | + per-binding scopes |
 | Grid | Named SQL query, offset paging, a time limit, sync | Data sources, keyset paging, async sources |
 | Cross-app | None needed yet | References, record panels, events |
 | Components | Grid, Ctrl+J, tiles, macros, timeline, stats | + form, chart, stepper, tree, graph, record view |
@@ -534,7 +535,10 @@ before the next starts.
    - A time limit on grid queries; the grids' plans checked with `EXPLAIN
      ANALYZE`. Grid search keeps joined columns; trigram indexes are documented
      for large tables that need search.
-3. **Permissions** replace role checks.
+3. **Permissions** replace role checks. Done
+   ([plan](plans/step-3-permissions.md)): apps declare permissions, roles are
+   sets of them edited in Administration › Roles, every check names a
+   permission. Binding scopes wait for bindings.
 4. **References, record panels, events,** and the record view.
 5. **Grid data sources** with keyset paging and async sources, an optional
    estimated count for large lists, and CSV export streamed from the database.

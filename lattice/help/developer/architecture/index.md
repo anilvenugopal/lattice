@@ -106,7 +106,7 @@ built from them, so no part of Lattice imports an app.
    carry `Depends(csrf_protect)`. Routes get the user from
    `Depends(current_user)` and the request's `Db` from `Depends(get_db)`: one
    transaction for the whole request, saved when the route returns;
-   `require_roles(...)` returns 403 to anyone without one of the roles.
+   `require(permission)` returns 403 to anyone without that permission.
 3. **Rendering.** `render_page(request, template, nav_key, **context)` builds
    the navigation context for that nav key: the rail, sidebar, breadcrumbs and
    title, with the menus filtered by role. It then renders the template inside

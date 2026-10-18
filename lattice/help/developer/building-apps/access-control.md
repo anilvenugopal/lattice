@@ -1,64 +1,99 @@
 ---
 title: Access control
-summary: Roles on routes, pages, grids and actions; scoping rows in the query; and what the server checks for you.
+summary: Users, roles and permissions; what a permission protects and how to check it; scoping rows in the query; and what the server checks for you.
 order: 70
-keywords: security roles permissions require_roles admins editors viewer 403 row scoping access boundary csrf
+keywords: security roles permissions permission require can 403 row scoping access boundary csrf admin editor viewer
 ---
 
 Access in Lattice has two parts:
 
-- **Roles** decide which functions a user can use: pages, grids, actions.
-- **The grid's query** decides which rows a user can see.
+- **Permissions** decide which features a user can use: pages, lists, actions,
+  Ctrl+J sources, help topics, parts of a page.
+- **Each list's query** decides which records a user can see.
 
 Both are checked on the server. Hiding a button is never the check.
 
-## Roles
+## Users, roles and permissions
 
-Lattice has three built-in roles:
+| Idea | What it is | Example | Who sets it |
+|---|---|---|---|
+| **User** | A person who can sign in | `editor@example.com` | Administrators, in Administration › Users |
+| **Permission** | One thing someone may do | `demo.work.edit`: create, edit, assign and approve work items | **Developers**, in the app's manifest |
+| **Role** | A named set of permissions | Editor; or a custom "Auditor" with `lattice.audit.view` | **Administrators**, in Administration › Roles |
 
-| Role | Can |
-|---|---|
-| `viewer` | Read |
-| `editor` | Create and change records, run bulk actions |
-| `admin` | Everything an editor can, plus Administration |
+A user has one or more roles. Their permissions are everything their roles
+grant, added together. Code checks a **permission**, never a role name.
 
-`lattice.api` exports two constants. Use them instead of role strings:
+Two rules always hold:
 
-| Constant | Is |
-|---|---|
-| `EDITORS` | `("admin", "editor")` |
-| `ADMINS` | `("admin",)` |
+- **The admin role has every permission**, including the ones a new app adds.
+  It cannot be edited, so nobody can lock everyone out.
+- **A user with no role** can sign in but sees only a waiting page until an
+  administrator gives them one.
 
-A user with no role cannot use the app at all. They see a waiting page until an
-administrator grants one.
+## Declaring permissions
 
-> [!NOTE]
-> Permissions declared by apps will replace role checks in a later step
-> ([Decisions and direction](../architecture/decisions.md)). Code written with
-> `EDITORS` and `ADMINS` will then move to permissions.
-
-## Where to put role checks
-
-| Protects | How | An empty value means |
-|---|---|---|
-| A route | `dependencies=[Depends(require_roles(*EDITORS))]`; returns 403 | — |
-| A page in the menus | `NavNode(…, roles=EDITORS)` | Every signed-in user |
-| A whole grid | `GridSpec(…, roles=ADMINS)`: its rows, panel, actions, export and Ctrl+J results | Every signed-in user |
-| One action | `Action(…, roles=EDITORS)` | Everyone who can see the grid |
-| A Ctrl+J source | `SearchProvider(…, roles=…)` | Everyone |
-| A help topic | `roles: [admin]` in its front matter | Everyone |
-| Part of a template | `{% if current_user.has_any(EDITORS) %}`, with `EDITORS` passed in | — |
-
-A `NavNode`'s `roles` only hides the menu item. Put `require_roles` on the
-route as well, or a user who types the URL gets the page. Grid actions and
-grid endpoints check their roles on the server for you.
-
-In a template, pass a flag from the route rather than checking roles in the
-template, as the demo's detail page does:
+An app declares what its users may do, in its manifest:
 
 ```python
-can_edit=request.state.user.has_any(EDITORS)
+EDIT, DELETE = "helpdesk.tickets.edit", "helpdesk.tickets.delete"
+PERMISSIONS = [
+    Permission(EDIT, "Edit tickets", "Open, assign and close tickets.",
+               default_roles=("editor",)),
+    Permission(DELETE, "Delete tickets", "Delete tickets for good."),
+]
+
+APP = AppManifest(key="helpdesk", …, permissions=PERMISSIONS)
 ```
+
+| Field | Is |
+|---|---|
+| `key` | Starts with the app's key: `helpdesk.…`. Dotted lower-case words |
+| `label`, `description` | What administrators see when they tick it on a role |
+| `default_roles` | Roles that get it the first time `lattice migrate` sees it. After that, only administrators change who has it |
+
+Name permissions after what they allow, not after who has them: write
+`helpdesk.tickets.close`, not `helpdesk.managers`. Keep them few: one per
+group of actions that the same people do.
+
+## What a permission protects
+
+| Protects | How | Without the permission |
+|---|---|---|
+| A page (a URL) | `dependencies=[Depends(require(EDIT))]` on the route | 403, even if the URL is typed |
+| A menu entry | `NavNode(…, permission=EDIT)` | Not in the rail, sidebar or Ctrl+J |
+| A whole list | `GridSpec(…, permission=…)` | Its rows, panel, export, actions and Ctrl+J results are refused |
+| One action on rows | `Action(…, permission=EDIT)` | No button, and posting to it directly returns 403 |
+| A Ctrl+J source | `SearchProvider(…, permission=…)` | Not shown in Ctrl+J |
+| A help topic | `permission: helpdesk.tickets.edit` in its front matter | Not listed; 404 |
+| Part of a template | `{% if current_user.can("helpdesk.tickets.edit") %}` | Not drawn |
+
+Leaving `permission` empty means every signed-in user. Each check names one
+permission.
+
+A `NavNode`'s permission only hides the menu entry. Put `require` on the route
+too, or a user who types the URL gets the page. Grid actions and grid
+endpoints check their permissions on the server for you.
+
+**Sections.** A rail icon shows when the user may open at least one page in its
+section, and leads to the first such page. Someone who may only read the audit
+log sees Administration with just **Audit log** in it.
+
+**Typos stop the host.** `create_app` refuses to start if a page, grid,
+action, Ctrl+J source or help topic names a permission that no app declares,
+and `require` fails the first request that uses an undeclared one.
+
+## Lattice's own permissions
+
+| Permission | Allows |
+|---|---|
+| `lattice.users.manage` | Administration › Users |
+| `lattice.roles.manage` | Administration › Roles |
+| `lattice.sessions.manage` | Administration › Sessions |
+| `lattice.audit.view` | Administration › Audit log, and Recent activity on Home |
+| `lattice.system.view` | Administration › System and UI kit |
+
+Account, Home, Help and Ctrl+J are open to every signed-in user.
 
 ## Row scoping
 
@@ -110,7 +145,7 @@ query before it calls `panel`.
 | A valid session on every page except sign-in and static files | Middleware |
 | A forced password change, and at least one role | Middleware |
 | CSRF on every form post, HTMX request and grid action | `csrf_protect` on each router; the grid router |
-| The roles of a grid and of each action | Grid endpoints |
+| The permission of a grid and of each action | Grid endpoints |
 | Rows come only from the grid's query | Grid endpoints, panels, export, Ctrl+J |
 | `when`: actions run only on eligible rows | Grid action endpoint |
 | An administrator cannot remove their own admin role or deactivate themselves | Administration |
@@ -119,7 +154,8 @@ query before it calls `panel`.
 
 - Add `Depends(csrf_protect)` to every router that changes data:
   `APIRouter(dependencies=[Depends(csrf_protect)])`.
-- Add `require_roles` to every route that a role must protect.
+- Declare the app's permissions, and add `require(…)` to every route a
+  permission must protect.
 - Scope rows in the grid's query and in your own record routes.
 - Never log or render passwords, session tokens or OIDC tokens.
 - Put values in queries as `:placeholders`, never by building SQL text; Lattice's checks fail on SQL written in Python.

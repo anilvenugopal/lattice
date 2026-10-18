@@ -109,7 +109,7 @@ APP = AppManifest(key="helpdesk", …, search=[ACCOUNTS])
 | `preview` | `(request, db, result id)` | The preview pane's HTML, rendered with `render`. 404 if the user may not see it |
 
 `search` and `count` run on every keystroke (debounced), once per source, so
-keep them fast. Check access in all three functions; `roles=` on the provider
+keep them fast. Check access in all three functions; `permission=` on the provider
 hides the whole source.
 
 ## Commands

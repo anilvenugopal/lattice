@@ -1,6 +1,6 @@
 # 0009. Permissions declared by apps, grouped into roles
 
-Status: Proposed
+Status: Accepted (18 October 2026). Built in step 3, except binding scopes (`@prod`), which wait for bindings.
 
 ## Context
 
@@ -21,8 +21,8 @@ separately from "operate dev". Role names cannot express that.
 ## Consequences
 
 - Adding an app adds permissions, without new roles or code changes in other apps.
-- A migration converts the current role checks, and `app/auth/roles.py` is replaced
-  by the permission catalogue.
+- The role checks were converted; `ADMINS`, `EDITORS` and `require_roles` are gone.
+  The admin role has every permission, always (decided in the step 3 plan).
 - Administration › Roles becomes an editor instead of a read-only list.
 
 ## Rejected

@@ -12,6 +12,7 @@ that the whole team can read. By the end you will have:
 - named SQL queries in a `.sql` file;
 - a list page with search, views, bulk actions and Ctrl+J results;
 - a form that creates a note and records it in the audit log;
+- permissions that decide who may write and delete notes;
 - help topics, with F1 landing on the right one;
 - tests for the pages, the form and the permissions.
 
@@ -147,14 +148,13 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
 
 from lattice.api import (
-    ADMINS,
-    EDITORS,
     Action,
     ActionContext,
     Column,
     Db,
     GridSpec,
     Palette,
+    Permission,
     View,
     audit,
     csrf_protect,
@@ -163,11 +163,16 @@ from lattice.api import (
     get_db,
     render_grid_page,
     render_page,
-    require_roles,
+    require,
     sql_queries,
 )
 
 SQL = sql_queries(Path(__file__).parent / "sql").notes
+WRITE, DELETE = "notes.write", "notes.delete"
+PERMISSIONS = [
+    Permission(WRITE, "Write notes", "Create and pin notes.", default_roles=("editor",)),
+    Permission(DELETE, "Delete notes", "Delete notes for good."),
+]
 
 
 def pin(ctx: ActionContext) -> str:
@@ -195,9 +200,9 @@ GRID = GridSpec(
     views=[View("all", "All"), View("pinned", "Pinned", where={"pinned": [True]})],
     actions=[
         Action("new", "New note", scope="none", href="/notes/new", tone="primary", icon="plus",
-               roles=EDITORS),
-        Action("pin", "Pin", handler=pin, icon="star", roles=EDITORS, when={"pinned": [False]}),
-        Action("delete", "Delete", handler=remove, tone="danger", icon="trash", roles=ADMINS,
+               permission=WRITE),
+        Action("pin", "Pin", handler=pin, icon="star", permission=WRITE, when={"pinned": [False]}),
+        Action("delete", "Delete", handler=remove, tone="danger", icon="trash", permission=DELETE,
                confirm="Delete {count} note(s)?"),
     ],
     default_sort="-created_at",
@@ -206,6 +211,11 @@ GRID = GridSpec(
 ```
 
 What each part does:
+
+**`PERMISSIONS`** are what the app's users may do. Notes declares two:
+`notes.write`, which `lattice migrate` gives to the editor role the first time
+it runs, and `notes.delete`, which only administrators have until someone grants
+it to a role in **Administration › Roles**. Permission keys start with the app's key.
 
 **`SQL = sql_queries(…).notes`** loads the queries in `sql/notes.sql`;
 `SQL.grid` is the query named `grid`. A misspelt name stops with an error
@@ -229,15 +239,15 @@ a muted second line under the title.
 - **New note** needs no selection (`scope="none"`) and opens a page.
 - **Pin** runs `pin` on the selected rows. `when` limits it to rows that are
   not pinned yet; other selected rows are skipped and the toast says how many.
-- **Delete** asks for confirmation and is for administrators only.
+- **Delete** asks for confirmation and needs `notes.delete`.
 
 Handlers run a named query with `ctx.db.run(…)`. They never commit: the whole
 request is one transaction, saved when it succeeds, together with the audit
 event the grid writes for each row.
 
-**`roles`**: hiding a button is not access control. The server checks `roles`
-again when an action runs, so an editor who posts to the delete action directly
-gets a 403.
+**`permission`**: each action names the permission it needs. Hiding a button is
+not access control: the server checks the permission again when the action
+runs, so an editor who posts to the delete action directly gets a 403.
 
 **`palette`** makes notes findable from Ctrl+J. Each placeholder is filled from the row.
 
@@ -254,12 +264,12 @@ def notes_list(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, GRID, "notes.list")
 
 
-@router.get("/new", dependencies=[Depends(require_roles(*EDITORS))])
+@router.get("/new", dependencies=[Depends(require(WRITE))])
 def new_form(request: Request):
     return render_page(request, "notes/new.html", "notes.new", errors={}, values={})
 
 
-@router.post("/new", dependencies=[Depends(require_roles(*EDITORS))])
+@router.post("/new", dependencies=[Depends(require(WRITE))])
 async def create(request: Request, db: Db = Depends(get_db), user=Depends(current_user)):
     form = await request.form()
     values = {"title": (form.get("title") or "").strip(), "body": form.get("body") or ""}
@@ -281,6 +291,8 @@ The routes follow the Lattice rules for pages and forms:
 - **Database.** `db: Db = Depends(get_db)` gives the request's database
   connection. `db.value` runs a query and returns one value, here the new
   note's id. Nothing is saved until the route returns; if it raises, nothing is.
+- **Permissions.** `require(WRITE)` returns 403 to anyone without
+  `notes.write`, even if they type the URL.
 - **CSRF.** `csrf_protect` on the router rejects any form post without the CSRF
   token.
 - **Pages.** `render_grid_page` and `render_page` take a nav key (`notes.list`,
@@ -349,10 +361,11 @@ APP = AppManifest(
         NavNode("notes", "Notes", "/notes", icon="edit", keywords="memo jot",
                 description="Short notes shared with the team"),
         NavNode("notes.list", "All notes", "/notes", parent="notes"),
-        NavNode("notes.new", "New note", "/notes/new", parent="notes"),
+        NavNode("notes.new", "New note", "/notes/new", parent="notes", permission=notes.WRITE),
     ],
     routers=[notes.router],
     grids=[notes.GRID],
+    permissions=notes.PERMISSIONS,
     sql=HERE / "sql",
     templates=HERE / "templates",
     help=HERE / "help",
@@ -364,9 +377,12 @@ The `nav` list builds the navigation:
 - The top-level node (`notes`) becomes an icon in the rail.
 - Its children become the sidebar.
 - Ctrl+J finds every node by its label, keywords and description.
+- `permission=notes.WRITE` hides **New note** from people who can't write.
 
 `sql=HERE / "sql"` tells Lattice where the app's migrations are, so
 `lattice migrate` creates the `notes` schema and its table.
+`permissions=notes.PERMISSIONS` declares the permissions; the host refuses to
+start if any page, grid or action names one that no app declares.
 
 ## Step 8: Write the help
 
@@ -433,7 +449,9 @@ uv sync --all-packages
 make migrate
 ```
 
-`make migrate` prints `Applied: notes/0001_notes.sql`. Restart `make dev`.
+`make migrate` prints `Applied: notes/0001_notes.sql` and
+`New permissions: notes.delete, notes.write`; the editor role now has
+`notes.write`. Restart `make dev`.
 
 ## Step 10: Try it
 
@@ -449,8 +467,11 @@ Sign in as `editor@example.com` and try each part:
 
 Now sign in as `viewer@example.com`:
 
-- there is no **New** or **Pin** button;
+- there is no **New note** button or menu entry, and no **Pin**;
 - `/notes/new` returns 403.
+
+To let viewers write notes too, an administrator ticks **Write notes** on the
+Viewer role in **Administration › Roles**. No code changes.
 
 ## Step 11: Test it
 
@@ -494,8 +515,10 @@ from lattice.testing import csrf, post_json
 CHECK = sql_queries(Path(__file__).parent / "sql").checks
 
 
-def test_list_renders_for_viewers(as_user):
-    assert as_user("viewer").get("/notes").status_code == 200
+def test_viewers_read_but_do_not_write(as_user):
+    viewer = as_user("viewer")
+    assert viewer.get("/notes").status_code == 200
+    assert viewer.get("/notes/new").status_code == 403
 
 
 def test_editor_creates_a_note(as_user, db):
@@ -550,9 +573,9 @@ Two of Lattice's own checks now cover Notes too:
 |---|---|
 | `sql/schema/0001_notes.sql` | The `notes.note` table |
 | `sql/notes.sql` | The named queries: the grid, create, pin, delete |
-| `notes.py` | The grid, its actions and the routes |
+| `notes.py` | The permissions, the grid, its actions and the routes |
 | `templates/notes/new.html` | The form, built from shared macros |
-| `__init__.py` | The manifest: pages, routes, grid, SQL, templates, help |
+| `__init__.py` | The manifest: pages, routes, grid, permissions, SQL, templates, help |
 | `help/` | Topics, and the F1 map in `help.toml` |
 | `tests/` | Pages, the form and permissions, with their own named queries |
 

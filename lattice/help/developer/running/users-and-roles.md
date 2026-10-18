@@ -30,48 +30,46 @@ After that, administrators manage users in the browser, under
 **Administration › Users**. See [Administration](../../user-guide/administration.md)
 in the user guide.
 
-## The built-in roles
+## Roles and permissions
 
-| Role | Label | Can |
-|---|---|---|
-| `admin` | Administrator | Everything, plus Administration: users, roles, sessions, audit log |
-| `editor` | Editor | Create and change records; run bulk actions |
-| `viewer` | Viewer | Read every page outside Administration |
+A role is a named set of permissions. Apps declare the permissions (see
+[Access control](../building-apps/access-control.md)); administrators decide
+which roles have them.
 
-**What roles control.** Roles decide which functions a user can use, not which
-records they see. Apps scope records in their grids' queries (see
-[Access control](../building-apps/access-control.md)).
+| Role | Has |
+|---|---|
+| `admin` (Administrator) | **Every permission, always**, including ones a new app adds. Cannot be edited |
+| `editor` (Editor) | The permissions apps give it by default, such as `demo.work.edit`. Editable |
+| `viewer` (Viewer) | None by default: it can read every page that needs no permission. Editable |
+
+**What roles control.** Roles decide which features a user can use, not which
+records they see. Apps scope records in their grids' queries.
 
 **No role, no access.** A user with no role sees only a waiting page.
 
 **Protecting the last administrator.** Administrators cannot remove their own
 admin role or deactivate themselves, so a host always keeps at least one.
 
-## Adding a role
+## Making a role
 
-Roles are rows in the `lattice.role` table, added by migrations:
+Administrators make roles in the browser, with no code change:
 
-1. **Write a migration** in Lattice's schema folder. Create the file with
-   `make migration schema=lattice m="add auditor role"`, then fill it in:
+1. **Administration › Roles › New role.** Give it a code (`auditor`), a name and
+   a description.
+2. **Tick its permissions**, grouped by app, for example **Read the audit log**.
+3. **Give it to people** in **Administration › Users** (**Grant role**, or on
+   the user's page).
 
-   ```sql
-   -- lattice/sql/schema/0002_add_auditor_role.sql
-   -- The auditor role: reads the audit log.
+A role's page also edits its permissions later and lists its members. Changes
+are audited. Built-in roles cannot be deleted; a role you made can be deleted
+once nobody has it.
 
-   INSERT INTO lattice.role (code, label, sort_order, description)
-   VALUES ('auditor', 'Auditor', 4, 'Read the audit log.');
-   ```
+## Where permissions come from
 
-2. **Add a constant** in `lattice/kernel/auth/roles.py`, and export it from
-   `lattice.api`. Apps use the constant, never the string.
-3. **Use it** in `roles=` and `require_roles(...)`.
-
-Administrators then grant it in **Administration › Users**. Roles are listed
-in **Administration › Roles**.
-
-> [!NOTE]
-> Roles will become named sets of permissions that apps declare
-> ([Decisions and direction](../architecture/decisions.md)).
+When an app adds a permission, `make migrate` records it and gives it to the
+roles the app suggests (`default_roles`), **once**. From then on, only
+administrators change who has it, and a later deploy never undoes their
+changes. `make migrate` prints the new permissions.
 
 ## Development users
 

@@ -33,10 +33,14 @@ only from `lattice.api`. Plain SQL, no ORM.
 5. **Templates and styles** (only if needed): in the app's `templates/<app>/`,
    built from `components/macros.html`; styles in the app's stylesheet, scoped to
    `[data-app="<app>"]`.
-6. **Tests** in the app's `tests/`: page renders for allowed roles, 403 for
+6. **Permissions** (if the grid or its actions are restricted): a `Permission` in
+   the manifest's `permissions=` (key `<app>.<area>.<verb>`, `default_roles=`),
+   used as `permission=` on the grid, its actions and nav nodes, and `require(...)`
+   on routes. Never role names.
+7. **Tests** in the app's `tests/`: page renders for users with the permission, 403 for
    others, each action changes the rows it should and skips ineligible ones. Set
    up and check rows with named queries in `tests/sql/checks.sql`.
-7. `make lint && make test` (Postgres running). The SQL rules test fails on an
+8. `make lint && make test` (Postgres running). The SQL rules test fails on an
    unused or invalid named query, or SQL written in Python.
 
 Do not write a custom table, pager, filter bar, selection script or list endpoint.

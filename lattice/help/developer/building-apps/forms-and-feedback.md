@@ -13,13 +13,16 @@ Use a full-page form for creating or editing a record. The pattern is
 post, then redirect:
 
 ```python
-@router.get("/tickets/new", dependencies=[Depends(require_roles(*EDITORS))])
+EDIT = "helpdesk.tickets.edit"          # declared in the app's permissions
+
+
+@router.get("/tickets/new", dependencies=[Depends(require(EDIT))])
 def new_form(request: Request):
     return render_page(request, "helpdesk/ticket_form.html", "tickets.new",
                        errors={}, values={})
 
 
-@router.post("/tickets/new", dependencies=[Depends(require_roles(*EDITORS))])
+@router.post("/tickets/new", dependencies=[Depends(require(EDIT))])
 async def create(request: Request, db: Db = Depends(get_db), user=Depends(current_user)):
     form = await request.form()
     values = {"subject": (form.get("subject") or "").strip()}

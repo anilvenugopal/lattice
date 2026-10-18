@@ -1,6 +1,6 @@
 # Step 3 plan: permissions instead of role checks
 
-Status: **approved** (18 October 2026), with the recommended answer to every decision below.
+Status: **done** on the `step-3` branch (18 October 2026), with the recommended answer to every decision below and the differences listed at the end.
 
 ## The problem
 
@@ -116,3 +116,15 @@ The full suite passes at the end of stage 2 and after each later stage.
 2. **One Lattice permission per Administration area:** the five in the table above.
 3. **One permission per check.** No "any of these" lists.
 4. **Editor and viewer are editable** like any role, but can't be deleted.
+
+## How the result differs from this plan
+
+| Plan | Built | Why |
+|---|---|---|
+| — | A rail section shows when the user may open at least one of its pages; its icon and breadcrumb lead to the first such page | With one permission per Administration area, an auditor's Administration icon must not lead to Users, which they can't open |
+| — | The demo's **New item** menu entry needs `demo.work.edit` | It showed to everyone though only editors could open the page |
+| `create_app` refuses unknown permissions | It does for pages, grids, actions, Ctrl+J sources and help topics; `require(...)` on a route fails at its first request | A route's dependency can't be inspected when the host starts |
+| Delete roles | Only roles that are not built in and have no members | Deleting a role with members would silently take access away |
+| — | A help topic still using `roles:` is refused with a pointer to `permission:` | Old topics fail loudly instead of becoming visible to everyone |
+| — | The Administration user-guide topic needs `lattice.users.manage` | It is about managing users |
+

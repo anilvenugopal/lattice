@@ -132,9 +132,14 @@ the layers below it. Apps import only `lattice.api`.
 ### Security
 
 - Every router that changes data has `Depends(csrf_protect)` in its `dependencies=[…]`.
-- Role checks: `require_roles(...)` on routes, `roles=` on `NavNode`, `GridSpec`
-  and `Action`. Use the constants in `lattice.api` (`ADMINS`, `EDITORS`), never
-  role strings. Hiding a button is not access control; the server checks all three.
+- **Permissions, never role names.** An app declares its permissions in its
+  manifest (`Permission("{key}.area.verb", label, description, default_roles=…)`).
+  Checks name one permission: `require("…")` on routes, `permission="…"` on
+  `NavNode`, `GridSpec`, `Action` and `SearchProvider`, `permission:` in help
+  front matter, `current_user.can("…")` in templates. Administrators group
+  permissions into roles in Administration › Roles; the admin role has every
+  permission. Hiding a button is not access control; the server checks all of
+  them. `create_app` refuses an undeclared permission.
 - A grid's `query` is its access boundary. Rows a user may not see must be filtered
   in that named query (see `apps/demo/lattice_demo/sql/inbox.sql`:
   `WHERE m.owner_id = :user_id`). Actions, panels, export and Ctrl+J results all
@@ -209,12 +214,14 @@ Copy the pattern in `apps/demo/lattice_demo/work_items.py` (`detail`, `edit_form
 `save`) and `templates/demo/work_item_detail.html`: `page_header` with status badge
 and actions, `prop_list` in a card, `timeline(audit.history(...))` for activity.
 
-### Add a role
+### Add a permission or a role
 
-Add it in a migration (`INSERT INTO lattice.role …` in a new
-`lattice/sql/schema/` file) and a constant in
-`lattice/kernel/auth/roles.py`, exported through `lattice.api`. Admins assign
-roles in Administration › Users.
+- **A permission** is code: add a `Permission` to the app's `permissions=`, use
+  it in `require(...)`/`permission=`, run `make migrate` (it records the
+  permission and grants its `default_roles` once), and test both a user who has
+  it and one who does not.
+- **A role** is data: administrators create it in Administration › Roles and
+  tick its permissions. No code or migration.
 
 ### Add a preference
 

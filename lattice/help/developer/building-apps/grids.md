@@ -73,7 +73,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, Request
 
-from lattice.api import (EDITORS, Action, Column, Db, Filter, GridSpec, Palette, View,
+from lattice.api import (Action, Column, Db, Filter, GridSpec, Palette, View,
                          csrf_protect, get_db, render_grid_page, sql_queries)
 
 SQL = sql_queries(Path(__file__).parent / "sql").tickets
@@ -102,9 +102,9 @@ GRID = GridSpec(
            View("all", "All")],
     actions=[
         Action("new", "New ticket", scope="none", href="/helpdesk/tickets/new",
-               tone="primary", icon="plus", roles=EDITORS),
+               tone="primary", icon="plus", permission="helpdesk.tickets.edit"),
         Action("close", "Close", handler=close, when={"status": ["new", "open"]},
-               confirm="Close {count} ticket(s)?", roles=EDITORS),
+               confirm="Close {count} ticket(s)?", permission="helpdesk.tickets.edit"),
     ],
     default_sort="-opened_at",
     row_href="/helpdesk/tickets/{id}",
@@ -247,12 +247,12 @@ read them from there with `badge_for(spec.column("status"), value)`,
 | `when` | Which rows it applies to, for example `{"status": ["failed"]}`. The button is enabled when at least one selected row qualifies; the server skips the others and the toast says how many |
 | `fields` | Inputs asked for in a dialog: `Field(name, label, kind, options, required, default, placeholder)`, where `kind` is `text`, `textarea`, `select`, `number` or `date` |
 | `confirm` | Confirmation text; `{count}` is replaced with the number of rows |
-| `roles` | Who sees and may run it; the server checks again |
+| `permission` | Who sees and may run it; the server checks again. Empty: everyone who can see the grid |
 | `tone`, `icon`, `in_row_menu` | Presentation |
 
 When an action runs, the server:
 
-1. checks the user holds one of `roles`;
+1. checks the user has the action's `permission`;
 2. reloads the selected rows through the query (up to 10,000 for "select all");
 3. drops the rows that fail `when`;
 4. calls the handler;
