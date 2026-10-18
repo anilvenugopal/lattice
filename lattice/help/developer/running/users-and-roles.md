@@ -49,20 +49,17 @@ admin role or deactivate themselves, so a host always keeps at least one.
 
 ## Adding a role
 
-Roles are rows in the `role` table, created by migrations:
+Roles are rows in the `lattice.role` table, added by migrations:
 
-1. **Write a migration** that inserts the role:
+1. **Write a migration** in Lattice's schema folder. Create the file with
+   `make migration schema=lattice m="add auditor role"`, then fill it in:
 
-   ```python
-   def upgrade() -> None:
-       role = sa.table("role", sa.column("code"), sa.column("label"),
-                       sa.column("sort_order"), sa.column("description"))
-       op.bulk_insert(role, [{"code": "auditor", "label": "Auditor", "sort_order": 4,
-                              "description": "Read the audit log."}])
+   ```sql
+   -- lattice/sql/schema/0002_add_auditor_role.sql
+   -- The auditor role: reads the audit log.
 
-
-   def downgrade() -> None:
-       op.execute("DELETE FROM role WHERE code = 'auditor'")
+   INSERT INTO lattice.role (code, label, sort_order, description)
+   VALUES ('auditor', 'Auditor', 4, 'Read the audit log.');
    ```
 
 2. **Add a constant** in `lattice/kernel/auth/roles.py`, and export it from

@@ -48,34 +48,46 @@ Every field of every class is listed in [Reference › Grid](../reference/grid.m
 
 ## Declaring a grid
 
+A grid is a named query, which returns the rows, and a `GridSpec`, which
+describes the list.
+
+```sql
+-- apps/helpdesk/lattice_helpdesk/sql/tickets.sql — an app with key "helpdesk"
+-- Tickets: customer requests from opening to close.
+
+-- name: grid
+-- Every ticket with its assignee's name. Must select id. This is the access boundary.
+SELECT t.id, t.ref, t.subject, t.status, t.assignee_id,
+       u.display_name AS assignee, t.opened_at
+FROM helpdesk.ticket t
+LEFT JOIN lattice.app_user u ON u.id = t.assignee_id;
+
+-- name: close
+-- Close tickets.
+UPDATE helpdesk.ticket SET status = 'closed' WHERE id = ANY(:ids);
+```
+
 ```python
-# apps/helpdesk/lattice_helpdesk/tickets.py — an app with key "helpdesk"
+# apps/helpdesk/lattice_helpdesk/tickets.py
+from pathlib import Path
+
 from fastapi import APIRouter, Depends, Request
-from sqlalchemy import select, update
-from sqlalchemy.orm import Session
 
-from lattice.api import (EDITORS, Action, Column, Filter, GridSpec, Palette, User, View,
-                         csrf_protect, get_db, render_grid_page)
-from lattice_helpdesk.models import Ticket
+from lattice.api import (EDITORS, Action, Column, Db, Filter, GridSpec, Palette, View,
+                         csrf_protect, get_db, render_grid_page, sql_queries)
 
+SQL = sql_queries(Path(__file__).parent / "sql").tickets
 STATUSES = [("new", "New"), ("open", "Open"), ("closed", "Closed")]
 STATUS_TONES = {"new": "info", "open": "warning", "closed": "success"}
 
 
-def query(db: Session, user):
-    # Labeled columns. Must include "id". This is the access boundary.
-    return (select(Ticket.id, Ticket.ref, Ticket.subject, Ticket.status, Ticket.assignee_id,
-                   User.display_name.label("assignee"), Ticket.opened_at)
-            .outerjoin(User, User.id == Ticket.assignee_id))
-
-
 def close(ctx):
-    ctx.db.execute(update(Ticket).where(Ticket.id.in_(ctx.ids)).values(status="closed"))
-    return f"Closed {ctx.count} ticket(s)."     # a str or an ActionResult; do not commit
+    ctx.db.run(SQL.close, ids=ctx.ids)
+    return f"Closed {ctx.count} ticket(s)."     # a str or an ActionResult
 
 
 GRID = GridSpec(
-    key="helpdesk.tickets", title="Tickets", path="/helpdesk/tickets", query=query,
+    key="helpdesk.tickets", title="Tickets", path="/helpdesk/tickets", query=SQL.grid,
     columns=[
         Column("ref", "Ref", kind="mono", required=True),
         Column("subject", "Subject", kind="strong"),
@@ -103,30 +115,31 @@ router = APIRouter(dependencies=[Depends(csrf_protect)])
 
 
 @router.get("/tickets")                  # mounted under /helpdesk by the host
-def tickets(request: Request, db: Session = Depends(get_db)):
+def tickets(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, GRID, "tickets")
 ```
 
-In the manifest: `grids=[GRID]`, `routers=[router]` and a `NavNode` for
-`tickets`.
+In the manifest: `grids=[GRID]`, `routers=[router]`, `sql=HERE / "sql"` and a
+`NavNode` for `tickets`.
 
 `create_app` refuses to start unless the grid key starts with the app key and a
 dot (`helpdesk.`), and the path starts with the app's prefix (`/helpdesk`).
 
 ## The query
 
-The query is a function `(db, user) -> Select`. Each selected column's label
-is a row key: `Column`, `search`, `Filter`, `View`, `when`, `Palette` and URL
-templates such as `{id}` all refer to these keys.
+`query` is a named query (see [Data and audit](data-and-audit.md)). Each
+column it selects is a row key: `Column`, `search`, `Filter`, `View`, `when`,
+`Palette` and URL templates such as `{id}` all refer to these keys.
 
 - **It must select `id`.** Selection, actions, panels and links use it.
 - **Filter and view keys must be selected.** `View("mine", where={"assignee_id": "$me"})`
   needs `assignee_id` in the select. It does not need a `Column`; only keys in
   `columns` are shown.
-- **It is the access boundary.** Filter out rows the user may not see here,
-  for example `.where(Message.owner_id == user.id)` in the demo Inbox. Paging,
-  panels, actions, export, tiles and Ctrl+J all run through it, so a row the
-  query does not return cannot be reached any other way.
+- **It is the access boundary.** Filter out rows the user may not see here. The
+  query may use `:user_id`, the signed-in user, as the demo Inbox does:
+  `WHERE m.owner_id = :user_id`. Paging, panels, actions, export, tiles and
+  Ctrl+J all run through it, so a row the query does not return cannot be
+  reached any other way.
 
 `$me` in a view's `where` is replaced with the signed-in user's id.
 
@@ -134,40 +147,42 @@ templates such as `{id}` all refer to these keys.
 
 A grid's rows come from **one SQL query that you write**. Lattice treats the
 query as a box: it wraps it as a subquery, then adds the search, filters, view,
-sort and paging on top. So the query can be as complex as SQL allows, and
-every column it returns can be shown, searched, filtered and sorted.
+sort and paging on top:
 
-**Joins.** Join as many tables as you need. Work Queue joins the users table
-to show each item's owner by name:
-
-```python
-owner = aliased(User)
-select(WorkItem.id, WorkItem.ref, WorkItem.title, owner.display_name.label("owner"))
-    .outerjoin(owner, owner.id == WorkItem.owner_id)
+```sql
+SELECT g.* FROM ( <your query> ) AS g
+WHERE <view> AND <filters> AND <search>
+ORDER BY <sort>, g.id
+LIMIT <page size> OFFSET <start>
 ```
+
+So the query can be as complex as SQL allows, and every column it returns can
+be shown, searched, filtered and sorted. Postgres merges the wrapping away
+before it runs, so it costs nothing (see [Grid performance](grid-performance.md)).
+
+**Joins.** Join as many tables as you need. The Work Queue joins the users
+table to show each item's owner by name (`apps/demo/lattice_demo/sql/work_items.sql`).
 
 **Lookups, counts and computed values.** Anything SQL can compute becomes a
 column. For example, each customer with their number of open tickets and a
 computed health label:
 
-```python
-open_tickets = (select(Ticket.customer_id, func.count().label("open_count"))
-                .where(Ticket.status.in_(["new", "open"]))
-                .group_by(Ticket.customer_id).subquery())
-
-def query(db, user):
-    return (select(Customer.id, Customer.name, Region.name.label("region"),
-                   func.coalesce(open_tickets.c.open_count, 0).label("open_tickets"),
-                   case((func.coalesce(open_tickets.c.open_count, 0) > 10, "busy"),
-                        else_="ok").label("health"))
-            .join(Region, Region.id == Customer.region_id)
-            .outerjoin(open_tickets, open_tickets.c.customer_id == Customer.id))
+```sql
+-- name: customers_grid
+-- Customers with their region, open ticket count and a health label.
+SELECT c.id, c.name, r.name AS region,
+       COALESCE(o.open_count, 0) AS open_tickets,
+       CASE WHEN COALESCE(o.open_count, 0) > 10 THEN 'busy' ELSE 'ok' END AS health
+FROM helpdesk.customer c
+JOIN helpdesk.region r ON r.id = c.region_id
+LEFT JOIN (SELECT customer_id, count(*) AS open_count FROM helpdesk.ticket
+           WHERE status IN ('new', 'open') GROUP BY customer_id) o ON o.customer_id = c.id;
 ```
 
 `region`, `open_tickets` and `health` are ordinary columns to the grid: a
 `Filter("health", …)`, `View(where={"region": [...]})`, sorting by
 `open_tickets` and searching `region` all work. Administration › Users does
-the same with a grouped subquery of each user's roles.
+the same with each user's roles.
 
 **The limits:**
 
@@ -180,11 +195,12 @@ the same with a grouped subquery of each user's roles.
   - a `template` column draws a cell from the row's values;
   - the side `panel` function runs Python for the one row opened, so it can
     look anything up, even in another system.
-- **One database.** Everything is in one database today, so any table can be
+- **One database.** Every app's schema is in one database, so any table can be
   joined.
-- **Speed.** The query runs for every page, count and export. Index the
-  columns you filter, sort and join on. See [Grid performance](grid-performance.md)
-  for what the database runs and what gets expensive on large tables.
+- **Speed.** The query runs for every page, count and export, under a time
+  limit (`LATTICE_GRID_QUERY_TIMEOUT_SECONDS`). Index the columns you filter,
+  sort and join on. See [Grid performance](grid-performance.md) for what the
+  database runs and what gets expensive on large tables.
 
 ## Columns
 
@@ -240,9 +256,11 @@ When an action runs, the server:
 2. reloads the selected rows through the query (up to 10,000 for "select all");
 3. drops the rows that fail `when`;
 4. calls the handler;
-5. writes one audit event per row (`{grid key}.{action key}`) and commits.
+5. writes one audit event per row (`{grid key}.{action key}`).
 
-**The handler must not commit.** If it raises, nothing is written.
+All of it is one transaction, saved when the request succeeds.
+
+**If the handler raises, nothing is saved:** neither its changes nor the audit events.
 
 Options for a `select` field or a filter can be a list of `(value, label)`
 pairs or a function `(db, user)` that returns one, such as `users.options` for
@@ -266,7 +284,7 @@ A **panel** is a function `(db, user, row) -> dict`. It returns a
 ```python
 def panel(db, user, row):
     return {"template": "helpdesk/ticket_panel.html",
-            "ticket": db.get(Ticket, row["id"]),
+            "ticket": db.one(SQL.by_id, id=row["id"]),
             "events": audit.history(db, "helpdesk.tickets", row["id"], limit=5)}
 ```
 
@@ -320,7 +338,7 @@ from lattice.api import build_grid, render_page
 
 
 @router.get("/customers/{customer_id}")
-def customer(customer_id: int, request: Request, db: Session = Depends(get_db)):
+def customer(customer_id: int, request: Request, db: Db = Depends(get_db)):
     customer = get_visible_customer(db, request.state.user, customer_id)   # 404 if not visible
     tickets = build_grid(request, db, tickets_module.GRID, sync_url=False,
                          fixed={"customer_id": customer.id})

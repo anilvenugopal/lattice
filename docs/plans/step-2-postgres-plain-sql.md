@@ -1,6 +1,7 @@
 # Step 2 plan: Postgres and plain SQL
 
-Status: **draft for approval**. No code has been written.
+Status: **done** on the `step-2` branch (18 October 2026). Built as planned,
+with the differences listed at the end.
 
 ## What step 2 delivers
 
@@ -162,3 +163,18 @@ This is the largest step so far:
 1. This plan as written, or with changes.
 2. Postgres 17 on port **5436**, so it does not clash with strategiq's 5434, taskline's 5435 or
    a default 5432.
+
+## How the result differs from this plan
+
+| Plan | Built | Why |
+|---|---|---|
+| `Db` has four calls | Five: `first` added (a row or `None`) | Lookups such as "user by email" need "maybe one" |
+| A missing query name stops the host at startup | The code fails when it reaches the name, naming file and query; `tests/test_sql_rules.py` finds it before then | A startup scan of every module's code was more machinery than a test |
+| Stages 2 then 3 | Built together, committed as two commits | Administration's pages are grids |
+| — | `lattice.utc_now()`: every timestamp from the database clock | One clock instead of Python's and Postgres's |
+| — | A bulk action's audit events in one statement | 10,000 inserts became one |
+| — | `make migration` and `make reset` (`lattice new-migration`, `lattice reset`) | They replace Alembic's `make revision` and the SQLite `make reset` |
+| — | The migration runner runs files with no parameters | A `%` in a migration was read as a placeholder |
+| Trigram indexes on the demo grids' search columns | Not added; documented for large tables that need search | Measured: indexes are unused when a grid searches a joined column, and you chose to keep joined-column search (the simplest) |
+| — | `LATTICE_GRID_QUERY_TIMEOUT_SECONDS` implemented with a savepoint per grid read | A cancelled query must not break the rest of the request |
+

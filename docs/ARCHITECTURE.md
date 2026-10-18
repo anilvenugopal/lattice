@@ -257,29 +257,35 @@ The host owns the brand. Apps style only their own pages.
 
 ## 5. Data
 
-Postgres only. [ADR 0001](adr/0001-postgres-with-per-app-bindings.md).
+Postgres only. [ADR 0001](adr/0001-postgres-with-per-app-bindings.md), as
+narrowed by the step 2 decisions (18 October 2026, recorded in
+[Decisions and direction](../lattice/help/developer/architecture/decisions.md)).
 
-- **Bindings.** Each app declares one or more named bindings. The host maps each
-  to a URL (`LATTICE_TASKLINE_DATABASE_URL`, or `…_PROD_DATABASE_URL`); an
-  unmapped binding uses Lattice's own database. Apps can therefore share one
-  database or each have their own, and that is configuration only.
-- **Schemas.** Each app owns one Postgres schema: `lattice` for the kernel,
-  `jobs` for taskline (taskline's own choice), `incidents`, `strategiq`. An app
-  never writes another app's schema.
-- **Migrations.** `lattice migrate` runs each app's migrations against its
-  binding, with Alembic's version table inside that app's schema. An app whose
-  library migrates itself, such as taskline (`taskline migrate`), declares that
-  instead.
+- **Plain SQL, no ORM.** Every statement is a named query in a `sql/<area>.sql`
+  file, run through `Db` on SQLAlchemy Core with the psycopg 3 driver. Only the
+  grid engine and the migration runner build SQL in code. Tests and lint enforce
+  this ([Data and audit](../lattice/help/developer/building-apps/data-and-audit.md)).
+- **One database, one engine.** Lattice and its apps share one database and one
+  connection pool, created once. Each request is one transaction.
+- **Schemas.** Each app owns one Postgres schema, named after its key: `lattice`
+  for the kernel, `demo`, `incidents`, `strategiq`; taskline keeps `jobs`. An app
+  never writes another app's schema; it may read Lattice's (a person's name from
+  `lattice.app_user`).
+- **Migrations.** Plain `.sql` files in each app's `sql/schema/`, applied in
+  order by `lattice migrate`, with a `_schema_version` table in each schema, in
+  the style of taskline's runner. An app whose library migrates itself, such as
+  taskline (`taskline migrate`), declares that instead.
 - **No cross-app keys.** Apps refer to each other's records by reference, never
-  by foreign key, because they may be in different databases.
-- **Transactions end at the binding.** A write in app A and the kernel's audit
-  record are separate commits when they use different databases. Audit records
-  and events are written after the app's commit.
-- **Sync and async.** A binding gives both a sync and an async SQLAlchemy engine
-  from one URL (psycopg 3). Kernel code stays sync; an app may use async routes
-  and async grid sources (taskline's read API is async).
-- **Tests** create a throwaway Postgres database per test, as taskline's tests
-  already do.
+  by foreign key.
+- **Bindings, later.** A separate database for one app (the host maps a named
+  binding to its own URL) is not built. It comes when an app needs one, first
+  the taskline Ops console with one binding per taskline instance. Writes in two
+  databases are then separate commits, and audit records and events are written
+  after the app's commit.
+- **Sync now, async with taskline.** Lattice is sync. An async engine on the
+  same URL is added in step 6, when the taskline app calls taskline's async API.
+- **Tests** create a Postgres database per test, copied from a template migrated
+  once per run.
 
 ## 6. Components
 
@@ -296,7 +302,7 @@ Every component checks the same permissions and uses the same action model.
 ### 6.1 Grid
 
 Today's grid ([Grids](../lattice/help/developer/building-apps/grids.md)) with one change: the rows come from a
-**data source** instead of only a SQLAlchemy query.
+**data source** instead of only a named SQL query.
 [ADR 0008](adr/0008-grid-data-sources.md).
 
 ```python
@@ -495,9 +501,9 @@ Step 1 (kernel restructure) is done. What remains:
 |---|---|---|
 | Package | `lattice` core, `apps/demo`, `hosts/demo`, `lattice.api`, import contracts | Unchanged |
 | Apps | `AppManifest` and `create_app(apps=[…])` with namespace checks | + settings, bindings, permissions, references, panels, events per manifest |
-| Database | SQLite default, one connection, one Alembic history | Postgres only, per-app bindings, schemas and migrations |
+| Database | Postgres 17; one database, a schema and SQL migrations per app; named SQL queries, no ORM | Unchanged; bindings to separate databases when an app needs one |
 | Permissions | Roles only (`admin`, `editor`, `viewer`) | Permissions grouped into roles; per-binding scopes |
-| Grid | SQLAlchemy query, offset paging, sync | Data sources, keyset paging, async sources |
+| Grid | Named SQL query, offset paging, a time limit, sync | Data sources, keyset paging, async sources |
 | Cross-app | None needed yet | References, record panels, events |
 | Components | Grid, Ctrl+J, tiles, macros, timeline, stats | + form, chart, stepper, tree, graph, record view |
 | CSS | Five ITCSS layers; app stylesheets scoped by `data-app`; host theme limited to brand tokens; all checked | Unchanged; `--app-accent` read by core when an app needs an accent |
@@ -518,13 +524,16 @@ before the next starts.
      for host and app stylesheets.
    - The example features move to `apps/demo`.
    - The `lattice` CLI and `LATTICE_` settings.
-2. **Postgres and bindings.**
-   - Per-app schemas and migrations.
-   - Postgres in a container for development, and test databases per test.
-   - SQLite removed.
-   - Grid performance on Postgres: trigram indexes (`pg_trgm`) so `contains`
-     search can use an index, a statement time limit on grid queries, and the
-     demo grids' query plans checked with `EXPLAIN ANALYZE`.
+2. **Postgres and plain SQL.** Done
+   ([plan](plans/step-2-postgres-plain-sql.md)).
+   - Postgres 17 only, a schema and plain SQL migrations per app; SQLite and
+     Alembic removed.
+   - Named SQL queries with no ORM, through one shared engine; one transaction
+     per request.
+   - Postgres in a container for development, a database per test.
+   - A time limit on grid queries; the grids' plans checked with `EXPLAIN
+     ANALYZE`. Grid search keeps joined columns; trigram indexes are documented
+     for large tables that need search.
 3. **Permissions** replace role checks.
 4. **References, record panels, events,** and the record view.
 5. **Grid data sources** with keyset paging and async sources, an optional

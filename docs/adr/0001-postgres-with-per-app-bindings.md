@@ -36,3 +36,15 @@ connection.
 
 - **Keeping SQLite for development.** Per-app schemas, JSONB and taskline do not work on it.
 - **One shared database with table prefixes.** It rules out separate databases per app.
+
+## Note, 18 October 2026: what step 2 built
+
+Postgres only, a schema per app and per-app migrations are built. Narrowed in
+the step 2 decisions (see the developer guide, *Architecture › Decisions and
+direction*):
+
+- **One database for now.** Bindings to separate databases are not built; they
+  come when an app needs one (the taskline Ops console).
+- **Plain SQL, no ORM.** Migrations are plain `.sql` files run by a small runner,
+  not Alembic.
+- **Sync only until step 6.** The async engine comes with the taskline app.

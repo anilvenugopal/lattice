@@ -21,13 +21,13 @@ flowchart TB
   HOST["lattice.host<br/>create_app and the app checks"] --> PLAT
   PLAT["lattice.platform<br/>Home, Administration, Account"] --> COMP
   COMP["lattice.components<br/>grid, search, help, tiles, AppManifest"] --> KER
-  KER["lattice.kernel<br/>config, db, models, auth, nav, services, rendering, icons, slots"]
+  KER["lattice.kernel<br/>config, database, named SQL, migrations, auth, nav, services, rendering"]
   APPS["Your apps"] -. "import only" .-> API
 ```
 
 | Layer | Package | Holds | Does not hold |
 |---|---|---|---|
-| Kernel | `lattice.kernel` | Settings, the database engine and `Base`, Lattice's tables, sign-in and sessions, the navigation registry, audit, users and preferences, template rendering, icons, slots, CSS rules | Any UI component |
+| Kernel | `lattice.kernel` | Settings, the shared database engine and `Db`, the named-SQL loader, the migration runner, sign-in and sessions, the navigation registry, audit, users and preferences, template rendering, icons, slots, CSS rules | Any UI component |
 | Components | `lattice.components` | The grid, Ctrl+J search, help, home tiles, and the `AppManifest` class | Pages of its own beyond the shared endpoints |
 | Platform | `lattice.platform` | Lattice's own apps: Home, Administration and Account, each an `AppManifest` | Anything an app could not also do |
 | Host | `lattice.host` | `create_app`: checks every app and wires it in | Feature code |
@@ -104,7 +104,8 @@ built from them, so no part of Lattice imports an app.
    token.
 2. **Route.** FastAPI runs the matching route. Routers that change data
    carry `Depends(csrf_protect)`. Routes get the user from
-   `Depends(current_user)` and a database session from `Depends(get_db)`;
+   `Depends(current_user)` and the request's `Db` from `Depends(get_db)`: one
+   transaction for the whole request, saved when the route returns;
    `require_roles(...)` returns 403 to anyone without one of the roles.
 3. **Rendering.** `render_page(request, template, nav_key, **context)` builds
    the navigation context for that nav key: the rail, sidebar, breadcrumbs and
@@ -146,11 +147,33 @@ the query is the access boundary.
 
 ## Data
 
-Lattice's tables (`app_user`, `role`, `user_role`, `user_session`,
-`user_preference`, `audit_event`) and the apps' tables share one SQLAlchemy
-`Base` and, for now, one database and one Alembic history in `alembic/`.
-Development uses SQLite in `data/lattice.db`. Timestamps are stored as naive
-UTC and formatted in the browser.
+One Postgres database holds everything, one schema per owner:
 
-The next step of the plan moves to Postgres. Each app will get its own schema,
-migrations and database binding. See [Decisions and direction](decisions.md).
+| Schema | Holds | Files |
+|---|---|---|
+| `lattice` | `app_user`, `role`, `user_role`, `user_session`, `user_preference`, `audit_event`, and `utc_now()` | `lattice/sql/schema/`, queries in `lattice/sql/*.sql` |
+| `demo`, … | Each app's tables | The app's `sql/schema/`, queries in its `sql/*.sql` |
+
+```mermaid
+flowchart LR
+  F["sql/area.sql<br/>named queries"] --> L["sql_queries()<br/>load and check"]
+  L --> C["Db.all / first / one / value / run"]
+  G["grid engine<br/>wraps a grid's query"] --> C
+  C --> E["one shared engine<br/>SQLAlchemy Core + psycopg 3"]
+  E --> P[("Postgres")]
+  M["lattice migrate<br/>sql/schema/*.sql"] --> E
+```
+
+- **No ORM.** Every statement is a named query in a `.sql` file. Only two
+  modules build SQL in code: the grid engine and the migration runner.
+- **One engine.** It is created on first use from `LATTICE_DATABASE_URL`, and
+  shared by requests, the `lattice` command and background tasks.
+- **One transaction per request.** It is saved when the route returns, and
+  rolled back if the route raises.
+- **Timestamps** are naive UTC from the database clock (`lattice.utc_now()`),
+  formatted in the browser.
+- **Tests** get a fresh database each, copied from a template migrated once per run.
+
+How to work with it is in [Data and audit](../building-apps/data-and-audit.md).
+Separate databases per app ("bindings") are not built; see
+[Decisions and direction](decisions.md).

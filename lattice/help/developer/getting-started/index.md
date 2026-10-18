@@ -15,25 +15,31 @@ You need:
 - **Python 3.14**. uv can install it for you: `uv python install 3.14`.
 - **[uv](https://docs.astral.sh/uv/)** 0.11 or later. It manages the virtual environment and the workspace packages.
 - **make** and **git**.
+- **A container tool for Postgres:** podman with `podman-compose` (the default),
+  or Docker with Compose (run `make` with `COMPOSE="docker compose"`).
 
-You do not need Node.js, Docker or a database server. Development uses a SQLite
-file in `data/`.
+You do not need Node.js or a Postgres install of your own. `compose.yaml` runs
+Postgres 17 in a container, on port 5436, with its data in a volume.
 
 ## Run it
 
 ```bash
 git clone https://github.com/anilvenugopal/lattice.git
 cd lattice
+make db-up
 make setup
 make dev
 ```
+
+`make db-up` starts Postgres and waits until it accepts connections. You start
+it once; it keeps running until `make db-down`, and its data survives restarts.
 
 `make setup` runs three commands:
 
 | Command | What it does |
 |---|---|
 | `uv sync --all-packages` | Creates `.venv` and installs Lattice, the demo app and the demo host |
-| `uv run lattice migrate` | Creates `data/lattice.db` and applies the database migrations |
+| `uv run lattice migrate` | Creates the `lattice` and `demo` schemas and their tables |
 | `uv run lattice seed` | Adds the development users and the demo app's example data |
 
 `make dev` starts the demo host with auto-reload at
@@ -92,16 +98,17 @@ lattice/                 the core package
   templates/  static/    shell layout and macros; CSS and JavaScript
 apps/demo/               lattice-demo: the example app and its tests
 hosts/demo/              lattice-demo-host: runs Lattice with the demo app
-alembic/                 database migrations
+lattice/sql/             Lattice's named queries; sql/schema/ holds its migrations
 tests/                   tests of the core
+compose.yaml             Postgres for development and tests
 docs/                    architecture and decision records
 ```
 
 The demo app in `apps/demo/` is the best source of working examples. It shows
 three shapes of list:
 
-- **Work Queue** (`work_items.py`): a table with views, bulk actions, a side
-  panel, a detail page and forms;
+- **Work Queue** (`work_items.py`, `sql/work_items.sql`): a table with views,
+  bulk actions, a side panel, a detail page with an embedded list, and forms;
 - **Jobs** (`jobs.py`): a list that refreshes itself, with actions that
   depend on each row's state;
 - **Inbox** (`inbox.py`): a message list with a reading pane.
@@ -113,9 +120,10 @@ three shapes of list:
 | `make dev` | Run the host with auto-reload |
 | `make test` | Run every test, core and apps. Run it before you hand off a change |
 | `make lint` | Run ruff and the import rules (apps import only `lattice.api`, and so on) |
-| `make revision m="add note table"` | Create a migration from model changes |
+| `make db-up`, `make db-down` | Start or stop Postgres |
+| `make migration schema=demo m="add note table"` | Create the next numbered migration file for a schema |
 | `make migrate` | Apply new migrations |
-| `make reset` | Delete the development database and set it up again |
+| `make reset` | Drop Lattice's and the apps' schemas, then migrate and seed again |
 | `uv run lattice docs build` | Regenerate the [Reference](../reference/index.md) after changing code it documents |
 
 Always run Python through `uv run …` (or `make`). A bare `python` or `pytest`
@@ -133,11 +141,13 @@ working development default, so you need none to start. To change them, copy
 | Symptom | Fix |
 |---|---|
 | `lattice: command not found` | Run it as `uv run lattice …`, or use the `make` targets |
-| `no such table` on the first page | Run `make migrate`, then restart `make dev` |
+| `connection refused` on port 5436 | Postgres is not running: `make db-up` |
+| `relation "…" does not exist` | Run `make migrate`, then restart `make dev` |
 | Cannot sign in with the accounts above | The database was created before seeding. Run `make seed`, or `make reset` to start over |
 | `AppError: App 'x': …` when the host starts | An app broke a rule; the message names the rule. See [App manifest](../reference/app-manifest.md) |
 | `AppError: Help for 'x', …` | A help topic has a broken link or front matter; the message names the file |
 | Port 8000 in use | `uv run lattice dev --port 8001` |
+| Port 5436 in use | Another Postgres is there. Change the port in `compose.yaml` and `LATTICE_DATABASE_URL` |
 
 ## Next
 

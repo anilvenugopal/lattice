@@ -28,11 +28,16 @@ def host_apps():
 
 Add the app's `tests` folder to `testpaths` in the root `pyproject.toml`.
 
+Tests run against Postgres: start it once with `make db-up`. Each test gets its
+own database, copied from one that was migrated once at the start of the run,
+so tests stay fast and never see each other's rows. The test server is
+`LATTICE_TEST_DATABASE_URL`, by default the development container.
+
 ## Fixtures
 
 | Fixture | Gives |
 |---|---|
-| `db` | A session on a fresh SQLite database for each test, built by running the migrations |
+| `db` | A fresh Postgres database for each test, already migrated for Lattice and `host_apps`, and a `Db` on it. Each call is saved at once, so the test client sees the rows |
 | `users` | `{"admin": …, "editor": …, "viewer": …}`: three users with those roles |
 | `client` | A `TestClient` for a host built with `host_apps` |
 | `as_user` | `as_user("editor")` signs the client in as that user and returns it |
@@ -82,12 +87,11 @@ def test_open_ticket(as_user, db):
 
 ```python
 def test_close_skips_closed_tickets(as_user, db, tickets):
-    open_, closed = tickets
+    open_, closed = tickets                      # ticket ids, from a fixture
     body = post_json(as_user("editor"), "/_grid/helpdesk.tickets/action/close",
-                     {"ids": [open_.id, closed.id]}).json()
+                     {"ids": [open_, closed]}).json()
     assert "1 skipped" in body["message"]
-    db.refresh(open_)
-    assert open_.status == "closed"
+    assert db.one(CHECK.ticket, id=open_)["status"] == "closed"
 ```
 
 **Roles are enforced on the server:**
@@ -95,7 +99,7 @@ def test_close_skips_closed_tickets(as_user, db, tickets):
 ```python
 def test_viewers_cannot_close(as_user, tickets):
     resp = post_json(as_user("viewer"), "/_grid/helpdesk.tickets/action/close",
-                     {"ids": [tickets[0].id]})
+                     {"ids": [tickets[0]]})
     assert resp.status_code == 403
 ```
 
@@ -105,11 +109,42 @@ def test_viewers_cannot_close(as_user, tickets):
 def test_users_see_only_their_messages(as_user, messages):
     mine, theirs = messages
     c = as_user("viewer")
-    assert c.get(f"/_grid/mail.messages/panel/{theirs.id}").status_code == 404
+    assert c.get(f"/_grid/mail.messages/panel/{theirs}").status_code == 404
 ```
 
-Build test data in fixtures in `conftest.py`, through the `db` session, and
-commit.
+## Test data
+
+Tests create and check rows with named queries too, in the app's
+`tests/sql/` folder:
+
+```sql
+-- apps/helpdesk/tests/sql/checks.sql
+-- Rows the helpdesk tests create, and queries they use to check results.
+
+-- name: add_ticket
+-- A ticket for a test. Returns its id.
+INSERT INTO helpdesk.ticket (ref, subject, status) VALUES (:ref, :subject, :status)
+RETURNING id;
+
+-- name: ticket
+-- One ticket.
+SELECT id, status FROM helpdesk.ticket WHERE id = :id;
+```
+
+```python
+# apps/helpdesk/tests/conftest.py (next to host_apps)
+CHECK = sql_queries(Path(__file__).parent / "sql").checks
+
+
+@pytest.fixture
+def tickets(db):
+    return [db.value(CHECK.add_ticket, ref=f"T-{n}", subject="Printer", status=status)
+            for n, status in enumerate(["open", "closed"])]
+```
+
+Each test module loads `CHECK` the same way. The demo's
+`apps/demo/tests/conftest.py` and `apps/demo/tests/sql/checks.sql` are a full
+example.
 
 ## Lattice's own checks
 
@@ -122,6 +157,8 @@ These run with `make test` and `make lint` and cover every app:
 | `tests/test_app_loader.py`, `tests/test_theming.py` | The manifest and namespace rules, host themes, slots and icons |
 | `tests/test_help.py` | Help loading, links, the page map |
 | `tests/test_reference.py` | The Reference pages match the code |
+| `tests/test_sql_rules.py` | Every named query is used and valid SQL, every name the code uses exists, and no SQL is written in Python |
+| `make lint` (ruff) | No `sqlalchemy.orm` imports anywhere |
 
 Building the host in your app's tests also runs every `create_app` check on
 your app, including its help folder and stylesheets.

@@ -9,13 +9,13 @@
 from __future__ import annotations
 
 import ast
+import importlib
 import re
 from pathlib import Path
 
 import pytest
 from sqlalchemy import text
 
-import lattice_demo
 from lattice.kernel.sql import sql_queries
 
 ROOT = Path(__file__).parents[1]
@@ -112,7 +112,9 @@ def test_every_query_the_code_names_exists():
 
 @pytest.fixture
 def host_apps():
-    return [lattice_demo.APP]
+    """Every app in apps/, so the test database has every schema the queries use."""
+    packages = sorted(p.parent.name for p in (ROOT / "apps").glob("*/*/__init__.py"))
+    return [importlib.import_module(name).APP for name in packages]
 
 
 def test_every_named_query_is_valid_sql(db):

@@ -81,7 +81,7 @@ Two apps cannot collide, and one app's styles cannot change another's pages.
 ### 4. Apps import only `lattice.api`
 
 `lattice.api` is the public surface: the manifest, the grid classes, rendering
-helpers, auth dependencies and the database base class. Everything else in
+helpers, auth dependencies and database access (`Db` and named SQL queries). Everything else in
 Lattice is internal and may change. A test enforces this rule. See
 [Python API](reference/api.md).
 
@@ -110,8 +110,9 @@ flowchart LR
    for a valid session cookie, a password that does not need changing, and at
    least one role. A request that fails a gate is redirected to the sign-in,
    change-password or waiting page.
-2. **Route.** The app's route runs, with the signed-in user and a database
-   session from FastAPI dependencies.
+2. **Route.** The app's route runs, with the signed-in user and the request's
+   `Db` from FastAPI dependencies. The whole request is one database
+   transaction: saved when the route returns, rolled back if it fails.
 3. **Page.** The route calls `render_page(request, template, nav_key, …)`. The
    nav key tells the shell which page this is, so it can highlight the menu,
    build the breadcrumbs, set the title and choose the help topic for F1.
@@ -137,8 +138,9 @@ exist yet. See [Not built yet](building-apps/not-built-yet.md).
 ## The stack
 
 Python 3.14, FastAPI, Jinja2 templates, HTMX and Alpine.js (vendored, no npm),
-SQLAlchemy 2 and Alembic. The workspace is managed with uv. Development uses
-SQLite; production moves to Postgres.
+and Postgres 17. Database access is plain SQL in named `.sql` files, run
+through SQLAlchemy Core with the psycopg 3 driver; there is no ORM. The
+workspace is managed with uv.
 
 ## Next
 

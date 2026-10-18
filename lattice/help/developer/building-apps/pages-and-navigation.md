@@ -53,11 +53,11 @@ area (`tickets.new`), not the app key.
 
 ```python
 @router.get("/tickets/{ticket_id}")
-def detail(ticket_id: int, request: Request, db: Session = Depends(get_db)):
-    ticket = get_visible_ticket(db, request.state.user, ticket_id)   # 404 if not visible
+def detail(ticket_id: int, request: Request, db: Db = Depends(get_db)):
+    ticket = db.one(SQL.by_id, id=ticket_id)          # a dict; 404 if there is none
     return render_page(request, "helpdesk/ticket_detail.html", "tickets.detail",
-                       ticket=ticket, events=audit.history(db, "helpdesk.tickets", ticket.id),
-                       crumb=ticket.ref)
+                       ticket=ticket, events=audit.history(db, "helpdesk.tickets", ticket_id),
+                       crumb=ticket["ref"])
 ```
 
 `render_page(request, template, nav_key, *, status_code=200, **context)`

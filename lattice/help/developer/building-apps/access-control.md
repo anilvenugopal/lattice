@@ -64,11 +64,16 @@ can_edit=request.state.user.has_any(EDITORS)
 
 Roles do not decide which rows a user may see. The grid's query does:
 
-```python
-def query(db, user):
-    return (select(Message.id, Message.subject, Message.received_at)
-            .where(Message.owner_id == user.id))          # each user sees only their own
+```sql
+-- name: grid
+-- The signed-in user's messages: each user sees only their own.
+SELECT m.id, m.subject, m.received_at
+FROM demo.message m
+WHERE m.owner_id = :user_id;
 ```
+
+The grid fills `:user_id` with the signed-in user's id on every request; nothing
+the browser sends can change it.
 
 Everything that reads rows goes through this query:
 
@@ -82,16 +87,21 @@ Rows the query does not return cannot be reached through any of them.
 
 **Your own routes must apply the same scoping.** A detail page, an edit form or
 an HTMX endpoint that loads a record by id returns 404 when the user could not
-see that record in the list. One way is to reuse the query:
+see that record in the list. Put the same condition in the record's own query:
+
+```sql
+-- name: by_id
+-- One of the signed-in user's messages; no row if it is someone else's.
+SELECT id, subject, body, received_at FROM demo.message
+WHERE id = :id AND owner_id = :user_id;
+```
 
 ```python
-def get_visible(db, user, message_id):
-    sub = query(db, user).subquery()
-    row = db.execute(select(sub).where(sub.c.id == message_id)).first()
-    if row is None:
-        raise HTTPException(404)
-    return row
+message = db.one(SQL.by_id, id=message_id, user_id=request.state.user.id)   # else 404
 ```
+
+A grid's side panel does not need this: the grid loads the row through its own
+query before it calls `panel`.
 
 ## What Lattice checks for you
 
@@ -112,7 +122,7 @@ def get_visible(db, user, message_id):
 - Add `require_roles` to every route that a role must protect.
 - Scope rows in the grid's query and in your own record routes.
 - Never log or render passwords, session tokens or OIDC tokens.
-- Use bind parameters (SQLAlchemy does this) and never build SQL from strings.
+- Put values in queries as `:placeholders`, never by building SQL text; Lattice's checks fail on SQL written in Python.
 - Render user input through Jinja's autoescaping. In an Alpine attribute, use
   the `js` filter: `@click="run({{ key|js }})"`.
 

@@ -16,14 +16,16 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
   pyproject.toml                  depends on "lattice" only
   lattice_helpdesk/               the package
     __init__.py                   APP = AppManifest(key="helpdesk", …)
-    models.py                     SQLAlchemy tables (Base from lattice.api)
-    tickets.py                    one module per area: query, GridSpec, actions, routes
+    sql/schema/0001_helpdesk.sql  migrations: the app's tables, in schema "helpdesk"
+    sql/tickets.sql               named SQL queries, one file per area
+    tickets.py                    one module per area: GridSpec, actions, routes
     seed.py                       example data for `lattice seed` (optional)
     templates/helpdesk/           Jinja templates, only in a folder named after the key
     static/helpdesk.css           styles scoped to [data-app="helpdesk"] (optional)
     help/                         Markdown topics and help.toml
   tests/
     conftest.py                   host_apps fixture returning [APP]
+    sql/checks.sql                named queries the tests use
     test_tickets.py
 ```
 
@@ -33,12 +35,15 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 
 | Rule | Enforced by |
 |---|---|
-| Import only `lattice.api`, never another app | `make lint` (import contracts) |
+| Import only `lattice.api`, never another app, SQLAlchemy or psycopg | `make lint` (import contracts) |
 | The key is lowercase letters, digits and underscores, and not reserved | `create_app` |
 | Nav routes and grid paths start with `/{key}`; grid keys start with `{key}.` | `create_app` |
 | Templates only in `templates/{key}/`; slot templates in `{key}/` | `create_app` |
 | Stylesheets declare `@layer components`, scope every selector to `[data-app="{key}"]`, and use no colour literals, `--p-*` tokens or `!important` | `create_app` |
 | Help topics have front matter, and links and the page map point to real topics | `create_app` |
+| Tables only in `sql/schema/` migrations, in the schema named after the key | Review |
+| Every SQL statement is a named query in `sql/*.sql`, with a comment; no SQL in Python, no ORM | `make test` (SQL rules), `make lint` |
+| Every named query is used, and valid SQL | `make test` (SQL rules) |
 | Every list of records is a `GridSpec` | Review |
 | Every page has a `NavNode` and renders with `render_page` | Review |
 | Status values get their labels and tones from their grid `Column` | Review |
@@ -55,7 +60,7 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 | [Forms and feedback](forms-and-feedback.md) | Form posts, validation, CSRF, toasts and flash messages |
 | [UI components](ui-components.md) | Macros, buttons, tones, icons, keyboard and accessibility |
 | [Styling](styling.md) | The five CSS layers, tokens, light and dark, an app's own stylesheet |
-| [Data and audit](data-and-audit.md) | Models, migrations, timestamps, the audit log, seed data, background work |
+| [Data and audit](data-and-audit.md) | Tables and migrations, named SQL queries, `Db` and transactions, the audit log, seed data, background work |
 | [Access control](access-control.md) | Roles, `require_roles`, row scoping and what the server checks |
 | [Ctrl+J search](search.md) | Making pages and records findable, custom sources, commands |
 | [Writing help](writing-help.md) | Help topics, sections, callouts, diagrams and the F1 map |

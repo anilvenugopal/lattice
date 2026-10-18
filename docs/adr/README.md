@@ -8,7 +8,7 @@ is a new record that names the one it replaces.
 
 | # | Decision | Status |
 |---|---|---|
-| [0001](0001-postgres-with-per-app-bindings.md) | Postgres only, with per-app database bindings | Accepted |
+| [0001](0001-postgres-with-per-app-bindings.md) | Postgres only, with per-app database bindings | Accepted; bindings deferred (see its note) |
 | [0002](0002-one-core-package-apps-as-packages.md) | One core package with enforced boundaries; each app its own package | Accepted |
 | [0003](0003-app-manifest-and-contracts.md) | Apps plug in through a manifest and kernel contracts | Accepted |
 | [0004](0004-charts-chartjs.md) | Charts with Chart.js and its plugins | Accepted |

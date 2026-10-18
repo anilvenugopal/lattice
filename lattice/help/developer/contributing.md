@@ -13,7 +13,8 @@ and these docs. To build an app on Lattice, see [Building apps](building-apps/in
 | Path | Owns |
 |---|---|
 | `lattice/api.py` | The only module apps import. Changing or removing a name is a breaking change |
-| `lattice/kernel/` | Config, database, Lattice's tables, `auth/`, `nav/`, `services/` (audit, users, preferences), `web.py` (rendering, flash, toast), icons, slots, CSS rules. No UI components |
+| `lattice/kernel/` | Config, `database.py` (the shared engine, `Db`, transactions), `sql.py` (named queries), `migrate.py`, `auth/`, `nav/`, `services/` (audit, users, preferences), `web.py` (rendering, flash, toast), icons, slots, CSS rules. No UI components |
+| `lattice/sql/` | Lattice's named queries, one file per area; `schema/` holds its migrations |
 | `lattice/components/` | `grid/`, `search/` (Ctrl+J), `help/`, `tiles.py`, `manifest.py` |
 | `lattice/platform/` | Lattice's own apps: `home.py`, `account.py`, `admin.py` |
 | `lattice/host.py` | `create_app` and the checks on every app |
@@ -21,7 +22,6 @@ and these docs. To build an app on Lattice, see [Building apps](building-apps/in
 | `lattice/templates/`, `lattice/static/` | The shell, macros, grid templates; the five CSS layers; the scripts |
 | `lattice/help/` | These docs: the user guide and the developer guide |
 | `apps/demo/`, `hosts/demo/` | The demo app and the host that runs it |
-| `alembic/` | Migrations |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | The target design and the decision records |
 | `AGENTS.md` | Rules and recipes for coding agents; `CLAUDE.md` points to it |
 
@@ -103,14 +103,23 @@ The same voice everywhere: code comments, docs, commit messages.
 
 ## Database changes
 
-1. Edit the models: `lattice/kernel/models.py` for Lattice's tables, the
-   app's `models.py` for an app's.
-2. Run `make revision m="what changes"`.
-3. Read the generated file and fix anything autogenerate got wrong.
-4. Run `make migrate`.
+1. Create the next migration file: `make migration schema=lattice m="what changes"`
+   (or the app's key for an app's tables).
+2. Write the SQL in it: `CREATE TABLE`, `ALTER TABLE`, `CREATE INDEX`, rows for
+   lookup tables.
+3. Run `make migrate`, and update the named queries that use the table.
+4. Run `make test`: the SQL rules check every named query against the new schema.
 
 Never edit a migration that has been merged. Seed lookup rows in the migration
 that creates their table.
+
+## Database access
+
+- **Queries.** Every SQL statement is a named query in a `sql/*.sql` file, run
+  through `Db`. No ORM, and no SQL written in Python.
+- **Building SQL in code.** Only the grid engine and the migration runner do,
+  and a change there needs review like any change to the access boundary.
+- **A query nobody uses** is deleted; the tests say which.
 
 ## Commits
 

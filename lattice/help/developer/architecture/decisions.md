@@ -37,9 +37,9 @@ More components join the grid: forms rendered from JSON Schema, charts
 | Area | Today | Target |
 |---|---|---|
 | Apps | `AppManifest` and `create_app` with namespace checks | Also settings, bindings, permissions, references, panels and events in the manifest |
-| Database | SQLite, one connection, one Alembic history | Postgres; each app its own schema, migrations and binding |
+| Database | Postgres 17; one database, a schema and SQL migrations per app; plain SQL, no ORM | Unchanged; separate databases per app only when one needs it |
 | Access | Roles (`admin`, `editor`, `viewer`) | Permissions grouped into roles |
-| Grid | A SQLAlchemy query with offset paging | Data sources, keyset paging, async sources |
+| Grid | A named SQL query, offset paging, a time limit | Data sources, keyset paging, async sources |
 | Between apps | Nothing needed yet | References, record panels, events |
 | Components | Grid, Ctrl+J, help, tiles, macros, timeline | Also forms, charts, stepper, tree, graph, record view |
 
@@ -51,9 +51,9 @@ before the next starts.
 1. **Kernel restructure.** Done: the `lattice` package with its layers,
    `lattice.api`, `AppManifest`, the demo as its own app, theming rules, the
    `lattice` command.
-2. **Postgres and bindings**: per-app schemas and migrations; SQLite removed.
-   Trigram indexes for grid search, a time limit on grid queries, and the
-   query plans of the demo grids checked on Postgres.
+2. **Postgres and plain SQL.** Done: Postgres only, a schema and SQL migrations
+   per app, named SQL queries with no ORM, one transaction per request, a time
+   limit on grid queries, and the grids' query plans checked on Postgres.
 3. **Permissions** replace role checks.
 4. **References, record panels and events**, and the record view.
 5. **Grid data sources** with keyset paging, an optional estimated count for
@@ -68,6 +68,20 @@ before the next starts.
 > Steps 2 and 3 change how apps declare tables and access. Write apps against
 > today's rules (one migration history, `roles=`); the change will come with a
 > migration guide.
+
+## Database decisions (step 2)
+
+Taken while planning step 2, on 18 October 2026:
+
+| Decision | Instead of |
+|---|---|
+| Plain SQL in named `.sql` files; no ORM | SQLAlchemy ORM model classes |
+| SQLAlchemy Core with the psycopg 3 driver; one shared engine | psycopg alone; an engine per app |
+| One database, a schema per app; apps may join Lattice's user table | A database per app (ADR 0001's bindings), built only when an app needs one |
+| Plain `.sql` migrations and a small runner, like taskline | Alembic |
+| One transaction per request | Routes committing themselves |
+| Sync database access; async is added with taskline in step 6 | Async now |
+| Grid search keeps joined columns; trigram indexes only where a large table needs search | Searching own columns only |
 
 ## Decision records
 

@@ -20,26 +20,25 @@ def new_form(request: Request):
 
 
 @router.post("/tickets/new", dependencies=[Depends(require_roles(*EDITORS))])
-async def create(request: Request, db: Session = Depends(get_db), user=Depends(current_user)):
+async def create(request: Request, db: Db = Depends(get_db), user=Depends(current_user)):
     form = await request.form()
     values = {"subject": (form.get("subject") or "").strip()}
     errors = {"subject": "Enter a subject."} if not values["subject"] else {}
     if errors:
         return render_page(request, "helpdesk/ticket_form.html", "tickets.new",
                            status_code=400, errors=errors, values=values)
-    ticket = Ticket(**values)
-    db.add(ticket)
-    db.flush()                                    # assigns ticket.id
-    audit.record(db, user.id, "helpdesk.tickets.create", f"Opened {ticket.subject}",
-                 target_type="helpdesk.tickets", target_id=ticket.id)
-    db.commit()
-    response = RedirectResponse(f"/helpdesk/tickets/{ticket.id}", status_code=303)
+    ticket_id = db.value(SQL.create, **values)   # INSERT … RETURNING id
+    audit.record(db, user.id, "helpdesk.tickets.create", f"Opened {values['subject']}",
+                 target_type="helpdesk.tickets", target_id=ticket_id)
+    response = RedirectResponse(f"/helpdesk/tickets/{ticket_id}", status_code=303)
     flash(response, request, "Ticket opened.")
     return response
 ```
 
 The rules:
 
+- **Saving** happens when the route returns: the request is one transaction,
+  so the insert and its audit event are saved together, or not at all.
 - **On failure**, render the form again with status 400. Pass an `errors`
   dict with one message per field, and the submitted `values`, so nothing the
   user typed is lost.
@@ -88,12 +87,11 @@ name or revoking a session, post with HTMX and answer with headers:
 
 ```python
 @router.post("/profile")
-def save_profile(display_name: str = Form(...), db: Session = Depends(get_db),
+def save_profile(display_name: str = Form(...), db: Db = Depends(get_db),
                  user=Depends(current_user)):
     if not display_name.strip():
         return Response(status_code=400, headers=toast("Display name is required.", "danger"))
-    …
-    db.commit()
+    db.run(SQL.users.rename, id=user.id, display_name=display_name.strip())
     return Response(headers={**toast("Profile saved."), "HX-Refresh": "true"})
 ```
 

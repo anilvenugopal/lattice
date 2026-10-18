@@ -14,18 +14,23 @@ This file is the single source of truth for coding agents. `CLAUDE.md` points he
 
 ## Stack
 
-Python 3.14, FastAPI + Jinja2 + HTMX + Alpine.js, SQLAlchemy 2.0, Alembic, a uv
-workspace. SQLite until step 2 of the architecture moves to Postgres
-([ADR 0001](docs/adr/0001-postgres-with-per-app-bindings.md)). Server-rendered.
+Python 3.14, FastAPI + Jinja2 + HTMX + Alpine.js, Postgres 17, a uv workspace.
+**Plain SQL, no ORM:** every statement is a named query in a `sql/*.sql` file,
+run through SQLAlchemy Core with the psycopg 3 driver. Server-rendered.
 **No SPA, no npm build, no CSS framework.** Vendored JS lives in
 `lattice/static/js/vendor/`.
 
 ```bash
+make db-up     # start Postgres (compose.yaml, port 5436); once per machine boot
 make setup     # uv sync --all-packages, lattice migrate, lattice seed
 make dev       # lattice dev: http://localhost:8000  (admin@example.com / Admin12345!)
 make test      # core and app tests; always run before handing off
 make lint      # ruff and the import contracts
+make migrate   # apply new sql/schema/*.sql migrations
+make reset     # drop Lattice's and the apps' schemas, migrate and seed (development)
 ```
+
+Agents do not start, stop or rebuild containers: ask the user to run `make db-up`.
 
 Always use `uv run …`; bare `python`/`pytest` miss the environment. Settings
 are `LATTICE_*` environment variables (`.env.example`).
@@ -35,16 +40,18 @@ are `LATTICE_*` environment variables (`.env.example`).
 | Path | Owns |
 |---|---|
 | `lattice/api.py` | **The only module apps import.** Changing or removing a name is a breaking change |
-| `lattice/kernel/` | No UI components: config, db, models (platform tables), `auth/`, `nav/`, `services/` (audit, users, preferences), `web.py` (render, flash, toast, filters), `icons.py`, `slots.py`, `css_rules.py` |
+| `lattice/kernel/` | No UI components: config, `database.py` (shared engine, `Db`, `get_db`, `transaction`), `sql.py` (named-query loader), `migrate.py`, `queries.py`, `auth/`, `nav/`, `services/` (audit, users, preferences), `web.py` (render, flash, toast, filters), `icons.py`, `slots.py`, `css_rules.py` |
+| `lattice/sql/` | Lattice's named queries (one file per area) and `schema/` migrations for schema `lattice` |
 | `lattice/components/` | `grid/` (spec, engine, render, router), `search/` (Ctrl+J providers and routes), `tiles.py` (home tiles), `manifest.py` (`AppManifest`) |
 | `lattice/platform/` | Lattice's own apps, built with `AppManifest`: `home.py`, `account.py`, `admin.py` |
 | `lattice/host.py` | `create_app(apps=[…])`: registers apps and checks they stay in their namespace |
-| `lattice/cli.py` | `lattice migrate`, `create-user`, `seed`, `dev`, `docs build\|check` |
+| `lattice/cli.py` | `lattice migrate`, `new-migration`, `reset`, `create-user`, `seed`, `dev`, `docs build\|check` |
 | `lattice/testing.py` | Pytest fixtures for core and app tests (`db`, `users`, `client`, `as_user`, `host_apps`…) |
 | `lattice/templates/`, `lattice/static/` | Shell layout, shared macros, grid templates; the five CSS layers |
-| `apps/demo/` | `lattice-demo`: the example app (Work Queue, Jobs, Inbox), its models, templates, styles, seed and tests |
+| `apps/demo/` | `lattice-demo`: the example app (Work Queue, Jobs, Inbox), its `sql/` (schema `demo` and named queries), templates, styles, seed and tests |
 | `hosts/demo/` | `lattice-demo-host`: runs Lattice with the demo app |
-| `alembic/` | Migrations (one history until per-app migrations in step 2) |
+| `tests/sql/`, `apps/*/tests/sql/` | Named queries the tests use to set up and check rows |
+| `compose.yaml` | Postgres 17 for development and tests |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | Target design and decisions. Read before changing anything they cover |
 | `lattice/help/` | The user guide and developer guide, served in the app at `/help`. `developer/building-apps/` covers the grid, pages, styling and access; `developer/running/` covers sign-in, users and branding. `developer/reference/` is generated: run `uv run lattice docs build` after changing what it documents |
 
@@ -129,21 +136,32 @@ the layers below it. Apps import only `lattice.api`.
   and `Action`. Use the constants in `lattice.api` (`ADMINS`, `EDITORS`), never
   role strings. Hiding a button is not access control; the server checks all three.
 - A grid's `query` is its access boundary. Rows a user may not see must be filtered
-  in `query` (see `apps/demo/lattice_demo/inbox.py`: `where(Message.owner_id == user.id)`).
-  Actions, panels, export and Ctrl+J results all go through it.
+  in that named query (see `apps/demo/lattice_demo/sql/inbox.sql`:
+  `WHERE m.owner_id = :user_id`). Actions, panels, export and Ctrl+J results all
+  go through it. A detail route loading a record by id applies the same condition.
 - Never log or render passwords, session tokens or OIDC tokens. Session ids in
   the database are SHA-256 hashes of the cookie.
 
 ### Data
 
-- All access through SQLAlchemy sessions (`Depends(get_db)`); bind parameters only.
-- Grid action handlers do not commit; the grid writes one audit event per row and commits.
-- Other writes call `audit.record(...)` then `db.commit()` in the route.
-- Schema changes: edit the models (`lattice/kernel/models.py` for platform tables,
-  the app's `models.py` for its own), then `make revision m="what changes"`, read
-  the generated file, fix anything autogenerate got wrong, `make migrate`. Never
-  edit a migration that has been merged. Seed lookup rows (roles, kinds) in the
-  migration that creates their table.
+- **Plain SQL, no ORM.** Every SQL statement is a named query in `sql/<area>.sql`
+  (`-- name: x` then a `--` comment line), loaded with
+  `sql_queries(Path(__file__).parent / "sql").<area>` and run through `Db`:
+  `db.all`, `db.first`, `db.one` (404 when missing), `db.value`, `db.run`.
+  Values are `:placeholders`; a list becomes an array (`= ANY(:ids)`); cast with
+  `CAST(:x AS type)`, never `:x::type`. Never write SQL in Python, never import
+  `sqlalchemy.orm`; apps never import SQLAlchemy or psycopg.
+- Routes take `db: Db = Depends(get_db)`. Each request is one transaction, saved
+  when the route returns: routes and grid handlers never commit. Outside a
+  request, use `with transaction() as db:`.
+- Grid writes are audited per row automatically. Other writes call
+  `audit.record(...)` in the same request.
+- Schema changes: `make migration schema=<key> m="what changes"`, write the SQL,
+  `make migrate`. Tables live in the schema named after the app's key; timestamps
+  are `timestamp DEFAULT lattice.utc_now()`. Never edit a migration that has been
+  merged. Seed lookup rows (roles, kinds) in the migration that creates their table.
+- `tests/test_sql_rules.py` fails on an unused named query, a missing one, one
+  Postgres rejects, or SQL written in Python. Delete queries nobody uses.
 - Apps refer to each other's records by reference, never by foreign key
   ([ADR 0001](docs/adr/0001-postgres-with-per-app-bindings.md)).
 
@@ -158,7 +176,7 @@ Implement the smallest change that satisfies the requirement.
   code, helpers that only rename a call, speculative options.
 - Tests: add or update tests for every route, action and permission you add — core
   tests in `tests/`, an app's tests in its own `tests/` with `host_apps` set to the
-  app. `make test` must pass. Report the count: "168 passed".
+  app. `make test` must pass (Postgres running). Report the count, e.g. "227 passed".
 
 ## Recipes
 
@@ -166,9 +184,11 @@ Implement the smallest change that satisfies the requirement.
 
 Follow `.claude/skills/add-grid-page/SKILL.md`. In short, in the app's package:
 
-1. Model in the app's `models.py`, and a migration.
-2. A module with `query()`, the `GridSpec` (key `{app}.name`, path `/{app}/…`),
-   action handlers, and a `router` whose page route calls `render_grid_page(...)`.
+1. The table in a migration (`make migration schema=<app> m="add <table>"`), and
+   the named queries in `sql/<area>.sql`: `grid`, and one per action.
+2. A module with `SQL = sql_queries(...).<area>`, the `GridSpec` (key `{app}.name`,
+   path `/{app}/…`, `query=SQL.grid`), action handlers running `ctx.db.run(...)`,
+   and a `router` whose page route calls `render_grid_page(...)`.
 3. In the app's `AppManifest`: add the router to `routers=`, the grid to `grids=`,
    its `NavNode`s to `nav=`, and optionally `HomeTile`s to `tiles=`.
 4. Tests in the app's `tests/`: page renders, an action works, a role that must not
@@ -176,10 +196,12 @@ Follow `.claude/skills/add-grid-page/SKILL.md`. In short, in the app's package:
 
 ### Add an app
 
-Create `apps/<name>/` with a `pyproject.toml` (depends on `lattice`), a package
-exporting `APP = AppManifest(key="<name>", …)`, and `tests/conftest.py` setting
-`host_apps`. Add it to a host's `create_app(apps=[…])` and to the root dev
-dependencies. Copy `apps/demo` for the shape.
+Follow the tutorial in `lattice/help/developer/getting-started/first-app.md`:
+a package exporting `APP = AppManifest(key="<name>", …, sql=HERE / "sql")`,
+`sql/schema/0001_<name>.sql`, named queries, and `tests/conftest.py` setting
+`host_apps`. Add it to a host's `create_app(apps=[…])`, the root dev dependencies,
+`testpaths`, ruff's `known-first-party` and the import contracts in
+`pyproject.toml`. Copy `apps/demo` for the shape.
 
 ### Add a detail page
 
@@ -189,7 +211,8 @@ and actions, `prop_list` in a card, `timeline(audit.history(...))` for activity.
 
 ### Add a role
 
-Add it in a migration (`op.bulk_insert` into `role`) and a constant in
+Add it in a migration (`INSERT INTO lattice.role …` in a new
+`lattice/sql/schema/` file) and a constant in
 `lattice/kernel/auth/roles.py`, exported through `lattice.api`. Admins assign
 roles in Administration › Users.
 

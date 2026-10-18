@@ -20,13 +20,15 @@ in [AGENTS.md](AGENTS.md) keep every screen consistent.
 - A demo app showing the grid in three shapes: Work Queue (submissions),
   Jobs (live job list), Inbox (email browsing)
 
-**Stack**: Python 3.14, FastAPI, Jinja2, HTMX, Alpine.js, SQLAlchemy 2, Alembic, a uv
-workspace. SQLite until the move to Postgres. No Node build.
+**Stack**: Python 3.14, FastAPI, Jinja2, HTMX, Alpine.js, Postgres 17, a uv
+workspace. Plain SQL in named `.sql` files, run through SQLAlchemy Core and
+psycopg 3; no ORM. No Node build.
 
 ## Run
 
 ```bash
 cp .env.example .env     # optional; defaults work for development
+make db-up               # start Postgres 17 (compose.yaml, port 5436, podman-compose)
 make setup               # install the workspace, lattice migrate, lattice seed
 make dev                 # lattice dev: http://localhost:8000
 ```
@@ -49,16 +51,17 @@ Sign in as `admin@example.com` / `Admin12345!` (also `editor@…`/`Editor12345!`
 ```
 lattice/                 the core package
   api.py                 the only module apps import
-  kernel/                auth, nav, db, models, services, web, icons, slots, css_rules
+  kernel/                database (engine, Db), sql loader, migrations, auth, nav, services, web
+  sql/                   Lattice's named queries; schema/ holds its migrations
   components/            grid/, search/ (Ctrl+J), tiles, manifest (AppManifest)
   platform/              home, account, admin: Lattice's own apps
   host.py                create_app and the app checks
-  cli.py                 lattice migrate | create-user | seed | dev
+  cli.py                 lattice migrate | new-migration | reset | create-user | seed | dev | docs
   testing.py             pytest fixtures for core and app tests
   help/                  the user guide and developer guide, served at /help
   templates/  static/    shell layout, macros; five CSS layers, JS
-apps/demo/               lattice-demo: the example app and its tests
+apps/demo/               lattice-demo: the example app, its sql/ and its tests
 hosts/demo/              lattice-demo-host: runs Lattice with the demo app
-alembic/                 migrations
+compose.yaml             Postgres for development and tests
 tests/                   core tests
 ```

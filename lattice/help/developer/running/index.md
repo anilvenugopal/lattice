@@ -78,11 +78,16 @@ the database, the sign-in methods, the session limits, every grid and every page
 
 ## The database
 
-> [!WARNING]
-> Lattice uses SQLite today. It is fine for development and small internal
-> deployments, but it allows one writer at a time. Postgres support, with a
-> database per app, is the next step of the plan
-> ([Decisions and direction](../architecture/decisions.md)).
+Lattice needs **Postgres** (version 17 is what development and tests use).
+One database holds everything: Lattice's tables in the `lattice` schema, and
+each app's in a schema named after its key. Point `LATTICE_DATABASE_URL` at it:
+
+```bash
+LATTICE_DATABASE_URL=postgresql+psycopg://lattice:secret@db.internal:5432/lattice
+```
+
+The database user needs to create schemas and tables in that database, for
+the migrations. Lattice opens one connection pool per process.
 
 Apply migrations before each release starts serving:
 
@@ -90,9 +95,11 @@ Apply migrations before each release starts serving:
 uv run lattice migrate
 ```
 
-Back up the database file (`data/lattice.db` by default) the way you back up
-any SQLite file: with `sqlite3 data/lattice.db ".backup backup.db"`, not by
-copying it while the host is running.
+It applies Lattice's pending migration files, then each app's, in one
+transaction, and prints what it applied. Two runs at once wait for each other.
+
+Back up the database with Postgres's own tools, for example a nightly
+`pg_dump`, or your managed service's snapshots, and test a restore.
 
 ## Running the server
 
@@ -109,18 +116,21 @@ uv run uvicorn helpdesk_host.main:app --host 0.0.0.0 --port 8000 \
   Lattice sees the original `https` scheme and client address.
 - **Health checks.** `GET /health` needs no sign-in. It answers
   `{"status": "ok"}` after a query to the database.
-- **Workers.** Each worker process runs every app's `background` task. With
-  SQLite, run a single worker.
+- **Workers.** Run several workers (`--workers 4`) for more traffic. Each worker
+  has its own connection pool, and runs every app's `background` task.
+- **Slow grids.** A grid query running longer than
+  `LATTICE_GRID_QUERY_TIMEOUT_SECONDS` (15) is cancelled, and the user is asked
+  to narrow the search. See [Grid performance](../building-apps/grid-performance.md).
 
 ## Production checklist
 
 - [ ] `LATTICE_APP_ENV=production`
 - [ ] `LATTICE_SECRET_KEY` set to a long random value, kept secret, and the same in every process
 - [ ] Served over HTTPS; uvicorn started with `--proxy-headers` behind a proxy
+- [ ] Postgres reachable at `LATTICE_DATABASE_URL`, with backups scheduled and a restore tested
 - [ ] `lattice migrate` run for this release
 - [ ] A first administrator created with `lattice create-user` ([Users and roles](users-and-roles.md))
 - [ ] OIDC configured and tested, and `LATTICE_OIDC_DEFAULT_ROLE` chosen ([Sign-in and sessions](sign-in.md))
 - [ ] `LATTICE_PASSWORD_LOGIN_ENABLED=false` if everyone signs in through SSO
 - [ ] Name, logos and theme set ([Branding a host](branding.md))
-- [ ] Database backups scheduled and a restore tested
 - [ ] `/health` wired to your monitoring
