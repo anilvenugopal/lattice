@@ -14,6 +14,7 @@ from lattice.components.grid import (
     GridSpec,
     Palette,
     View,
+    build_grid,
     render_grid_page,
 )
 from lattice.components.manifest import AppManifest
@@ -35,7 +36,7 @@ __all__ = [
     "AppManifest", "NavNode", "HomeTile", "SearchProvider", "SearchResult",
     # Grid
     "Action", "ActionContext", "ActionResult", "Column", "Field", "Filter", "GridSpec",
-    "Palette", "View", "render_grid_page",
+    "Palette", "View", "build_grid", "render_grid_page",
     # Pages and feedback
     "render", "render_page", "flash", "toast",
     # Requests and access

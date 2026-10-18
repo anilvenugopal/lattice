@@ -37,6 +37,7 @@ from lattice.api import AppManifest, GridSpec, render_page
 | [`GridSpec`](grid.md#gridspec) | class | One list screen: what rows exist, how they look, how users narrow them and what they can do with a selection. |
 | [`Palette`](grid.md#palette) | class | Makes rows findable from Ctrl+J (one search provider per grid, see lattice/components/search/providers.py). |
 | [`View`](grid.md#view) | class | A named preset of filters shown as a tab above the grid (or in the sidebar). |
+| `build_grid` `(request, db, spec, views_in_nav=False, sync_url=True, fixed=None)` | function | Template context for components/grid.html: render it with `data_grid(grid)`. |
 | `render_grid_page` `(request, db, spec, nav_key, title='', subtitle='', views_in_nav=False)` | function | A full page holding one grid: the standard list screen. |
 
 ## Pages and feedback

@@ -1,5 +1,5 @@
 {#
-  The standard data grid. Build the context with app.grid.build_grid() and render:
+  The standard data grid. Build the context with build_grid() and render:
     {% from "components/grid.html" import data_grid %}{{ data_grid(grid) }}
   Client behaviour lives in static/js/grid.js (Alpine component `dataGrid`).
 #}
@@ -24,6 +24,9 @@
     <input type="hidden" name="sort" x-ref="sort" value="{{ gq.sort }}">
     <input type="hidden" name="page" x-ref="page" value="{{ gq.page }}">
     <input type="hidden" name="size" x-ref="size" value="{{ gq.size }}">
+    {% for key, values in gq.fixed.items() %}{% for v in values %}
+    <input type="hidden" name="x_{{ key }}" value="{{ v }}">
+    {% endfor %}{% endfor %}
 
     <label class="dg__search">
       {{ icon('search', 15) }}

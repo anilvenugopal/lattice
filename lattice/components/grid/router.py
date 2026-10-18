@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import csv
 import io
+from contextlib import contextmanager
 from datetime import date, datetime
 from urllib.parse import parse_qsl
 
@@ -50,12 +51,22 @@ def _spec(key: str, user) -> GridSpec:
     return spec
 
 
+@contextmanager
+def _bad_state():
+    """A request naming a fixed column the grid does not have is a 400, not a server error."""
+    try:
+        yield
+    except ValueError as exc:
+        raise HTTPException(400, detail=str(exc)) from None
+
+
 @router.get("/{key}/rows")
 def rows(key: str, request: Request, db: Session = Depends(get_db),
          user=Depends(current_user)):
     spec = _spec(key, user)
-    grid = build_grid(request, db, spec,
-                      views_in_nav=request.query_params.get("_nav") == "1")
+    with _bad_state():
+        grid = build_grid(request, db, spec,
+                          views_in_nav=request.query_params.get("_nav") == "1")
     return render(request, "components/grid_body.html", grid=grid)
 
 
@@ -106,7 +117,8 @@ async def run_action(key: str, action_key: str, request: Request,
     if body.get("all"):
         params = QueryParams(parse_qsl(body.get("params", "")))
         gq = engine.GridQuery.from_params(params, spec)
-        selected = engine.fetch_all(spec, db, user, gq, engine.MAX_BULK)
+        with _bad_state():
+            selected = engine.fetch_all(spec, db, user, gq, engine.MAX_BULK)
     else:
         selected = engine.fetch_by_ids(spec, db, user, list(body.get("ids", []))[:engine.MAX_BULK])
 
@@ -163,7 +175,8 @@ def export_csv(key: str, request: Request, db: Session = Depends(get_db),
     if not spec.export:
         raise HTTPException(404)
     gq = engine.GridQuery.from_params(request.query_params, spec)
-    rows = engine.fetch_all(spec, db, user, gq, engine.MAX_EXPORT)
+    with _bad_state():
+        rows = engine.fetch_all(spec, db, user, gq, engine.MAX_EXPORT)
     columns = [c for c in spec.columns if c.kind != "template"]
 
     def generate():

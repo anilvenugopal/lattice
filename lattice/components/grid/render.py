@@ -6,6 +6,7 @@ import json
 
 from fastapi import HTTPException, Request
 from sqlalchemy.orm import Session
+from starlette.datastructures import QueryParams
 
 from lattice.components.grid import engine
 from lattice.components.grid.spec import Field, Filter, GridSpec
@@ -30,17 +31,29 @@ def _field_config(fld: Field, db, user) -> dict:
 
 
 def build_grid(request: Request, db: Session, spec: GridSpec, *, views_in_nav: bool = False,
-               sync_url: bool = True) -> dict:
-    """Template context for components/grid.html. Reads grid state from the request URL."""
+               sync_url: bool = True, fixed: dict | None = None) -> dict:
+    """Template context for components/grid.html: render it with `data_grid(grid)`.
+
+    sync_url=True: the grid owns the page URL. It starts from the URL's state and writes
+    its state back to it. sync_url=False (a grid embedded in another page): it starts from
+    its defaults and leaves the URL alone.
+    fixed: column -> value (or list of values) the rows are narrowed to on every request,
+    e.g. {"customer_id": 42} for one customer's tickets. Users cannot change it. It
+    narrows what the grid shows; it is not access control (the query is).
+    """
     user = request.state.user
     default_size = int(preferences.get(user, "page_size"))
-    gq = engine.GridQuery.from_params(request.query_params, spec, default_size)
+    params = request.query_params if sync_url else QueryParams()
+    gq = engine.GridQuery.from_params(params, spec, default_size)
+    if fixed is not None:
+        gq.fixed = {k: [str(x) for x in (v if isinstance(v, (list, tuple)) else [v])]
+                    for k, v in fixed.items()}
     page = engine.fetch_page(spec, db, user, gq)
     hidden = hidden_columns(spec, user)
     actions = spec.actions_for(user)
     filters: list[tuple[Filter, list, list]] = [
         (f, resolve_options(f.options, db, user), gq.filters.get(f.key, []))
-        for f in spec.filters
+        for f in spec.filters if f.key not in gq.fixed
     ]
     current_sort = gq.effective_sort(spec)
     config = {

@@ -33,6 +33,9 @@ class GridQuery:
     size: int = DEFAULT_PAGE_SIZE
     view: str = ""
     filters: dict[str, list[str]] = field(default_factory=dict)
+    # Set by the page that embeds the grid (build_grid(fixed=…)), not by the user.
+    # It travels as x_{key} parameters and narrows the query; it is not access control.
+    fixed: dict[str, list[str]] = field(default_factory=dict)
 
     @classmethod
     def from_params(cls, params, spec: GridSpec, default_size: int = DEFAULT_PAGE_SIZE):
@@ -48,6 +51,7 @@ class GridQuery:
             values = [v for v in params.getlist(f"f_{flt.key}") if v != ""]
             if values:
                 filters[flt.key] = values
+        fixed = {k[2:]: params.getlist(k) for k in params if k.startswith("x_")}
         view = params.get("view", "")
         if view and not spec.view(view):
             view = ""
@@ -60,6 +64,7 @@ class GridQuery:
             size=size if size in PAGE_SIZES else default_size,
             view=view,
             filters=filters,
+            fixed=fixed,
         )
 
     def effective_sort(self, spec: GridSpec) -> str:
@@ -135,6 +140,10 @@ def filtered(spec: GridSpec, db: Session, user, gq: GridQuery):
     """The spec query narrowed by view, filters and search, as (select, subquery)."""
     sq = spec.query(db, user).subquery("g")
     conds = []
+    for key, values in gq.fixed.items():
+        if key not in sq.c:
+            raise ValueError(f"Grid {spec.key!r} has no column {key!r} to fix")
+        conds.append(_match(sq.c[key], values))
     view = spec.view(gq.view)
     if view:
         for key, val in view.where.items():

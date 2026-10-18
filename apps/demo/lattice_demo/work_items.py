@@ -27,6 +27,7 @@ from lattice.api import (
     User,
     View,
     audit,
+    build_grid,
     csrf_protect,
     current_user,
     get_db,
@@ -214,10 +215,12 @@ def _get(db: Session, item_id: int) -> WorkItem:
 def detail(item_id: int, request: Request, db: Session = Depends(get_db)):
     item = _get(db, item_id)
     owner = db.get(User, item.owner_id) if item.owner_id else None
+    # The same grid, embedded and fixed to this item's account.
+    related = build_grid(request, db, GRID, sync_url=False, fixed={"account": item.account})
     return render_page(request, "demo/work_item_detail.html", "work.detail",
                        item=item, owner=owner, events=audit.history(db, "demo.work_items", item.id),
                        spec=GRID, can_edit=request.state.user.has_any(EDITORS),
-                       crumb=item.ref)
+                       related=related, crumb=item.ref)
 
 
 @router.get("/work/{item_id}/edit", dependencies=[Depends(require_roles(*EDITORS))])

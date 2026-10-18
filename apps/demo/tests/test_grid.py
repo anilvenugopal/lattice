@@ -133,3 +133,38 @@ def test_secondary_line_uses_its_own_column_labels(as_user, db, users):
     db.commit()
     html = as_user("viewer").get("/_grid/demo.jobs/rows").text
     assert '<div class="dg__secondary">Sync</div>' in html
+
+
+# ── Fixed filters: a grid embedded in another page ───────────────────────────
+
+def test_fixed_filter_narrows_rows_and_combines_with_search(db, users, items):
+    spec = work_items.GRID
+    me = current(users["editor"])
+    page = engine.fetch_page(spec, db, me, q(view="all", fixed={"account": ["Globex"]}))
+    assert {r["account"] for r in page.rows} == {"Globex"} and page.total == 3
+    page = engine.fetch_page(spec, db, me, q(view="all", q="cyber", fixed={"account": ["Globex"]}))
+    assert {r["ref"] for r in page.rows} == {"WI-00004", "WI-00006"}
+
+
+def test_fixed_filter_travels_with_rows_actions_and_export(as_user, items):
+    c = as_user("editor")
+    body = c.get("/_grid/demo.work_items/rows?view=all&x_account=Acme").text
+    assert "WI-00001" in body and "WI-00004" not in body
+    csv_text = c.get("/_grid/demo.work_items/export.csv?view=all&x_account=Acme").text
+    assert "Acme" in csv_text and "Globex" not in csv_text
+    resp = post_json(c, "/_grid/demo.work_items/action/approve",
+                     {"all": True, "params": "view=all&x_account=Globex"}).json()
+    assert resp["message"].startswith("Approved 2 item(s).")     # Globex's open items only
+
+
+def test_unknown_fixed_column_is_a_bad_request(as_user, items):
+    c = as_user("editor")
+    assert c.get("/_grid/demo.work_items/rows?x_nope=1").status_code == 400
+    assert c.get("/_grid/demo.work_items/export.csv?x_nope=1").status_code == 400
+
+
+def test_embedded_grid_on_the_detail_page(as_user, items):
+    page = as_user("editor").get("/demo/work/1?q=zzz&view=closed").text
+    assert '<input type="hidden" name="x_account" value="Acme">' in page
+    assert "WI-00002" in page and "WI-00004" not in page       # Acme's items, not Globex's
+    assert '"syncUrl": false' in page                           # the page URL is left alone

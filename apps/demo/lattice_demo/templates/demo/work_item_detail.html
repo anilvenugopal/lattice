@@ -1,8 +1,9 @@
 {# Record page pattern: header with status and actions, properties, description, activity. #}
 {% extends "base/shell.html" %}
 {% from "components/macros.html" import page_header, card, prop_list, badge_for, user_chip, timeline %}
+{% from "components/grid.html" import data_grid %}
 {% block main %}
-<div class="page">
+<div class="page stack-lg">
   {% set status_col = spec.column("status") %}
   {% call page_header(item.ref ~ " · " ~ item.title, item.account, label_for(status_col, item.status), tone_for(status_col, item.status)) %}
     <a class="btn btn--ghost" href="/demo/work">{{ icon('chevron-left', 14) }}Back to list</a>
@@ -28,5 +29,6 @@
     </div>
     {% call card("Activity") %}{{ timeline(events) }}{% endcall %}
   </div>
+  {% call card("All work items from " ~ item.account, flush=True) %}{{ data_grid(related) }}{% endcall %}
 </div>
 {% endblock %}

@@ -130,6 +130,61 @@ templates such as `{id}` all refer to these keys.
 
 `$me` in a view's `where` is replaced with the signed-in user's id.
 
+## Where the rows come from
+
+A grid's rows come from **one SQL query that you write**. Lattice treats the
+query as a box: it wraps it as a subquery, then adds the search, filters, view,
+sort and paging on top. So the query can be as complex as SQL allows, and
+every column it returns can be shown, searched, filtered and sorted.
+
+**Joins.** Join as many tables as you need. Work Queue joins the users table
+to show each item's owner by name:
+
+```python
+owner = aliased(User)
+select(WorkItem.id, WorkItem.ref, WorkItem.title, owner.display_name.label("owner"))
+    .outerjoin(owner, owner.id == WorkItem.owner_id)
+```
+
+**Lookups, counts and computed values.** Anything SQL can compute becomes a
+column. For example, each customer with their number of open tickets and a
+computed health label:
+
+```python
+open_tickets = (select(Ticket.customer_id, func.count().label("open_count"))
+                .where(Ticket.status.in_(["new", "open"]))
+                .group_by(Ticket.customer_id).subquery())
+
+def query(db, user):
+    return (select(Customer.id, Customer.name, Region.name.label("region"),
+                   func.coalesce(open_tickets.c.open_count, 0).label("open_tickets"),
+                   case((func.coalesce(open_tickets.c.open_count, 0) > 10, "busy"),
+                        else_="ok").label("health"))
+            .join(Region, Region.id == Customer.region_id)
+            .outerjoin(open_tickets, open_tickets.c.customer_id == Customer.id))
+```
+
+`region`, `open_tickets` and `health` are ordinary columns to the grid: a
+`Filter("health", …)`, `View(where={"region": [...]})`, sorting by
+`open_tickets` and searching `region` all work. Administration › Users does
+the same with a grouped subquery of each user's roles.
+
+**The limits:**
+
+- **Rows come from the database.** A grid cannot list rows from a web service
+  or a Python list. Data sources for that are planned (step 5 in
+  [Decisions and direction](../architecture/decisions.md)).
+- **No per-row Python.** You cannot run Python on every row before it is
+  shown. Do the work in SQL. Three things help with display:
+  - a column's `labels` turn stored values into text;
+  - a `template` column draws a cell from the row's values;
+  - the side `panel` function runs Python for the one row opened, so it can
+    look anything up, even in another system.
+- **One database.** Everything is in one database today, so any table can be
+  joined.
+- **Speed.** The query runs for every page, count and export. Index the
+  columns you filter, sort and join on.
+
 ## Columns
 
 Choose how a value renders with `kind`:
@@ -245,25 +300,85 @@ Every grid uses the same endpoints, so apps never write list endpoints:
 
 ## Embedding a grid in another page
 
-`render_grid_page` makes a page that is only the grid. To put a grid inside
-another page, such as a list of related records on a detail page, build its
-context and place it with the `data_grid` macro:
+`render_grid_page` makes a page that is only a grid. To put a grid **inside**
+another page, build it with `build_grid` and place it with the `data_grid`
+macro. The usual reason is a record page that lists related records: a
+customer's tickets, a job's runs, all items from one account.
+
+Embedded, it is the full grid: search, views, sorting, paging, selection,
+actions, the side panel and export all work.
+
+### Fix it to the record with `fixed`
+
+On a customer's page you want that customer's tickets, not every ticket. Pass
+`fixed`: column → value. The grid shows only matching rows, on every request,
+and the user cannot remove it.
 
 ```python
-grid = build_grid(request, db, GRID, sync_url=False)
-return render_page(request, "helpdesk/customer.html", "customers.detail", grid=grid)
+from lattice.api import build_grid, render_page
+
+
+@router.get("/customers/{customer_id}")
+def customer(customer_id: int, request: Request, db: Session = Depends(get_db)):
+    customer = get_visible_customer(db, request.state.user, customer_id)   # 404 if not visible
+    tickets = build_grid(request, db, tickets_module.GRID, sync_url=False,
+                         fixed={"customer_id": customer.id})
+    return render_page(request, "helpdesk/customer.html", "customers.detail",
+                       customer=customer, tickets=tickets, crumb=customer.name)
 ```
 
 ```jinja
 {% from "components/grid.html" import data_grid %}
-{{ data_grid(grid) }}
+…
+{% call card("Tickets", flush=True) %}{{ data_grid(tickets) }}{% endcall %}
 ```
 
-`sync_url=False` stops the grid writing its state to the page URL.
+A working example is in the demo: open any work item. Under its details,
+**All work items from {account}** is the Work Queue grid fixed to that item's
+account (`detail()` in `apps/demo/lattice_demo/work_items.py`).
 
-> [!NOTE]
-> `build_grid` is not yet exported from `lattice.api`, so apps cannot use it.
-> It will be added when the first app needs it.
+### What `fixed` does
+
+- **Columns.** Each key is a column of the grid's query: the label in its
+  `select`. It does not need to be a `Column` or a `Filter`; select it in the
+  query and it can be fixed. A key the query does not have is an error.
+- **Values.** A single value, or a list for "any of these":
+  `fixed={"status": ["new", "open"]}`.
+- **Everywhere.** It applies to the rows, the counts and paging, "select all N
+  matching", actions run on all matching rows, and CSV export.
+- **On top of the user's choices.** The user's search, filters and views
+  narrow further inside it.
+- **No filter chip.** A filter chip for a fixed column is hidden, since it
+  could only conflict.
+
+### `sync_url=False`
+
+A full grid page keeps its state in the address bar, so a link reopens the
+same view. An embedded grid must not. The page's URL belongs to the page.
+With `sync_url=False` the grid starts from its defaults (first view, default
+sort, first page) and never writes to the URL. Always pass it when embedding.
+
+### Using it well
+
+- **Access.** `fixed` narrows what is shown; it is **not access control**. It
+  travels with each request from the browser, and a user could edit it. The
+  grid's query still decides what a user may see, so they could only ever
+  reach rows they could see on the grid's own page. Keep row access in the
+  query, as always.
+- **Reuse the grid.** Embed the app's existing grid rather than declaring a
+  second one, so columns, actions and labels stay the same in both places.
+  Declare a separate `GridSpec` only when the embedded list needs different
+  columns or actions. Give it its own key, for example
+  `helpdesk.customer_tickets`.
+- **Hide the fixed column.** On a customer's page, a Customer column says the
+  same thing in every row. Leave it out of the grid's `columns`, or set
+  `hidden=True`, and select it in the query only for fixing.
+- **Use `flush=True`** on the card, so the grid sits edge to edge.
+- **One per grid key.** A page can embed several different grids, but the same
+  grid only once.
+- **After an action,** the embedded grid refreshes itself, like a full grid
+  page. If the action changes the record the page shows, return
+  `ActionResult(redirect=…)` to reload the page.
 
 ## Home tiles and Ctrl+J
 
