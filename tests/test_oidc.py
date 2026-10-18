@@ -7,11 +7,10 @@ from urllib.parse import parse_qs, urlparse
 import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import rsa
-from sqlalchemy import select
 
 from lattice.kernel.auth import oidc
 from lattice.kernel.config import settings
-from lattice.kernel.models import User
+from lattice.kernel.services import users as users_service
 from lattice.testing import csrf, make_user
 
 ISSUER = "https://idp.test"
@@ -69,39 +68,36 @@ def sign_in(client, idp, claims, nonce_override=None):
 def test_first_sso_sign_in_creates_user_with_default_role(client, db, idp):
     resp = sign_in(client, idp, {"sub": "u-1", "email": "New.Person@corp.io", "name": "New Person"})
     assert resp.status_code == 303 and resp.headers["location"] == "/account/profile"
-    user = db.scalar(select(User).where(User.email == "new.person@corp.io"))
-    assert user.oidc_subject == "u-1" and user.role_codes == ["viewer"] and user.password_hash is None
+    user = users_service.by_email(db, "new.person@corp.io")
+    assert user["oidc_subject"] == "u-1" and user["roles"] == ["viewer"]
+    assert user["password_hash"] is None
     assert client.get("/account/profile").status_code == 200
 
 
 def test_sso_links_existing_account_by_verified_email(client, db, idp, users):
     resp = sign_in(client, idp, {"sub": "u-2", "email": "editor@test.io", "email_verified": True})
     assert resp.status_code == 303
-    db.expire_all()
-    assert db.get(User, users["editor"].id).oidc_subject == "u-2"
+    assert users_service.by_id(db, users["editor"].id)["oidc_subject"] == "u-2"
 
 
 def test_unverified_email_does_not_link_existing_account(client, db, idp, users):
     resp = sign_in(client, idp, {"sub": "u-5", "email": "admin@test.io"})
     assert resp.status_code == 403 and "Ask an administrator" in resp.text
-    db.expire_all()
-    assert db.get(User, users["admin"].id).oidc_subject is None
+    assert users_service.by_id(db, users["admin"].id)["oidc_subject"] is None
     assert client.get("/", follow_redirects=False).status_code == 302
 
 
 def test_trusted_email_setting_links_without_email_verified(client, db, idp, users, monkeypatch):
     monkeypatch.setattr(settings, "oidc_trust_email", True)
     assert sign_in(client, idp, {"sub": "u-6", "email": "viewer@test.io"}).status_code == 303
-    db.expire_all()
-    assert db.get(User, users["viewer"].id).oidc_subject == "u-6"
+    assert users_service.by_id(db, users["viewer"].id)["oidc_subject"] == "u-6"
 
 
 def test_preferred_username_never_links(client, db, idp, users, monkeypatch):
     monkeypatch.setattr(settings, "oidc_trust_email", True)
     resp = sign_in(client, idp, {"sub": "u-7", "preferred_username": "admin@test.io"})
     assert resp.status_code == 403
-    db.expire_all()
-    assert db.get(User, users["admin"].id).oidc_subject is None
+    assert users_service.by_id(db, users["admin"].id)["oidc_subject"] is None
 
 
 def test_nonce_mismatch_is_rejected(client, db, idp):

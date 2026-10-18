@@ -7,11 +7,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from fastapi import APIRouter
-from sqlalchemy.orm import Session
 
 from lattice.components.grid import GridSpec
 from lattice.components.search.providers import SearchProvider
 from lattice.components.tiles import HomeTile
+from lattice.kernel.database import Db
 from lattice.kernel.nav import NavNode
 
 
@@ -25,9 +25,7 @@ class AppManifest:
     help_url: str = ""                         # listed in the shell's Help menu
     nav: list[NavNode] = field(default_factory=list)  # the app's pages; every page has a node
     # FastAPI routers, mounted as declared (paths start with /{key})
-    # FastAPI routers, mounted as declared (paths start with /{key})
     routers: list[APIRouter] = field(default_factory=list)
-    # registered for actions, export, Ctrl+J and tiles
     # registered for actions, export, Ctrl+J and tiles
     grids: list[GridSpec] = field(default_factory=list)
     search: list[SearchProvider] = field(default_factory=list)  # extra Ctrl+J sources
@@ -50,8 +48,8 @@ class AppManifest:
     slots: dict[str, str] = field(default_factory=dict)
     # Started with the host, cancelled at shutdown.
     background: Callable[[], Awaitable[None]] | None = None
-    # Development data for `lattice seed`; receives a session and commits.
-    seed: Callable[[Session], None] | None = None
+    # Development data for `lattice seed`; receives a Db in the seed's transaction.
+    seed: Callable[[Db], None] | None = None
 
     @property
     def prefix(self) -> str:

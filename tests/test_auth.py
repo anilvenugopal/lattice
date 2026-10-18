@@ -1,8 +1,14 @@
-from sqlalchemy import select
+from pathlib import Path
+
+import pytest
 
 from lattice.kernel.auth.sessions import COOKIE_NAME as SESSION_COOKIE
-from lattice.kernel.models import AuditEvent, UserSession
+from lattice.kernel.auth.sessions import revoke_user_sessions
+from lattice.kernel.database import transaction
+from lattice.kernel.sql import sql_queries
 from lattice.testing import PASSWORD, csrf, login, make_user
+
+CHECK = sql_queries(Path(__file__).parent / "sql").checks
 
 
 def test_anonymous_request_redirects_to_login_with_next(client, users):
@@ -24,12 +30,12 @@ def test_password_login_and_logout(client, users, db):
     assert client.get("/").status_code == 200
 
     token = client.cookies[SESSION_COOKIE]
-    stored = db.scalars(select(UserSession.id)).all()
+    stored = [r["id"] for r in db.all(CHECK.session_ids)]
     assert token not in stored and len(stored) == 1     # only the hash is stored
 
     client.post("/auth/logout", data={"csrf_token": csrf(client)})
     assert client.get("/", follow_redirects=False).status_code == 302
-    actions = db.scalars(select(AuditEvent.action)).all()
+    actions = [r["action"] for r in db.all(CHECK.audit_actions)]
     assert "auth.login_failed" in actions and "auth.login" in actions
 
 
@@ -91,22 +97,20 @@ def test_revoking_sessions_on_deactivate(as_user, users, client):
     assert login(c, "editor@test.io").status_code == 401
 
 
-def test_session_helpers_leave_the_commit_to_the_caller(db, users):
-    from lattice.kernel.auth.sessions import revoke_user_sessions
-    from lattice.kernel.models import UserSession, utcnow
-    db.add(UserSession(id="s1", user_id=users["editor"].id, expires_at=utcnow()))
-    db.commit()
-    revoke_user_sessions(db, users["editor"].id)
-    db.rollback()
-    assert db.get(UserSession, "s1").revoked_at is None
+def test_session_helpers_write_in_the_callers_transaction(db, users):
+    db.run(CHECK.add_session, id="s1", user_id=users["editor"].id)
+    with pytest.raises(RuntimeError), transaction() as tx:
+        revoke_user_sessions(tx, [users["editor"].id])
+        raise RuntimeError("the caller fails after revoking")
+    assert db.one(CHECK.session, id="s1")["revoked_at"] is None
 
 
 def test_logout_and_own_session_revocation_are_audited(as_user, users, db):
     c = as_user("viewer")
     c.post("/account/sessions/revoke-others", headers={"X-CSRF-Token": csrf(c)})
     c.post("/auth/logout", data={"csrf_token": csrf(c)})
-    actions = db.scalars(select(AuditEvent.action).where(
-        AuditEvent.target_id == str(users["viewer"].id))).all()
+    actions = [r["action"] for r in
+               db.all(CHECK.audit_actions_for_target, target_id=str(users["viewer"].id))]
     assert "user.session_revoked" in actions and "auth.logout" in actions
 
 

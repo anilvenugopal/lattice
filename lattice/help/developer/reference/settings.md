@@ -19,7 +19,7 @@ Values are read from the environment, then from a `.env` file in the working fol
 | `LATTICE_BRAND_LOGO_DARK` | `/static/brand/logo-dark.svg` | Logo for dark mode. |
 | `LATTICE_BRAND_SHOW_NAME` | `true` | Show the app name next to the logo. Set false when the logo images already contain the name. |
 | `LATTICE_SECRET_KEY` | `dev-secret-change-me` | Signs the flash and OIDC cookies. Set a long random value in production. |
-| `LATTICE_DATABASE_URL` | `sqlite:///./data/lattice.db` | SQLAlchemy database URL. |
+| `LATTICE_DATABASE_URL` | `postgresql+psycopg://lattice:lattice@127.0.0.1:5436/lattice` | The Postgres database, as a SQLAlchemy URL with the psycopg driver. |
 | `LATTICE_HOST` | `demo_host.main:app` | The host the `lattice` command line runs and seeds, as `module:attribute`. |
 | `LATTICE_SESSION_IDLE_MINUTES` | `480` | A session ends after this many minutes without a request. |
 | `LATTICE_SESSION_MAX_HOURS` | `24` | A session ends this many hours after sign-in, whatever the activity. |

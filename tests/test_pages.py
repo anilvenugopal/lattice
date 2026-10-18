@@ -102,9 +102,8 @@ def test_profile_update_and_blank_name(as_user, users, db):
     resp = c.post("/account/profile", data={"display_name": "  "}, headers={"X-CSRF-Token": csrf(c)})
     assert resp.status_code == 400
     c.post("/account/profile", data={"display_name": "Val V"}, headers={"X-CSRF-Token": csrf(c)})
-    db.expire_all()
-    from lattice.kernel.models import User
-    assert db.get(User, users["viewer"].id).display_name == "Val V"
+    from lattice.kernel.services import users as users_service
+    assert users_service.by_id(db, users["viewer"].id)["display_name"] == "Val V"
 
 
 def test_revoking_own_current_session_signs_out(as_user, users):

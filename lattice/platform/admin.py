@@ -7,10 +7,8 @@ from __future__ import annotations
 
 import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import RedirectResponse
-from sqlalchemy import func, select, update
-from sqlalchemy.orm import Session
 
 from lattice.components.grid import (
     REGISTRY,
@@ -29,87 +27,61 @@ from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.auth.deps import current_user, require_roles
 from lattice.kernel.auth.passwords import hash_password, policy_errors
 from lattice.kernel.auth.roles import ADMIN, ADMINS
-from lattice.kernel.auth.sessions import AUTH_METHOD_LABELS, is_active_clause, revoke_user_sessions
+from lattice.kernel.auth.sessions import AUTH_METHOD_LABELS, revoke_sessions, revoke_user_sessions
 from lattice.kernel.auth.sessions import active as active_sessions
-from lattice.kernel.db import get_db
-from lattice.kernel.models import AuditEvent, Role, User, UserRole, UserSession, utcnow
+from lattice.kernel.database import Db, engine, get_db
 from lattice.kernel.nav import NODES, NavNode
+from lattice.kernel.queries import SQL
 from lattice.kernel.services import audit, users
 from lattice.kernel.web import flash, render_page
 
 router = APIRouter(dependencies=[Depends(csrf_protect), Depends(require_roles(*ADMINS))])
 
 
-def role_options(db: Session, _user=None) -> list[tuple[str, str]]:
-    return [(r.code, r.label) for r in db.scalars(select(Role).order_by(Role.sort_order))]
-
-
 # ── Users ────────────────────────────────────────────────────────────────────
-
-def users_query(db: Session, user):
-    roles = (select(UserRole.user_id, func.group_concat(UserRole.role_code, ", ").label("roles"))
-             .group_by(UserRole.user_id).subquery()
-             if db.bind.dialect.name == "sqlite" else
-             select(UserRole.user_id,
-                    func.string_agg(UserRole.role_code, ", ").label("roles"))
-             .group_by(UserRole.user_id).subquery())
-    return (
-        select(User.id, User.display_name, User.email, User.is_active, User.must_change_password,
-               func.coalesce(roles.c.roles, "").label("roles"),
-               (User.oidc_subject.isnot(None)).label("sso"),
-               User.created_at, User.last_login_at)
-        .outerjoin(roles, roles.c.user_id == User.id)
-    )
-
 
 def _not_self(ctx: ActionContext) -> list[int]:
     return [i for i in ctx.ids if i != ctx.user.id]
 
 
 def activate(ctx):
-    ctx.db.execute(update(User).where(User.id.in_(ctx.ids)).values(is_active=True))
+    ctx.db.run(SQL.users.set_active, ids=ctx.ids, active=True)
     return f"Activated {ctx.count} user(s)."
 
 
 def deactivate(ctx):
     ids = _not_self(ctx)
-    ctx.db.execute(update(User).where(User.id.in_(ids)).values(is_active=False))
-    for uid in ids:
-        revoke_user_sessions(ctx.db, uid)
+    ctx.db.run(SQL.users.set_active, ids=ids, active=False)
+    revoke_user_sessions(ctx.db, ids)
     skipped = " Your own account was skipped." if len(ids) < ctx.count else ""
     return f"Deactivated {len(ids)} user(s).{skipped}"
 
 
 def grant_role(ctx):
     role = ctx.values["role"]
-    have = set(ctx.db.scalars(select(UserRole.user_id).where(
-        UserRole.role_code == role, UserRole.user_id.in_(ctx.ids))))
-    for uid in ctx.ids:
-        if uid not in have:
-            ctx.db.add(UserRole(user_id=uid, role_code=role))
-    return f"Granted {role} to {len(set(ctx.ids) - have)} user(s)."
+    granted = ctx.db.run(SQL.users.grant_role, ids=ctx.ids, role=role)
+    return f"Granted {role} to {granted} user(s)."
 
 
 def revoke_role(ctx):
     role = ctx.values["role"]
     ids = _not_self(ctx) if role == ADMIN else ctx.ids
-    result = ctx.db.execute(UserRole.__table__.delete().where(
-        UserRole.role_code == role, UserRole.user_id.in_(ids)))
-    return f"Removed {role} from {result.rowcount} user(s)."
+    removed = ctx.db.run(SQL.users.remove_role, ids=ids, role=role)
+    return f"Removed {role} from {removed} user(s)."
 
 
 def reset_password(ctx):
     temp = secrets.token_urlsafe(9) + "A1"
-    user = ctx.db.get(User, ctx.ids[0])
-    user.password_hash = hash_password(temp)
-    user.must_change_password = True
-    revoke_user_sessions(ctx.db, user.id)
-    return ActionResult(f"Temporary password for {user.email}: {temp} (shown once; "
+    user = users.by_id(ctx.db, ctx.ids[0])
+    ctx.db.run(SQL.users.set_password, id=user["id"], password_hash=hash_password(temp),
+               must_change=True)
+    revoke_user_sessions(ctx.db, [user["id"]])
+    return ActionResult(f"Temporary password for {user['email']}: {temp} (shown once; "
                         "they must change it at next sign-in).", tone="info")
 
 
 def sign_out_users(ctx):
-    n = sum(revoke_user_sessions(ctx.db, uid, keep=ctx.user.session_id) for uid in ctx.ids)
+    n = revoke_user_sessions(ctx.db, ctx.ids, keep=ctx.user.session_id)
     return f"Revoked {n} session(s)."
 
 
@@ -118,7 +90,7 @@ USERS = GridSpec(
     title="Users",
     path="/admin/users",
     roles=ADMINS,
-    query=users_query,
+    query=SQL.admin.users_grid,
     columns=[
         Column("display_name", "Name", kind="user", secondary="email", required=True),
         Column("email", "Email", hidden=True),
@@ -139,9 +111,9 @@ USERS = GridSpec(
                icon="plus"),
         Action("open", "Open", scope="single", href="/admin/users/{id}", icon="external"),
         Action("grant", "Grant role", handler=grant_role, icon="key",
-               fields=[Field("role", "Role", kind="select", options=role_options, required=True)]),
+               fields=[Field("role", "Role", kind="select", options=users.role_options, required=True)]),
         Action("revoke", "Remove role", handler=revoke_role, icon="x",
-               fields=[Field("role", "Role", kind="select", options=role_options, required=True)]),
+               fields=[Field("role", "Role", kind="select", options=users.role_options, required=True)]),
         Action("activate", "Activate", handler=activate, icon="check",
                when={"is_active": [False]}),
         Action("deactivate", "Deactivate", handler=deactivate, icon="lock", tone="danger",
@@ -160,19 +132,19 @@ USERS = GridSpec(
 
 
 @router.get("/users")
-def users_page(request: Request, db: Session = Depends(get_db)):
+def users_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, USERS, "admin.users",
                             subtitle="Accounts, roles and access.")
 
 
 @router.get("/users/new")
-def new_user_form(request: Request, db: Session = Depends(get_db)):
+def new_user_form(request: Request, db: Db = Depends(get_db)):
     return render_page(request, "admin/user_form.html", "admin.user", target=None,
-                       roles=role_options(db), errors={}, values={}, crumb="New user")
+                       roles=users.role_options(db), errors={}, values={}, crumb="New user")
 
 
 @router.post("/users/new")
-async def create_user(request: Request, db: Session = Depends(get_db),
+async def create_user(request: Request, db: Db = Depends(get_db),
                       user=Depends(current_user)):
     form = await request.form()
     values = {"email": users.normalize_email(form.get("email")),
@@ -190,59 +162,51 @@ async def create_user(request: Request, db: Session = Depends(get_db),
         errors["password"] = "; ".join(problems)
     if errors:
         return render_page(request, "admin/user_form.html", "admin.user", target=None,
-                           roles=role_options(db), errors=errors, values=values,
+                           roles=users.role_options(db), errors=errors, values=values,
                            crumb="New user", status_code=400)
     new = users.create(db, values["email"], values["display_name"],
                        password=values["password"] or None, roles=values["roles"],
                        must_change_password=bool(values["password"]))
-    audit.record(db, user.id, "user.created", f"Created {new.email}", "users", new.id,
-                 {"roles": new.role_codes})
-    db.commit()
-    return RedirectResponse(f"/admin/users/{new.id}", status_code=303)
+    audit.record(db, user.id, "user.created", f"Created {new['email']}", "users", new["id"],
+                 {"roles": new["roles"]})
+    return RedirectResponse(f"/admin/users/{new['id']}", status_code=303)
 
 
-def _user(db: Session, user_id: int) -> User:
-    target = db.get(User, user_id)
-    if target is None:
-        raise HTTPException(404)
-    return target
-
-
-def _user_detail_page(request: Request, db: Session, target: User, errors: dict | None = None,
+def _user_detail_page(request: Request, db: Db, target: dict, errors: dict | None = None,
                       status_code: int = 200):
-    sessions = active_sessions(db, target.id)
-    events = audit.history(db, "users", target.id, actor_id=target.id, limit=25)
+    sessions = active_sessions(db, target["id"])
+    events = audit.history(db, "users", target["id"], actor_id=target["id"], limit=25)
     return render_page(request, "admin/user_detail.html", "admin.user", status_code=status_code,
-                       target=target, roles=role_options(db), sessions=sessions, events=events,
-                       errors=errors or {}, crumb=target.display_name)
+                       target=target, sign_in_methods=users.sign_in_methods(target),
+                       roles=users.role_options(db), sessions=sessions, events=events,
+                       errors=errors or {}, crumb=target["display_name"])
 
 
 @router.get("/users/{user_id}")
-def user_detail(user_id: int, request: Request, db: Session = Depends(get_db)):
-    return _user_detail_page(request, db, _user(db, user_id))
+def user_detail(user_id: int, request: Request, db: Db = Depends(get_db)):
+    return _user_detail_page(request, db, users.by_id(db, user_id))
 
 
 @router.post("/users/{user_id}")
-async def update_user(user_id: int, request: Request, db: Session = Depends(get_db),
+async def update_user(user_id: int, request: Request, db: Db = Depends(get_db),
                       user=Depends(current_user)):
-    target = _user(db, user_id)
+    target = users.by_id(db, user_id)
     form = await request.form()
     name = (form.get("display_name") or "").strip()
     if not name:
         return _user_detail_page(request, db, target, {"display_name": "Name is required."}, 400)
-    target.display_name = name
+    db.run(SQL.users.rename, id=user_id, display_name=name)
     wanted = set(form.getlist("roles")) & users.role_codes(db)
-    if target.id == user.id:
+    if user_id == user.id:
         wanted.add(ADMIN)            # admins cannot remove their own admin role
-    target.roles = [r for r in target.roles if r.role_code in wanted] + [
-        UserRole(role_code=r) for r in wanted - set(target.role_codes)]
-    active = form.get("is_active") == "on" or target.id == user.id
-    if target.is_active and not active:
-        revoke_user_sessions(db, target.id)
-    target.is_active = active
-    audit.record(db, user.id, "user.updated", f"Updated {target.email}", "users", target.id,
+    db.run(SQL.users.keep_only_roles, user_id=user_id, roles=sorted(wanted))
+    db.run(SQL.users.add_roles, user_id=user_id, roles=sorted(wanted))
+    active = form.get("is_active") == "on" or user_id == user.id
+    if target["is_active"] and not active:
+        revoke_user_sessions(db, [user_id])
+    db.run(SQL.users.set_active, ids=[user_id], active=active)
+    audit.record(db, user.id, "user.updated", f"Updated {target['email']}", "users", user_id,
                  {"roles": sorted(wanted), "is_active": active})
-    db.commit()
     response = RedirectResponse(f"/admin/users/{user_id}", status_code=303)
     flash(response, request, "Changes saved.")
     return response
@@ -250,16 +214,8 @@ async def update_user(user_id: int, request: Request, db: Session = Depends(get_
 
 # ── Roles ────────────────────────────────────────────────────────────────────
 
-def roles_query(db: Session, user):
-    members = (select(UserRole.role_code, func.count().label("members"))
-               .group_by(UserRole.role_code).subquery())
-    return (select(Role.code.label("id"), Role.label, Role.description, Role.sort_order,
-                   func.coalesce(members.c.members, 0).label("members"))
-            .outerjoin(members, members.c.role_code == Role.code))
-
-
 ROLES = GridSpec(
-    key="roles", title="Roles", path="/admin/roles", roles=ADMINS, query=roles_query,
+    key="roles", title="Roles", path="/admin/roles", roles=ADMINS, query=SQL.admin.roles_grid,
     columns=[Column("id", "Code", kind="mono", width="120px"),
              Column("label", "Role", kind="strong"),
              Column("description", "Grants"),
@@ -270,7 +226,7 @@ ROLES = GridSpec(
 
 
 @router.get("/roles")
-def roles_page(request: Request, db: Session = Depends(get_db)):
+def roles_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, ROLES, "admin.roles",
                             subtitle="Roles gate pages, menus and actions. "
                                      "Add a role in a migration, then reference it in roles=.")
@@ -278,24 +234,15 @@ def roles_page(request: Request, db: Session = Depends(get_db)):
 
 # ── Sessions ─────────────────────────────────────────────────────────────────
 
-def sessions_query(db: Session, user):
-    return (select(UserSession.id, User.display_name.label("user"), User.email,
-                   UserSession.auth_method, UserSession.ip_address, UserSession.user_agent,
-                   UserSession.created_at, UserSession.last_seen_at, UserSession.expires_at)
-            .join(User, User.id == UserSession.user_id)
-            .where(is_active_clause()))
-
-
-def revoke_sessions(ctx):
-    mine = [i for i in ctx.ids if i == ctx.user.session_id]
-    ids = [i for i in ctx.ids if i not in mine]
-    ctx.db.execute(update(UserSession).where(UserSession.id.in_(ids)).values(revoked_at=utcnow()))
-    note = " Your current session was kept." if mine else ""
+def revoke_selected_sessions(ctx):
+    ids = [i for i in ctx.ids if i != ctx.user.session_id]
+    revoke_sessions(ctx.db, ids)
+    note = " Your current session was kept." if len(ids) < ctx.count else ""
     return f"Revoked {len(ids)} session(s).{note}"
 
 
 SESSIONS = GridSpec(
-    key="sessions", title="Sessions", path="/admin/sessions", roles=ADMINS, query=sessions_query,
+    key="sessions", title="Sessions", path="/admin/sessions", roles=ADMINS, query=SQL.sessions.grid,
     columns=[Column("user", "User", kind="user", secondary="email"),
              Column("email", "Email", hidden=True),
              Column("auth_method", "Method", kind="badge",
@@ -308,34 +255,26 @@ SESSIONS = GridSpec(
              Column("expires_at", "Expires", kind="datetime", width="170px", hidden=True)],
     search=["user", "email", "ip_address"],
     filters=[Filter("auth_method", "Method", list(AUTH_METHOD_LABELS.items()))],
-    actions=[Action("revoke", "Revoke", handler=revoke_sessions, icon="logout", tone="danger",
+    actions=[Action("revoke", "Revoke", handler=revoke_selected_sessions, icon="logout", tone="danger",
                     confirm="Revoke {count} session(s)? Those users are signed out.")],
     default_sort="-last_seen_at", panel_title="{user}", export=False,
 )
 
 
 @router.get("/sessions")
-def sessions_page(request: Request, db: Session = Depends(get_db)):
+def sessions_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, SESSIONS, "admin.sessions",
                             subtitle="Active sign-ins across all users.")
 
 
 # ── Audit log ────────────────────────────────────────────────────────────────
 
-def audit_query(db: Session, user):
-    return (select(AuditEvent.id, AuditEvent.at, AuditEvent.action, AuditEvent.summary,
-                   AuditEvent.target_type, AuditEvent.target_id, AuditEvent.detail,
-                   func.coalesce(User.display_name, "System").label("actor"))
-            .outerjoin(User, User.id == AuditEvent.actor_id))
-
-
-def action_options(db: Session, _user=None):
-    return [(a, a) for a in db.scalars(select(AuditEvent.action).distinct()
-                                       .order_by(AuditEvent.action))]
+def _options(db: Db, query) -> list[tuple[str, str]]:
+    return [(r["value"], r["label"]) for r in db.all(query)]
 
 
 AUDIT = GridSpec(
-    key="audit", title="Audit log", path="/admin/audit", roles=ADMINS, query=audit_query,
+    key="audit", title="Audit log", path="/admin/audit", roles=ADMINS, query=SQL.audit.grid,
     columns=[Column("at", "When", kind="datetime", width="180px"),
              Column("actor", "Actor", kind="user", width="180px"),
              Column("action", "Event", kind="mono", width="220px"),
@@ -343,15 +282,14 @@ AUDIT = GridSpec(
              Column("target_type", "Target", kind="mono", width="120px", secondary="target_id"),
              Column("target_id", "Target id", hidden=True)],
     search=["actor", "action", "summary", "target_id"],
-    filters=[Filter("action", "Event", action_options),
-             Filter("target_type", "Target", lambda db, u: [
-                 (t, t) for t in db.scalars(select(AuditEvent.target_type).distinct()) if t])],
+    filters=[Filter("action", "Event", lambda db, u: _options(db, SQL.audit.actions)),
+             Filter("target_type", "Target", lambda db, u: _options(db, SQL.audit.target_types))],
     selection="none", default_sort="-at", panel_title="{action}",
 )
 
 
 @router.get("/audit")
-def audit_page(request: Request, db: Session = Depends(get_db)):
+def audit_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, AUDIT, "admin.audit",
                             subtitle="Sign-ins, account changes and every grid action.")
 
@@ -359,10 +297,11 @@ def audit_page(request: Request, db: Session = Depends(get_db)):
 # ── System and UI kit ────────────────────────────────────────────────────────
 
 @router.get("/system")
-def system_page(request: Request, db: Session = Depends(get_db)):
-    url = db.bind.url
-    counts = {name: db.scalar(select(func.count()).select_from(model)) for name, model in
-              (("Users", User), ("Active sessions", UserSession), ("Audit events", AuditEvent))}
+def system_page(request: Request, db: Db = Depends(get_db)):
+    url = engine().url
+    totals = db.one(SQL.admin.counts)
+    counts = {"Users": totals["users"], "Active sessions": totals["active_sessions"],
+              "Audit events": totals["audit_events"]}
     return render_page(request, "admin/system.html", "admin.system",
                        db_url=url.render_as_string(hide_password=True), dialect=url.get_backend_name(),
                        counts=counts, grids=sorted(REGISTRY.values(), key=lambda s: s.key),

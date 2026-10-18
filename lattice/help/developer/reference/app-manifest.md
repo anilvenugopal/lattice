@@ -21,18 +21,19 @@ What an app adds to a host. Listed once per app package.
 | `icon` | `str` | `''` | icon registry name, e.g. "demo:app" |
 | `help_url` | `str` | `''` | listed in the shell's Help menu |
 | `nav` | `list[NavNode]` | `[]` | the app's pages; every page has a node |
-| `routers` | `list[APIRouter]` | `[]` | FastAPI routers, mounted as declared (paths start with /{key}) FastAPI routers, mounted as declared (paths start with /{key}) |
-| `grids` | `list[GridSpec]` | `[]` | registered for actions, export, Ctrl+J and tiles registered for actions, export, Ctrl+J and tiles |
+| `routers` | `list[APIRouter]` | `[]` | FastAPI routers, mounted as declared (paths start with /{key}) |
+| `grids` | `list[GridSpec]` | `[]` | registered for actions, export, Ctrl+J and tiles |
 | `search` | `list[SearchProvider]` | `[]` | extra Ctrl+J sources |
 | `tiles` | `list[HomeTile]` | `[]` | count tiles on the home page |
 | `templates` | `Path \| None` | `None` | Folder holding templates/{key}/…; searched before core templates. |
 | `static` | `Path \| None` | `None` | Folder served at /static/{key}/, and stylesheets in it loaded on every page. Each stylesheet declares @layer components and scopes every selector to [data-app="{key}"] (ADR 0010). |
 | `stylesheets` | `list[str]` | `[]` | file names inside `static` |
 | `icons` | `dict[str, str]` | `{}` | Icons the app adds, used as icon("{key}:name"). Values are SVG path markup. |
+| `sql` | `Path \| None` | `None` | Folder of the app's SQL: named queries in *.sql, migrations in schema/*.sql. The migrations create and fill the Postgres schema named after the app's key. |
 | `help` | `Path \| None` | `None` | Folder of Markdown help topics with index.md and an optional help.toml page map. |
 | `slots` | `dict[str, str]` | `{}` | Slot name -> template in the app's own folder ("{key}/…"). |
 | `background` | `Callable[[], Awaitable[None]] \| None` | `None` | Started with the host, cancelled at shutdown. |
-| `seed` | `Callable[[Session], None] \| None` | `None` | Development data for `lattice seed`; receives a session and commits. |
+| `seed` | `Callable[[Db], None] \| None` | `None` | Development data for `lattice seed`; receives a Db in the seed's transaction. |
 
 ## NavNode
 
@@ -73,9 +74,9 @@ A Ctrl+J source: answers a query and renders a preview of one result.
 | `key` | `str` | required | unique; the filter chip and the preview URL use it |
 | `label` | `str` | required | filter chip text |
 | `icon` | `str` | required | icon shown on its results |
-| `search` | `Callable[[Session, object, str, int], list[SearchResult]]` | required | (db, user, query, limit) -> results (db, user, query, limit) -> results |
-| `count` | `Callable[[Session, object, str], int]` | required | (db, user, query) -> number of matches, for the filter chip (db, user, query) -> number of matches, for the filter chip |
-| `preview` | `Callable[[Request, Session, str], object]` | required | (request, db, result id) -> HTML for the preview pane (request, db, result id) -> HTML for the preview pane |
+| `search` | `Callable[[Db, object, str, int], list[SearchResult]]` | required | (db, user, query, limit) -> results |
+| `count` | `Callable[[Db, object, str], int]` | required | (db, user, query) -> number of matches, for the filter chip |
+| `preview` | `Callable[[Request, Db, str], object]` | required | (request, db, result id) -> HTML for the preview pane |
 | `roles` | `tuple[str, ...]` | `()` | who sees the source; empty = everyone |
 
 ## SearchResult

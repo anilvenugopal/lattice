@@ -6,9 +6,8 @@ from fastapi.testclient import TestClient
 
 from lattice.kernel import database
 from lattice.kernel.database import Db, NotFound, get_db
-from lattice.kernel.migrate import migrate
+from lattice.kernel.migrate import migrate, sources_for
 from lattice.kernel.sql import Query, SqlError, parse, sql_queries
-from lattice.testing import migration_sources
 
 
 def write(tmp_path, body, name="things"):
@@ -89,7 +88,7 @@ def test_column_casts_are_fine(tmp_path):
 def test_migrations_create_lattice_schema_once(db):
     assert db.conn.exec_driver_sql(
         "SELECT count(*) FROM lattice.role").scalar() == 3
-    assert migrate(migration_sources([])) == []          # already applied in the template
+    assert migrate(sources_for([])) == []          # already applied in the template
 
 
 def test_db_calls(db, tmp_path):

@@ -1,6 +1,10 @@
 -- Lattice's own tables: users, roles, sessions, preferences and the audit log.
--- Timestamps are naive UTC (timestamp without time zone); the browser shows them
--- in the user's time zone.
+-- Timestamps are naive UTC (timestamp without time zone), taken from the database's
+-- clock with lattice.utc_now(); the browser shows them in the user's time zone.
+
+CREATE FUNCTION lattice.utc_now() RETURNS timestamp
+  LANGUAGE sql STABLE
+  AS $$ SELECT (now() AT TIME ZONE 'utc') $$;
 
 CREATE TABLE lattice.role (
   code        varchar(32)  PRIMARY KEY,
@@ -22,7 +26,7 @@ CREATE TABLE lattice.app_user (
   oidc_subject         varchar(255) UNIQUE,
   is_active            boolean      NOT NULL DEFAULT true,
   must_change_password boolean      NOT NULL DEFAULT false,
-  created_at           timestamp    NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
+  created_at           timestamp    NOT NULL DEFAULT lattice.utc_now(),
   last_login_at        timestamp
 );
 
@@ -36,8 +40,8 @@ CREATE TABLE lattice.user_role (
 CREATE TABLE lattice.user_session (
   id           varchar(64)  PRIMARY KEY,
   user_id      bigint       NOT NULL REFERENCES lattice.app_user (id) ON DELETE CASCADE,
-  created_at   timestamp    NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
-  last_seen_at timestamp    NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
+  created_at   timestamp    NOT NULL DEFAULT lattice.utc_now(),
+  last_seen_at timestamp    NOT NULL DEFAULT lattice.utc_now(),
   expires_at   timestamp    NOT NULL,
   ip_address   varchar(45)  NOT NULL DEFAULT '',
   user_agent   varchar(512) NOT NULL DEFAULT '',
@@ -55,7 +59,7 @@ CREATE TABLE lattice.user_preference (
 
 CREATE TABLE lattice.audit_event (
   id          bigint       GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  at          timestamp    NOT NULL DEFAULT (now() AT TIME ZONE 'utc'),
+  at          timestamp    NOT NULL DEFAULT lattice.utc_now(),
   actor_id    bigint       REFERENCES lattice.app_user (id) ON DELETE SET NULL,
   action      varchar(64)  NOT NULL,
   target_type varchar(64)  NOT NULL DEFAULT '',

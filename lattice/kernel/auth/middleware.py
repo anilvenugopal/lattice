@@ -16,10 +16,10 @@ from fastapi.responses import RedirectResponse
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware
 
-from lattice.kernel import db as app_db
 from lattice.kernel.auth import csrf
 from lattice.kernel.auth.cookies import set_cookie
 from lattice.kernel.auth.sessions import COOKIE_NAME, load_session
+from lattice.kernel.database import transaction
 
 PUBLIC_PREFIXES = ("/static/", "/auth/login", "/auth/oidc/", "/health")
 CHANGE_PASSWORD_EXEMPT = ("/auth/change-password", "/auth/logout")
@@ -37,9 +37,9 @@ def redirect(request: Request, url: str) -> Response:
     return RedirectResponse(url, status_code=302)
 
 
-def _load(session_id: str):
-    with app_db.SessionLocal() as db:
-        return load_session(db, session_id)
+def _load(token: str):
+    with transaction() as db:
+        return load_session(db, token)
 
 
 class AuthMiddleware(BaseHTTPMiddleware):

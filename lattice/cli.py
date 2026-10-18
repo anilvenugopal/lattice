@@ -15,15 +15,13 @@ import argparse
 import getpass
 import importlib
 
-from alembic.config import Config
-from sqlalchemy import select
-
-from alembic import command
 from lattice.kernel.auth.passwords import hash_password, policy_errors
 from lattice.kernel.config import settings
-from lattice.kernel.db import SessionLocal
+from lattice.kernel.database import transaction
 from lattice.kernel.dev_seed import DEV_USERS
-from lattice.kernel.models import User, UserRole
+from lattice.kernel.migrate import migrate as run_migrations
+from lattice.kernel.migrate import sources_for
+from lattice.kernel.queries import SQL
 from lattice.kernel.services import users
 
 
@@ -33,26 +31,27 @@ def _load_host():
 
 
 def migrate(_args) -> None:
-    command.upgrade(Config("alembic.ini"), "head")
+    host = _load_host()
+    applied = run_migrations(sources_for(host.state.apps))
+    print("Applied: " + ", ".join(applied) if applied else "Nothing to apply.")
 
 
 def create_user(args) -> None:
     password = None if args.no_password else _prompt_password()
-    with SessionLocal() as db:
+    with transaction() as db:
         unknown = set(args.role) - users.role_codes(db)
         if unknown:
             raise SystemExit(f"Unknown role(s): {', '.join(sorted(unknown))}. "
                              f"Known: {', '.join(sorted(users.role_codes(db)))}")
         user = users.by_email(db, args.email) or users.create(db, args.email, args.name)
-        user.display_name = args.name
-        user.is_active = True
+        db.run(SQL.users.rename, id=user["id"], display_name=args.name)
+        db.run(SQL.users.set_active, ids=[user["id"]], active=True)
         if password:
-            user.password_hash = hash_password(password)
-            user.must_change_password = not args.keep_password
-        have = set(user.role_codes)
-        user.roles += [UserRole(role_code=r) for r in dict.fromkeys(args.role) if r not in have]
-        db.commit()
-        print(f"Saved {user.email} with roles: {', '.join(user.role_codes) or 'none'}")
+            db.run(SQL.users.set_password, id=user["id"], password_hash=hash_password(password),
+                   must_change=not args.keep_password)
+        db.run(SQL.users.add_roles, user_id=user["id"], roles=args.role)
+        roles = users.by_id(db, user["id"])["roles"]
+    print(f"Saved {user['email']} with roles: {', '.join(roles) or 'none'}")
 
 
 def _prompt_password() -> str:
@@ -70,13 +69,12 @@ def seed(_args) -> None:
     if settings.is_production:
         raise SystemExit("Refusing to seed a production database.")
     host = _load_host()
-    with SessionLocal() as db:
-        if db.scalar(select(User).limit(1)):
+    with transaction() as db:
+        if db.value(SQL.users.any_exist):
             print("Users exist; skipping. `make reset` recreates the development database.")
             return
         for email, name, password, roles in DEV_USERS:
             users.create(db, email, name, password=password, roles=roles)
-        db.commit()
         for app in host.state.apps:
             if app.seed:
                 app.seed(db)

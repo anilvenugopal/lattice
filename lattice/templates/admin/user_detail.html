@@ -11,7 +11,7 @@
           {{ field("display_name", "Name", target.display_name, error=errors.display_name, required=True) }}
           <fieldset class="field"><legend class="field__label">Roles</legend>
             {% for code, label in roles %}
-              {{ checkbox("roles", label, code in target.role_codes, value=code,
+              {{ checkbox("roles", label, code in target.roles, value=code,
                           disabled=(code == 'admin' and target.id == current_user.id),
                           hint=("You cannot remove your own admin role" if code == 'admin' and target.id == current_user.id else "")) }}
             {% endfor %}
@@ -23,7 +23,7 @@
       {% endcall %}
       {% call card("Details") %}
         {{ prop_list([
-          ("Sign-in", target.sign_in_methods),
+          ("Sign-in", sign_in_methods),
           ("SSO subject", target.oidc_subject),
           ("Must change password", "Yes" if target.must_change_password else "No"),
           ("Created", time_tag(target.created_at, "datetime")),

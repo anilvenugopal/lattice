@@ -15,7 +15,7 @@
       {% set roles %}{% for r in current_user.roles %}{{ badge(r, 'accent') }} {% endfor %}{% endset %}
       {{ prop_list([
         ("Roles", roles),
-        ("Sign-in methods", profile.sign_in_methods),
+        ("Sign-in methods", sign_in_methods),
         ("Member since", time_tag(profile.created_at, "date")),
         ("Last sign-in", time_tag(profile.last_login_at)),
       ]) }}

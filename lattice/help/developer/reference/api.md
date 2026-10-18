@@ -63,14 +63,19 @@ from lattice.api import AppManifest, GridSpec, render_page
 
 | Name | Kind | Description |
 |---|---|---|
-| `Base` | class | Base class for every SQLAlchemy model, Lattice's and the apps'. |
-| `SessionLocal` `(**local_kw)` | function | A configurable :class:`.Session` factory. |
-| `get_db` `()` | function | Route dependency: a database session, closed when the request ends. |
-| `User` | class | A person who can sign in. Apps refer to users by `User.id`. |
-| `utcnow` `()` | function | The current time as naive UTC, the form every timestamp column stores. |
+| `Db` | class | Runs named queries on one connection, inside its transaction. |
+| `get_db` `()` | function | Route dependency: the request's `Db`, in one transaction for the whole request. |
+| `transaction` `()` | function | A `Db` in its own transaction: committed on success, rolled back on an exception. |
+| `NotFound` | class | `Db.one` found no row. Routes turn it into a 404. |
+| `Query` | class |  |
+| `sql_queries` `(folder)` | function | Load every `*.sql` file in `folder` (not its `schema/` migrations). Loaded once. |
 | `audit` | module | Audit trail. |
 | `users` | module | User lookup and creation. Every caller (admin UI, SSO, scripts, tests) goes through here. |
 | [`settings`](settings.md) | value | The running configuration, read from `LATTICE_*` environment variables. |
+| `Base` | class | Base class for every SQLAlchemy model, Lattice's and the apps'. |
+| `SessionLocal` `(**local_kw)` | function | A configurable :class:`.Session` factory. |
+| `User` | class | A person who can sign in. Apps refer to users by `User.id`. |
+| `utcnow` `()` | function | The current time as naive UTC, the form every timestamp column stores. |
 
 ## Development data
 

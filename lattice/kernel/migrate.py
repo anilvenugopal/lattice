@@ -19,6 +19,7 @@ from sqlalchemy import text
 from lattice.kernel.database import engine
 
 _SCHEMA = re.compile(r"^[a-z][a-z0-9_]*$")
+LATTICE_SCHEMA = Path(__file__).parents[1] / "sql" / "schema"
 
 
 class MigrationError(Exception):
@@ -27,6 +28,11 @@ class MigrationError(Exception):
 
 def pending(folder: Path, done: set[str]) -> list[Path]:
     return [p for p in sorted(folder.glob("*.sql")) if p.stem not in done]
+
+
+def sources_for(apps) -> list[tuple[str, Path]]:
+    """Lattice's migrations, then each app's (`AppManifest.sql`), in the host's order."""
+    return [("lattice", LATTICE_SCHEMA)] + [(a.key, a.sql / "schema") for a in apps if a.sql]
 
 
 def migrate(sources: list[tuple[str, Path]]) -> list[str]:

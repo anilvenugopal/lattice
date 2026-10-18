@@ -20,7 +20,7 @@ TEST_SERVER_URL = os.environ.get("LATTICE_TEST_DATABASE_URL",
 os.environ.setdefault("LATTICE_DATABASE_URL", TEST_SERVER_URL)
 
 import hashlib  # noqa: E402
-from pathlib import Path  # noqa: E402
+from dataclasses import dataclass  # noqa: E402
 from uuid import uuid4  # noqa: E402
 
 import pytest  # noqa: E402
@@ -33,19 +33,10 @@ from lattice.kernel import database  # noqa: E402
 from lattice.kernel.auth import csrf as csrf_cookie  # noqa: E402
 from lattice.kernel.auth.sessions import CurrentUser  # noqa: E402
 from lattice.kernel.database import Db  # noqa: E402
-from lattice.kernel.migrate import migrate  # noqa: E402
-from lattice.kernel.models import User  # noqa: E402
+from lattice.kernel.migrate import migrate, sources_for  # noqa: E402
 from lattice.kernel.services import users as users_service  # noqa: E402
 
 PASSWORD = "Passw0rd-Long!"
-
-
-CORE_SCHEMA = Path(__file__).parent / "sql" / "schema"
-
-
-def migration_sources(apps) -> list[tuple[str, Path]]:
-    """Lattice's migrations, then each app's: what `lattice migrate` runs for a host."""
-    return [("lattice", CORE_SCHEMA)] + [(a.key, a.sql / "schema") for a in apps if a.sql]
 
 
 def _url(name: str) -> str:
@@ -87,7 +78,7 @@ def db(_pg_server, host_apps):
     Every call commits at once, so rows a test adds are visible to the test client.
     """
     server, templates = _pg_server
-    template = _template(server, templates, migration_sources(host_apps))
+    template = _template(server, templates, sources_for(host_apps))
     name = f"lattice_test_{uuid4().hex[:12]}"
     with server.connect() as conn:
         conn.exec_driver_sql(f'CREATE DATABASE "{name}" TEMPLATE "{template}"')
@@ -102,11 +93,20 @@ def db(_pg_server, host_apps):
             admin.exec_driver_sql(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
 
 
-def make_user(db, email, roles=("viewer",), password=PASSWORD, **kw) -> User:
+@dataclass(frozen=True)
+class TestUser:
+    """A user made for a test: `users["editor"].id`."""
+
+    id: int
+    email: str
+    display_name: str
+    roles: tuple[str, ...]
+
+
+def make_user(db, email, roles=("viewer",), password=PASSWORD, **kw) -> TestUser:
     user = users_service.create(db, email, email.split("@")[0].title(), password=password,
                                 roles=roles, **kw)
-    db.commit()
-    return user
+    return TestUser(user["id"], user["email"], user["display_name"], tuple(user["roles"]))
 
 
 @pytest.fixture
@@ -158,5 +158,5 @@ def post_json(client, url, body):
 def current(user, roles=None) -> CurrentUser:
     """A CurrentUser for calling grid code directly, without a request."""
     return CurrentUser(id=user.id, email=user.email, display_name=user.display_name,
-                       roles=tuple(roles or user.role_codes), must_change_password=False,
+                       roles=tuple(roles or user.roles), must_change_password=False,
                        has_password=True, session_id="test")

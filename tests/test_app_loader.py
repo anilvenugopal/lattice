@@ -1,22 +1,20 @@
 """create_app: app registration, mounting and the namespace rules (ADR 0003)."""
 
 import asyncio
+from pathlib import Path
 
 import pytest
 from fastapi import APIRouter
 from fastapi.testclient import TestClient
-from sqlalchemy import select
 
 from lattice.components.grid import Column, GridSpec
 from lattice.components.manifest import AppManifest
 from lattice.host import AppError, create_app
 from lattice.kernel import nav
-from lattice.kernel.models import User
+from lattice.kernel.sql import sql_queries
 from lattice.testing import login
 
-
-def _users_query(db, user):
-    return select(User.id, User.email)
+_users_query = sql_queries(Path(__file__).parent / "sql").checks.user_list
 
 
 def _app(key="notes", **kw):

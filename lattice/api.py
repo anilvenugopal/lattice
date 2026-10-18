@@ -24,11 +24,13 @@ from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.auth.deps import current_user, require_roles
 from lattice.kernel.auth.roles import ADMINS, EDITORS
 from lattice.kernel.config import settings
-from lattice.kernel.db import Base, SessionLocal, get_db
+from lattice.kernel.database import Db, NotFound, get_db, transaction
+from lattice.kernel.db import Base, SessionLocal  # ORM, removed in step 2 stage 5
 from lattice.kernel.dev_seed import DEV_USERS
-from lattice.kernel.models import User, utcnow
+from lattice.kernel.models import User, utcnow  # ORM, removed in step 2 stage 5
 from lattice.kernel.nav import NavNode
 from lattice.kernel.services import audit, users
+from lattice.kernel.sql import Query, sql_queries
 from lattice.kernel.web import flash, render, render_page, toast
 
 __all__ = [
@@ -42,7 +44,9 @@ __all__ = [
     # Requests and access
     "csrf_protect", "current_user", "require_roles", "ADMINS", "EDITORS",
     # Data
-    "Base", "SessionLocal", "get_db", "User", "utcnow", "audit", "users", "settings",
+    "Db", "get_db", "transaction", "NotFound", "Query", "sql_queries",
+    "audit", "users", "settings",
+    "Base", "SessionLocal", "User", "utcnow",
     # Development data
     "DEV_USERS",
 ]

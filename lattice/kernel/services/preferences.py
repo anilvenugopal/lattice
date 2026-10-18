@@ -2,15 +2,15 @@
 
 Keys in DEFAULTS are the user-facing settings on Account > Preferences.
 Grids store column visibility under "grid.<grid key>.hidden".
-set_pref() does not commit; the calling route commits.
+set_pref() writes in the caller's transaction.
 """
 
 from __future__ import annotations
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+import json
 
-from lattice.kernel.models import UserPreference
+from lattice.kernel.database import Db
+from lattice.kernel.queries import SQL
 
 PAGE_SIZES = (25, 50, 100, 200)
 
@@ -32,9 +32,8 @@ CHOICES: dict[str, list[tuple[object, str]]] = {
 }
 
 
-def load(db: Session, user_id: int) -> dict:
-    return dict(db.execute(select(UserPreference.key, UserPreference.value)
-                           .where(UserPreference.user_id == user_id)).all())
+def load(db: Db, user_id: int) -> dict:
+    return {r["key"]: r["value"] for r in db.all(SQL.preferences.for_user, user_id=user_id)}
 
 
 def choice(key: str, submitted: str, choices=None):
@@ -46,9 +45,5 @@ def get(user, key: str):
     return user.prefs.get(key, DEFAULTS.get(key))
 
 
-def set_pref(db: Session, user_id: int, key: str, value) -> None:
-    row = db.get(UserPreference, (user_id, key))
-    if row is None:
-        db.add(UserPreference(user_id=user_id, key=key, value=value))
-    else:
-        row.value = value
+def set_pref(db: Db, user_id: int, key: str, value) -> None:
+    db.run(SQL.preferences.save, user_id=user_id, key=key, value=json.dumps(value))
