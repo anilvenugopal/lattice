@@ -8,7 +8,7 @@ subquery `g` and adds the view, filters, search, sort and paging around it:
 This module and the migration runner are the only code in Lattice that builds SQL.
 Column names come from the query itself (asked of Postgres once per query), and
 values are always bound. The query may use `:user_id`, the signed-in user, to
-scope rows.
+scope rows, and the GridSpec's own `params` (fixed values such as a document kind).
 
 Every read and every action goes through the query, so it is the grid's access
 boundary: a row the query does not return cannot be shown, exported or acted on.
@@ -132,7 +132,7 @@ def shape(spec: GridSpec, db: Db) -> Shape:
     key = spec.query.key
     if key not in _SHAPES:
         probe = text(f"SELECT * FROM ({spec.query.sql}) AS g LIMIT 0")
-        description = db.conn.execute(probe, {"user_id": None}).cursor.description
+        description = db.conn.execute(probe, {"user_id": None, **spec.params}).cursor.description
         info = {d.name: pg_types.get(d.type_code) for d in description}
         _SHAPES[key] = Shape(names=tuple(info),
                              types={n: _PY_TYPES.get(t.name) if t else None for n, t in info.items()})
@@ -249,35 +249,40 @@ def _time_limit(db: Db) -> Iterator[None]:
         savepoint.rollback()
 
 
-def read(db: Db, stmt, user) -> list[dict]:
+def binds(spec: GridSpec, user) -> dict:
+    """The values a grid's query is run with: the user and the spec's params."""
+    return {"user_id": user.id, **spec.params}
+
+
+def read(db: Db, stmt, values: dict) -> list[dict]:
     """Run a statement built on a grid query, within the grid time limit."""
     with _time_limit(db):
-        return [dict(r) for r in db.conn.execute(stmt, {"user_id": user.id}).mappings()]
+        return [dict(r) for r in db.conn.execute(stmt, values).mappings()]
 
 
-def _count(db: Db, stmt, user) -> int:
+def _count(db: Db, stmt, values: dict) -> int:
     counted = select(func.count()).select_from(stmt.subquery())
     with _time_limit(db):
-        return db.conn.execute(counted, {"user_id": user.id}).scalar_one()
+        return db.conn.execute(counted, values).scalar_one()
 
 
 def count(spec: GridSpec, db: Db, user, gq: GridQuery) -> int:
     """Rows matching the grid state, through the spec query (so it respects row scoping)."""
-    return _count(db, filtered(spec, db, user, gq)[0], user)
+    return _count(db, filtered(spec, db, user, gq)[0], binds(spec, user))
 
 
 def fetch_page(spec: GridSpec, db: Db, user, gq: GridQuery) -> GridPage:
     stmt, g = filtered(spec, db, user, gq)
-    page = GridPage(rows=[], total=_count(db, stmt, user), page=gq.page, size=gq.size)
+    page = GridPage(rows=[], total=_count(db, stmt, binds(spec, user)), page=gq.page, size=gq.size)
     page.page = gq.page = min(gq.page, page.pages)
     stmt = _ordered(stmt, g, spec, gq).limit(gq.size).offset((gq.page - 1) * gq.size)
-    page.rows = read(db, stmt, user)
+    page.rows = read(db, stmt, binds(spec, user))
     return page
 
 
 def fetch_all(spec: GridSpec, db: Db, user, gq: GridQuery, limit: int) -> list[dict]:
     stmt, g = filtered(spec, db, user, gq)
-    return read(db, _ordered(stmt, g, spec, gq).limit(limit), user)
+    return read(db, _ordered(stmt, g, spec, gq).limit(limit), binds(spec, user))
 
 
 def fetch_by_ids(spec: GridSpec, db: Db, user, ids: list) -> list[dict]:
@@ -286,4 +291,4 @@ def fetch_by_ids(spec: GridSpec, db: Db, user, ids: list) -> list[dict]:
     ids = _coerce_all(g.shape.types.get("id"), ids)
     if not ids:
         return []
-    return read(db, select(g.sq).where(g.c.id.in_(ids)), user)
+    return read(db, select(g.sq).where(g.c.id.in_(ids)), binds(spec, user))

@@ -77,7 +77,7 @@ def _top(chart: ChartSpec, points: list[list]) -> tuple[list, list[list]]:
 
 def data(chart: ChartSpec, db: Db, user, gq: grid_engine.GridQuery) -> dict:
     """The chart's points and how to draw them, as JSON for static/js/charts.js."""
-    rows = grid_engine.read(db, _query(chart, db, user, gq), user)
+    rows = grid_engine.read(db, _query(chart, db, user, gq), grid_engine.binds(chart.source, user))
     points = [[_plain(r["x"]), _plain(r.get("s")), _plain(r["v"])] for r in rows]
     time = isinstance(chart.x, Time)
     if time or chart.kind in ("sankey", "choropleth"):

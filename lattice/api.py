@@ -4,6 +4,7 @@ Everything else under `lattice` is internal and may change without notice.
 Removing or changing a name here is a breaking change.
 """
 
+from lattice.components import documents
 from lattice.components.chart import (
     Avg,
     ChartSpec,
@@ -15,6 +16,8 @@ from lattice.components.chart import (
     Time,
     build_chart,
 )
+from lattice.components.documents import DocumentKind, InvalidDocument
+from lattice.components.forms import FormResult, FormSpec, SchemaDef, build_form, parse_form
 from lattice.components.grid import (
     Action,
     ActionContext,
@@ -53,6 +56,9 @@ __all__ = [
     "RecordPage", "Panel", "Link", "render_record_page",
     # Charts
     "ChartSpec", "Count", "Sum", "Avg", "Min", "Max", "Time", "Threshold", "build_chart",
+    # Forms from JSON Schema
+    "FormSpec", "SchemaDef", "FormResult", "build_form", "parse_form",
+    "DocumentKind", "InvalidDocument", "documents",
     # Pages and feedback
     "render", "render_page", "flash", "toast",
     # Requests and access

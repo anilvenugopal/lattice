@@ -63,6 +63,19 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `Threshold` | class | A horizontal line across a bar, line or area chart, e.g. a target or a limit. |
 | `build_chart` `(request, chart, linked=True, fixed=None)` | function | Context for one chart on a page. |
 
+## Forms from JSON Schema
+
+| Name | Kind | Description |
+|---|---|---|
+| `FormSpec` | class | A form drawn from a JSON Schema. JSON in, JSON out; the app loads and saves. |
+| `SchemaDef` | class | A named JSON Schema that forms can apply, e.g. a document kind's schema. |
+| `FormResult` | class |  |
+| `build_form` `(request, spec, data, errors=None, general=None, schema_id='', mode='form', chosen=None, json_text=None)` | function | Context for components/json_form.html: render it with `json_form(form, …)`. |
+| `parse_form` `(request, spec, form)` | function | Read a posted form back into a document and validate it against the schema in force. |
+| `DocumentKind` | class |  |
+| `InvalidDocument` | class | The data does not satisfy the kind's schema. |
+| `documents` | module | The document store (ADR 0007): JSON documents of kinds that apps declare. |
+
 ## Pages and feedback
 
 | Name | Kind | Description |

@@ -26,6 +26,7 @@ with a selection.
 | `path` | `str` | required | page that hosts the grid |
 | `query` | `Query` | required | A named query (sql/<area>.sql) returning the rows, with an "id" column. It may use :user_id (the signed-in user) to scope rows. |
 | `columns` | `list[Column]` | required | in display order |
+| `params` | `dict[str, Any]` | `{}` | Fixed values the query is run with, beside :user_id, e.g. {"kind": "demo.policy"}. Part of the access boundary: users cannot change them. |
 | `search` | `list[str]` | `[]` | columns matched by the search box (ILIKE) |
 | `filters` | `list[Filter]` | `[]` | dropdowns in the filter bar |
 | `views` | `list[View]` | `[]` | tabs of preset filters |

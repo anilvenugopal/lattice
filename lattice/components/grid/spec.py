@@ -173,6 +173,9 @@ class GridSpec:
     # It may use :user_id (the signed-in user) to scope rows.
     query: Query
     columns: list[Column]           # in display order
+    # Fixed values the query is run with, beside :user_id, e.g. {"kind": "demo.policy"}.
+    # Part of the access boundary: users cannot change them.
+    params: dict[str, Any] = field(default_factory=dict)
     search: list[str] = field(default_factory=list)  # columns matched by the search box (ILIKE)
     filters: list[Filter] = field(default_factory=list)  # dropdowns in the filter bar
     views: list[View] = field(default_factory=list)  # tabs of preset filters

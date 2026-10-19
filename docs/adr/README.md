@@ -14,7 +14,7 @@ is a new record that names the one it replaces.
 | [0004](0004-charts-chartjs.md) | Charts with Chart.js and its plugins | Accepted |
 | [0005](0005-graphs-xyflow-web-component.md) | Graphs with Svelte Flow compiled to a web component | Proposed, needs a spike |
 | [0006](0006-taskline-as-lattice-app.md) | The taskline UI is a Lattice app, bundled or as an Ops console | Accepted |
-| [0007](0007-json-schema-forms.md) | Forms rendered from JSON Schema, JSON in and JSON out | Proposed |
+| [0007](0007-json-schema-forms.md) | Forms rendered from JSON Schema, JSON in and JSON out | Accepted |
 | [0008](0008-grid-data-sources.md) | Grid rows come from data sources with keyset paging | Proposed |
 | [0009](0009-permissions.md) | Permissions declared by apps, grouped into roles | Accepted |
 | [0010](0010-theming-and-overrides.md) | Theming and overrides: the host owns the brand, apps style only their own pages | Proposed |

@@ -1,0 +1,22 @@
+/* Forms drawn from JSON Schema (components/json_form.html). */
+.jf__body { display: flex; flex-direction: column; gap: var(--sp-4); }
+.jf__bar { display: flex; align-items: center; gap: var(--sp-4); }
+.jf__schema { display: flex; align-items: center; gap: var(--sp-2); margin-left: auto; }
+.jf__fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--sp-3) var(--sp-4); align-items: start; }
+.jf__fields > .jf__group, .jf__fields > .jf__variant, .jf__fields > .jf__section,
+.jf__fields > .field:has(textarea) { grid-column: 1 / -1; }
+.jf__group, .jf__section { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; margin: 0; padding: var(--sp-3) var(--sp-4) var(--sp-4); border: 1px solid var(--border); border-radius: var(--r-lg); }
+.jf__section { border-style: none; padding: 0; }
+.jf__legend { padding: 0 var(--sp-1); font-size: var(--fs-md); font-weight: var(--fw-semibold); color: var(--text); }
+.jf__list.field--invalid { border-color: var(--danger); }
+.jf__item { display: flex; align-items: flex-start; gap: var(--sp-2); padding: var(--sp-3); background: var(--surface-recessed); border-radius: var(--r-md); }
+.jf__item-body { flex: 1; min-width: 0; }
+.jf__item-tools { display: flex; gap: 2px; }
+.jf__variant { display: flex; flex-direction: column; gap: var(--sp-3); }
+.jf__const { font-family: var(--font-mono); font-size: var(--fs-md); color: var(--text-2); }
+.jf__json { font-family: var(--font-mono); font-size: var(--fs-sm); }
+.jf__code { font-family: var(--font-mono); font-size: var(--fs-sm); word-break: break-all; }
+.jf__other summary { font-size: var(--fs-md); color: var(--text-2); cursor: pointer; }
+.jf__add { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.jf__general { margin: 0; }
+.jf__item-label { margin-bottom: var(--sp-2); font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text-2); }

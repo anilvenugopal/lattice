@@ -1,0 +1,3 @@
+{% extends "base/shell.html" %}
+{% from "components/json_form.html" import json_form with context %}
+{% block main %}<div class="page page--narrow">{{ json_form(form, action=action) }}</div>{% endblock %}

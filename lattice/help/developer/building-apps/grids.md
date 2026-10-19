@@ -141,6 +141,10 @@ column it selects is a row key: `Column`, `search`, `Filter`, `View`, `when`,
   `WHERE m.owner_id = :user_id`. Paging, panels, actions, export, tiles and
   Ctrl+J all run through it, so a row the query does not return cannot be
   reached any other way.
+- **`params` binds fixed values.** `params={"kind": "demo.policy"}` runs the
+  query with `:kind` bound, so one query can serve several grids (the
+  [document store](json-forms.md#the-document-store) does this). Users cannot
+  change them, so they are part of the access boundary.
 
 `$me` in a view's `where` is replaced with the signed-in user's id.
 

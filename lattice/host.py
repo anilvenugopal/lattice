@@ -20,8 +20,9 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
-from lattice.components import tiles
+from lattice.components import forms, tiles
 from lattice.components.chart import router as chart_router
+from lattice.components.forms import render as form_router
 from lattice.components.grid import router as grid_router
 from lattice.components.grid.engine import GridTimeout
 from lattice.components.help import content as help_content
@@ -71,6 +72,15 @@ def _check(app: AppManifest) -> None:
             fail(f"grid key {grid.key!r} must start with {app.key + '.'!r}")
         if not grid.path.startswith(app.prefix + "/") and grid.path != app.prefix:
             fail(f"grid {grid.key!r} path {grid.path!r} must start with {app.prefix}")
+    for spec in app.forms:
+        if not spec.key.startswith(app.key + "."):
+            fail(f"form key {spec.key!r} must start with {app.key + '.'!r}")
+    for kind in app.documents:
+        if not kind.key.startswith(app.key + "."):
+            fail(f"document kind {kind.key!r} must start with {app.key + '.'!r}")
+    for schema in app.schemas:
+        if not schema.id.startswith(app.key + "."):
+            fail(f"schema id {schema.id!r} must start with {app.key + '.'!r}")
     for chart in app.charts:
         if not chart.key.startswith(app.key + "."):
             fail(f"chart key {chart.key!r} must start with {app.key + '.'!r}")
@@ -124,6 +134,13 @@ def _register(app: AppManifest, platform: bool) -> None:
         grid_router.register(grid)
     for chart in app.charts:
         chart_router.register(chart)
+    for spec in app.forms:
+        forms.register_form(spec)
+    for schema in app.schemas:
+        forms.register_schema(schema)
+    for kind in app.documents:
+        forms.register_schema(kind.schema_def())
+        forms.register_form(kind.form)
     for tile in app.tiles:
         tiles.register_tile(tile)
     for provider in app.search:
@@ -152,6 +169,7 @@ def _check_permissions() -> None:
         named.append((f"grid {spec.key!r}", spec.permission))
         named += [(f"action {spec.key}.{a.key}", a.permission) for a in spec.actions]
     named += [(f"chart {c.key!r}", c.permission) for c in chart_router.REGISTRY.values()]
+    named += [(f"form {f.key!r}", f.permission) for f in forms.FORMS.values()]
     named += [(f"Ctrl+J source {p.key!r}", p.permission) for p in search_providers.registered()]
     named += [(f"help topic {t.url}", t.permission)
               for app in help_content.HELP.values() for t in app.topics.values()]
@@ -168,6 +186,8 @@ def _reset_registries() -> None:
     slots.reset()
     grid_router.REGISTRY.clear()
     chart_router.REGISTRY.clear()
+    forms.FORMS.clear()
+    forms.SCHEMAS.clear()
     tiles.TILES.clear()
     search_providers.reset()
 
@@ -233,7 +253,8 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
         web.mount("/static/host", StaticFiles(directory=host_static))
     web.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
     web.add_middleware(AuthMiddleware)
-    for router in (auth_routes.router, grid_router.router, chart_router.router, search_router.router,
+    for router in (auth_routes.router, grid_router.router, chart_router.router,
+                   form_router.router, search_router.router,
                    help_router.router):
         web.include_router(router)
     for app, mount in ordered:

@@ -9,6 +9,8 @@ from pathlib import Path
 from fastapi import APIRouter
 
 from lattice.components.chart import ChartSpec
+from lattice.components.documents import DocumentKind
+from lattice.components.forms import FormSpec, SchemaDef
 from lattice.components.grid import GridSpec
 from lattice.components.search.providers import SearchProvider
 from lattice.components.tiles import HomeTile
@@ -31,6 +33,9 @@ class AppManifest:
     # registered for actions, export, Ctrl+J and tiles
     grids: list[GridSpec] = field(default_factory=list)
     charts: list[ChartSpec] = field(default_factory=list)  # served at /_chart/{key}/data
+    forms: list[FormSpec] = field(default_factory=list)  # JSON Schema forms: /_form/{key}/render
+    schemas: list[SchemaDef] = field(default_factory=list)  # named schemas forms can apply
+    documents: list[DocumentKind] = field(default_factory=list)  # kinds in the document store
     search: list[SearchProvider] = field(default_factory=list)  # extra Ctrl+J sources
     tiles: list[HomeTile] = field(default_factory=list)  # count tiles on the home page
     # Folder holding templates/{key}/…; searched before core templates.

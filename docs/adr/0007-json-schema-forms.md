@@ -1,6 +1,6 @@
 # 0007. Forms rendered from JSON Schema, JSON in and JSON out
 
-Status: Proposed
+Status: Accepted (18 October 2026, built in step 5)
 
 ## Context
 

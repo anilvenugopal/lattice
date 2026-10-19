@@ -74,3 +74,5 @@ textarea.input { height: auto; padding: var(--sp-2) 10px; resize: vertical; line
 .segmented span { display: block; padding: 5px var(--sp-3); font-size: var(--fs-md); color: var(--text-2); border-radius: 5px; cursor: pointer; }
 .segmented input:checked + span { color: var(--text); background: var(--surface-panel); box-shadow: var(--shadow-sm); font-weight: var(--fw-medium); }
 .segmented input:focus-visible + span { box-shadow: var(--focus-ring); }
+.segmented__item { padding: 5px var(--sp-3); font-size: var(--fs-md); color: var(--text-2); background: none; border: none; border-radius: 5px; cursor: pointer; }
+.segmented__item.is-active { color: var(--text); background: var(--surface-panel); box-shadow: var(--shadow-sm); font-weight: var(--fw-medium); cursor: default; }
