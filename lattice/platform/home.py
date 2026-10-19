@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Request
 from lattice.components import tiles as home_tiles
 from lattice.components.manifest import AppManifest
 from lattice.kernel.auth.deps import current_user
+from lattice.kernel.auth.permissions import Permission
 from lattice.kernel.database import Db, get_db
 from lattice.kernel.nav import NavNode
 from lattice.kernel.queries import SQL
@@ -31,6 +32,9 @@ def home(request: Request, db: Db = Depends(get_db), user=Depends(current_user))
 
 APP = AppManifest(
     key="home", label="Home", routers=[router],
+    permissions=[Permission("lattice.views.share", "Share saved views",
+                            "Share a saved grid view with everyone who can open the grid, "
+                            "and delete views others shared.", default_roles=("editor",))],
     nav=[NavNode("home", "Home", "/", icon="home", description="Overview and recent activity"),
          # Help pages render under this node; the Help menu and F1 lead to them.
          NavNode("help", "Help", "/help", hidden=True)],

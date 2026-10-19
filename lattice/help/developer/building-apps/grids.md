@@ -30,6 +30,7 @@ Every field of every class is listed in [Reference › Grid](../reference/grid.m
 | Search across the `search` columns (every word must match) | The search box; `/` focuses it |
 | Filters with multi- or single-select options | Filter chips in the toolbar |
 | Views: named filter presets | Tabs above the toolbar, or sidebar links (`views_in_nav=True`) |
+| Saved views: a user's own search, filters and sort, optionally shared | The Views menu in the toolbar |
 | Sort by any sortable column | Click the header; click again to reverse |
 | Paging; the page size defaults to the user's preference | The footer |
 | Single, multi, range and page selection; "select all N matching" | Click, Ctrl/⌘-click, Shift-click, the header checkbox, Ctrl+A, Space or X |
@@ -316,6 +317,15 @@ Every grid uses the same endpoints, so apps never write list endpoints:
 | `POST /_grid/{key}/action/{action}` | Runs an action (JSON: `ids` or the filter state, and `values`) |
 | `POST /_grid/{key}/columns` | Saves the user's hidden columns |
 | `GET /_grid/{key}/export.csv` | CSV of the filtered rows |
+| `GET /_grid/{key}/views` | The user's saved views and those shared with everyone |
+| `POST /_grid/{key}/views` | Saves the current state as a view (JSON: `name`, `state`, `shared`) |
+| `POST /_grid/{key}/views/{id}` | Renames, re-saves or shares one of the user's views |
+| `POST /_grid/{key}/views/{id}/delete` | Deletes a view: the owner, or a holder of `lattice.views.share` for shared views |
+
+Saved views need nothing from the app. A view stores the grid's URL state
+(tab, search, filters, sort and page size) in `lattice.grid_view`, so every
+grid has them. A view that names a filter or column the grid no longer has
+simply loses that part.
 
 ## Embedding a grid in another page
 

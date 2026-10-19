@@ -48,20 +48,22 @@ def test_a_permission_is_declared_once():
         create_app(apps=[notes_app(EDIT, EDIT)])
 
 
-def test_lattice_declares_one_permission_per_administration_area():
+def test_lattice_declares_its_permissions():
     create_app(apps=[])
     assert sorted(permissions.CATALOGUE) == [
         "lattice.audit.view", "lattice.roles.manage", "lattice.sessions.manage",
-        "lattice.system.view", "lattice.users.manage"]
+        "lattice.system.view", "lattice.users.manage", "lattice.views.share"]
 
 
 def test_defaults_are_granted_once_and_never_again(db):
-    assert [r["permission"] for r in db.all(CHECK.role_permissions, role="editor")] == ["notes.edit"]
+    editor = [r["permission"] for r in db.all(CHECK.role_permissions, role="editor")]
+    assert editor == ["lattice.views.share", "notes.edit"]
     assert db.all(CHECK.role_permissions, role="admin") == []      # admin has all, implicitly
     db.run(CHECK.take_permission, role="editor", permission="notes.edit")
     create_app(apps=[notes_app(EDIT)])
     assert permissions.sync(db) == []                              # already known: not re-granted
-    assert db.all(CHECK.role_permissions, role="editor") == []
+    editor = [r["permission"] for r in db.all(CHECK.role_permissions, role="editor")]
+    assert editor == ["lattice.views.share"]
 
 
 def test_a_permission_added_later_is_granted_its_defaults(db):

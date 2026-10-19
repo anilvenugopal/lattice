@@ -58,6 +58,7 @@ PATHS: dict[str, str] = {
     "panel-right": '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/>',
     "assign": '<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6 1.5 0 3 .3 4 1"/><path d="M16 19h6M19 16v6"/>',
     "flag": '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
+    "bookmark": '<path d="M6 3h12v18l-6-4-6 4z"/>',
 }
 
 

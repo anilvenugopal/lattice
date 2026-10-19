@@ -25,6 +25,8 @@ function dataGrid(config) {
     dirty: false,
     rowMenu: { open: false, x: 0, y: 0, id: null, attrs: {} },
     dialog: { open: false, title: '', text: '', fields: [], values: {}, submit: '', tone: '', action: '', ids: null, busy: false },
+    saved: { open: false, loaded: false, list: [], canShare: false, current: null, state: '' },
+    savedDialog: { open: false, id: null, name: '', shared: false, busy: false, deleting: false },
 
     init() {
       this.updateFilterState();
@@ -73,6 +75,7 @@ function dataGrid(config) {
       const url = `${config.endpoint}/rows?${qs}${config.viewsInNav ? '&_nav=1' : ''}`;
       if (config.syncUrl && !opts.quiet) history.replaceState(null, '', config.path + (qs ? '?' + qs : ''));
       this.updateFilterState();
+      this.saved.state = this.stateString();
       return htmx.ajax('GET', url, { target: this.$refs.body, swap: 'innerHTML' }).then(() => {
         this.loading = false;
         if (opts.quiet) {
@@ -118,6 +121,117 @@ function dataGrid(config) {
         any = any || n > 0;
       });
       this.dirty = any;
+    },
+
+    // ── Saved views ────────────────────────────────────────────────────────
+    // A saved view is the grid's state as a query string, without the page.
+    stateString() {
+      const p = new URLSearchParams(this.paramString());
+      p.delete('page');
+      return p.toString();
+    },
+    canon(qs) {
+      return JSON.stringify([...new URLSearchParams(qs)].sort((a, b) =>
+        a[0] === b[0] ? (a[1] < b[1] ? -1 : 1) : (a[0] < b[0] ? -1 : 1)));
+    },
+    async loadSaved() {
+      try {
+        const res = await fetch(`${config.endpoint}/views`, { headers: { Accept: 'application/json' } });
+        if (!res.ok) throw new Error('Could not load saved views.');
+        const data = await res.json();
+        this.saved.list = data.views;
+        this.saved.canShare = data.canShare;
+        this.saved.loaded = true;
+      } catch (err) { app.toast(err.message, 'danger'); }
+    },
+    toggleSaved() {
+      this.saved.state = this.stateString();
+      this.saved.open = !this.saved.open;
+      if (this.saved.open && !this.saved.loaded) this.loadSaved();
+    },
+    savedGroups() {
+      const mine = this.saved.list.filter(v => v.mine);
+      const shared = this.saved.list.filter(v => !v.mine);
+      return [{ label: 'Mine', views: mine }, { label: 'Shared with everyone', views: shared }]
+        .filter(g => g.views.length);
+    },
+    // The saved view the grid shows right now, if its state is unchanged.
+    activeSaved() {
+      const now = this.canon(this.saved.state);
+      const cur = this.saved.list.find(v => v.id === this.saved.current);
+      if (cur && this.canon(cur.state) === now) return cur;
+      return null;
+    },
+    // The user's own view last opened, now changed: offered as "Save changes to …".
+    ownSelected() {
+      const cur = this.saved.list.find(v => v.id === this.saved.current);
+      return cur && cur.mine ? cur : null;
+    },
+    applySaved(v) {
+      const p = new URLSearchParams(v.state);
+      this.$refs.search.value = p.get('q') || '';
+      this.$refs.sort.value = p.get('sort') || '';
+      if (p.get('sort')) config.sort = p.get('sort');
+      this.$refs.size.value = p.get('size') || config.defaultSize;
+      this.filterInputs().forEach(i => (i.checked = p.getAll(i.name).includes(i.value)));
+      this.view = p.get('view') || config.defaultView;
+      this.saved.current = v.id;
+      this.saved.open = false;
+      this.closePanel();
+      this.$nextTick(() => this.reload({ page: 1, reset: true }));
+    },
+    newSaved() {
+      this.saved.open = false;
+      this.savedDialog = { open: true, id: null, name: '', shared: false, busy: false, deleting: false };
+      this.$nextTick(() => this.$refs.savedName.focus());
+    },
+    editSaved(v) {
+      this.saved.open = false;
+      this.savedDialog = { open: true, id: v.id, name: v.name, shared: v.shared, busy: false, deleting: false };
+      this.$nextTick(() => this.$refs.savedName.focus());
+    },
+    async submitSaved() {
+      const d = this.savedDialog;
+      d.busy = true;
+      try {
+        const body = { name: d.name, shared: d.shared };
+        const res = d.id
+          ? await app.post(`${config.endpoint}/views/${d.id}`, body)
+          : await app.post(`${config.endpoint}/views`, { ...body, state: this.stateString() });
+        this.saved.list = res.views;
+        this.saved.loaded = true;
+        if (!d.id) this.saved.current = res.id;
+        this.saved.state = this.stateString();
+        d.open = false;
+        app.toast(d.id ? 'View saved.' : `Saved view “${d.name}”.`);
+      } catch (err) { app.toast(err.message, 'danger'); }
+      d.busy = false;
+    },
+    async resaveSaved() {
+      const v = this.ownSelected();
+      try {
+        const res = await app.post(`${config.endpoint}/views/${v.id}`, { state: this.stateString() });
+        this.saved.list = res.views;
+        this.saved.state = this.stateString();
+        this.saved.open = false;
+        app.toast(`Saved changes to “${v.name}”.`);
+      } catch (err) { app.toast(err.message, 'danger'); }
+    },
+    deleteSaved(v) {
+      this.saved.open = false;
+      this.savedDialog = { open: true, id: v.id, name: v.name, shared: v.shared, busy: false, deleting: true };
+    },
+    async confirmDeleteSaved() {
+      const v = this.savedDialog;
+      v.busy = true;
+      try {
+        const res = await app.post(`${config.endpoint}/views/${v.id}/delete`, {});
+        this.saved.list = res.views;
+        if (this.saved.current === v.id) this.saved.current = null;
+        v.open = false;
+        app.toast(`Deleted “${v.name}”.`);
+      } catch (err) { app.toast(err.message, 'danger'); }
+      v.busy = false;
     },
 
     exportUrl() { return `${config.endpoint}/export.csv?${this.paramString()}`; },

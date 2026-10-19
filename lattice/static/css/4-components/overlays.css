@@ -37,3 +37,11 @@
   background: var(--surface-recessed); border-top: 1px solid var(--border-faint); }
 .shortcuts { display: grid; grid-template-columns: auto 1fr; gap: 10px var(--sp-5); margin: 0; font-size: var(--fs-md); }
 .shortcuts dd { margin: 0; color: var(--text-2); }
+
+/* Saved views menu (components/grid.html) */
+.menu--views { min-width: 260px; }
+.menu__group { padding: var(--sp-2) 10px var(--sp-1); font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--text-3); }
+.menu__row { display: flex; align-items: center; gap: 2px; border-radius: var(--r-md); }
+.menu__row .menu__item { flex: 1; min-width: 0; }
+.menu__row.is-active .menu__item { font-weight: var(--fw-semibold); }
+.menu__meta { margin-left: auto; padding-left: var(--sp-2); font-size: var(--fs-sm); color: var(--text-3); }

@@ -60,6 +60,40 @@
     <span class="dg__spacer"></span>
 
     <div class="dg__tools">
+      <div class="menu-wrap" @click.outside="saved.open = false" @keydown.escape.stop="saved.open = false">
+        <button type="button" class="chip" :class="{ 'is-on': activeSaved() }" @click="toggleSaved()"
+                aria-label="Saved views" data-saved-views>
+          {{ icon('bookmark', 14) }}<span x-text="activeSaved() ? activeSaved().name : 'Views'">Views</span>{{ icon('chevron-down', 13) }}
+        </button>
+        <div class="menu menu--right menu--views" x-show="saved.open" x-cloak>
+          <template x-if="!saved.list.length">
+            <div class="menu__empty">No saved views yet.</div>
+          </template>
+          <template x-for="group in savedGroups()" :key="group.label">
+            <div>
+              <div class="menu__group" x-text="group.label"></div>
+              <template x-for="v in group.views" :key="v.id">
+                <div class="menu__row" :class="{ 'is-active': activeSaved() && activeSaved().id === v.id }">
+                  <button type="button" class="menu__item" @click="applySaved(v)">
+                    <span x-text="v.name"></span>
+                    <span class="menu__meta" x-show="!v.mine" x-text="v.owner_name"></span>
+                    <span class="menu__meta" x-show="v.mine && v.shared">Shared</span>
+                  </button>
+                  <button type="button" class="icon-btn icon-btn--sm" x-show="v.mine" @click="editSaved(v)"
+                          :aria-label="'Edit ' + v.name">{{ icon('edit', 14) }}</button>
+                  <button type="button" class="icon-btn icon-btn--sm" x-show="v.mine || saved.canShare"
+                          @click="deleteSaved(v)" :aria-label="'Delete ' + v.name">{{ icon('trash', 14) }}</button>
+                </div>
+              </template>
+            </div>
+          </template>
+          <div class="menu__sep"></div>
+          <template x-if="activeSaved() === null && ownSelected()">
+            <button type="button" class="menu__item" @click="resaveSaved()">{{ icon('check') }}<span x-text="`Save changes to “${ownSelected().name}”`"></span></button>
+          </template>
+          <button type="button" class="menu__item" @click="newSaved()">{{ icon('plus') }}Save current view…</button>
+        </div>
+      </div>
       <div class="menu-wrap" x-data="{ open: false }" @click.outside="open = false">
         <button type="button" class="icon-btn" @click="open = !open" data-tip="Columns" aria-label="Columns">{{ icon('columns') }}</button>
         <div class="menu menu--right" x-show="open" x-cloak>
@@ -127,6 +161,38 @@
     {% endfor %}
   </div>
   {% endif %}
+
+  {# Save, edit or delete a saved view. #}
+  <div class="overlay" x-show="savedDialog.open" x-cloak @click.self="savedDialog.open = false"
+       @keydown.escape.stop="savedDialog.open = false">
+    <form class="dialog dialog--sm" @submit.prevent="savedDialog.deleting ? confirmDeleteSaved() : submitSaved()">
+      <div class="dialog__head"><h2 x-text="savedDialog.deleting ? 'Delete view' : savedDialog.id ? 'Edit view' : 'Save view'"></h2>
+        <button type="button" class="icon-btn" @click="savedDialog.open = false" aria-label="Close">{{ icon('x') }}</button></div>
+      <div class="dialog__body">
+        <template x-if="savedDialog.deleting">
+          <p class="dialog__text">Delete the view “<span x-text="savedDialog.name"></span>”?<span x-show="savedDialog.shared"> Everyone it is shared with loses it too.</span></p>
+        </template>
+        <template x-if="!savedDialog.deleting">
+          <div>
+            <p class="dialog__text" x-show="!savedDialog.id">Saves the search, filters and sort as they are now.</p>
+            <label class="field">
+              <span class="field__label">Name<span class="field__req"> *</span></span>
+              <input class="input" x-model="savedDialog.name" maxlength="80" required x-ref="savedName">
+            </label>
+            <label class="check" x-show="saved.canShare">
+              <input type="checkbox" x-model="savedDialog.shared">
+              <span>Share with everyone who can open this list</span>
+            </label>
+          </div>
+        </template>
+      </div>
+      <div class="dialog__foot">
+        <button type="button" class="btn btn--ghost" @click="savedDialog.open = false">Cancel</button>
+        <button type="submit" class="btn" :class="savedDialog.deleting ? 'btn--danger' : 'btn--primary'"
+                :disabled="savedDialog.busy" x-text="savedDialog.deleting ? 'Delete' : 'Save'">Save</button>
+      </div>
+    </form>
+  </div>
 
   {# Confirm / input dialog for actions. Fields come from Action.fields. #}
   <div class="overlay" x-show="dialog.open" x-cloak @click.self="dialog.open = false"

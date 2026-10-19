@@ -2,7 +2,7 @@
 title: Working with lists
 summary: Every list works the same way. Search, filter, sort, select rows, run actions, open records and export.
 order: 30
-keywords: grid list table search filter sort view select bulk action export csv columns panel page size
+keywords: grid list table search filter sort view saved views bookmark share select bulk action export csv columns panel page size
 ---
 
 Every list of records works the same way, in every app. Once you know one, you
@@ -22,6 +22,28 @@ know them all.
 
 The address in your browser keeps the view, search, filters, sort and page.
 Copy it to share exactly what you see, or bookmark it.
+
+## Save a view
+
+Save a search and filters you use often, and open them again with one click.
+
+1. Set up the list: choose a tab, search, filter and sort.
+2. Open **Views** (next to the columns icon) and choose **Save current view…**.
+3. Name it and choose **Save**.
+
+The **Views** button then shows the view's name. Open **Views** and choose a
+saved view to return to it.
+
+- **Change a view.** Open it, change the search or filters, then choose
+  **Save changes to "…"** in **Views**. The pencil renames it; the bin deletes
+  it.
+- **Share a view.** Tick **Share with everyone who can open this list** when
+  you save it, or later with the pencil. Shared views appear under **Shared
+  with everyone** for everyone who can open the list, with the owner's name.
+  Only the owner changes a shared view. Sharing needs the **Share saved views**
+  permission, which editors have.
+- **What is saved:** the tab, search, filters, sort and rows per page. Columns
+  are your own choice for the list, saved separately.
 
 ## Look at a row
 

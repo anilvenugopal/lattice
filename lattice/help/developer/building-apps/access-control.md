@@ -92,6 +92,7 @@ and `require` fails the first request that uses an undeclared one.
 | `lattice.sessions.manage` | Administration › Sessions |
 | `lattice.audit.view` | Administration › Audit log, and Recent activity on Home |
 | `lattice.system.view` | Administration › System and UI kit |
+| `lattice.views.share` | Share a saved grid view with everyone, and delete views others shared (default: editor) |
 
 Account, Home, Help and Ctrl+J are open to every signed-in user.
 

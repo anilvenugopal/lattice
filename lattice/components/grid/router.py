@@ -5,6 +5,10 @@
   POST /_grid/{key}/action/{action} run an action on the selection (JSON)
   POST /_grid/{key}/columns         save the user's hidden columns
   GET  /_grid/{key}/export.csv      current filtered rows as CSV
+  GET  /_grid/{key}/views           saved views the user can open (JSON)
+  POST /_grid/{key}/views           save the current state as a view
+  POST /_grid/{key}/views/{id}      rename, re-save or share a view
+  POST /_grid/{key}/views/{id}/delete
 """
 
 from __future__ import annotations
@@ -19,7 +23,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from starlette.datastructures import QueryParams
 
-from lattice.components.grid import engine
+from lattice.components.grid import engine, views
 from lattice.components.grid.render import build_grid, render_panel, resolve_options
 from lattice.components.grid.spec import ActionContext, ActionResult, GridSpec
 from lattice.kernel.auth.csrf import csrf_protect
@@ -187,3 +191,32 @@ def export_csv(key: str, request: Request, db: Db = Depends(get_db),
     stamp = datetime.now().strftime("%Y%m%d-%H%M")
     return StreamingResponse(generate(), media_type="text/csv", headers={
         "Content-Disposition": f'attachment; filename="{spec.key}-{stamp}.csv"'})
+
+
+@router.get("/{key}/views")
+def list_views(key: str, db: Db = Depends(get_db), user=Depends(current_user)):
+    spec = _spec(key, user)
+    return {"views": views.visible(db, spec, user), "canShare": user.can(views.SHARE)}
+
+
+@router.post("/{key}/views")
+async def create_view(key: str, request: Request, db: Db = Depends(get_db),
+                      user=Depends(current_user)):
+    spec = _spec(key, user)
+    view_id = views.create(db, spec, user, await request.json())
+    return {"id": view_id, "views": views.visible(db, spec, user)}
+
+
+@router.post("/{key}/views/{view_id}")
+async def update_view(key: str, view_id: int, request: Request, db: Db = Depends(get_db),
+                      user=Depends(current_user)):
+    spec = _spec(key, user)
+    views.update(db, spec, user, view_id, await request.json())
+    return {"id": view_id, "views": views.visible(db, spec, user)}
+
+
+@router.post("/{key}/views/{view_id}/delete")
+def delete_view(key: str, view_id: int, db: Db = Depends(get_db), user=Depends(current_user)):
+    spec = _spec(key, user)
+    views.delete(db, spec, user, view_id)
+    return {"views": views.visible(db, spec, user)}
