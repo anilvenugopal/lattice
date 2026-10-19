@@ -19,7 +19,7 @@ def current_user(request: Request) -> CurrentUser:
 def require(permission: str):
     """Route dependency: 403 unless the user has `permission`.
 
-    Usage: `@router.get(..., dependencies=[Depends(require("demo.work.edit"))])`
+    Usage: `@router.get(..., dependencies=[Depends(require("showcase.items.edit"))])`
     """
     def check(request: Request) -> CurrentUser:
         if permission not in permissions.CATALOGUE:

@@ -1,6 +1,6 @@
 """Schema migrations: plain `.sql` files, applied in name order, once each.
 
-Lattice and every app own one Postgres schema each (`lattice`, `demo`…) and keep
+Lattice and every app own one Postgres schema each (`lattice`, `showcase`…) and keep
 their migrations in `sql/schema/` (0001_lattice.sql, 0002_….sql). The schema's
 `_schema_version` table records which files have run. `lattice migrate` applies
 Lattice's files first, then each app's, all in one transaction: a failure leaves

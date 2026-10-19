@@ -1,6 +1,6 @@
 ---
 title: Getting started
-summary: Run Lattice and its demo app on your machine, and find your way around the repository.
+summary: Run Lattice and its showcase on your machine, and find your way around the repository.
 order: 20
 keywords: install setup run local development quickstart make uv
 ---
@@ -38,11 +38,11 @@ it once; it keeps running until `make db-down`, and its data survives restarts.
 
 | Command | What it does |
 |---|---|
-| `uv sync --all-packages` | Creates `.venv` and installs Lattice, the demo app and the demo host |
-| `uv run lattice migrate` | Creates the `lattice` and `demo` schemas and their tables |
-| `uv run lattice seed` | Adds the development users and the demo app's example data |
+| `uv sync --all-packages` | Creates `.venv` and installs Lattice, the showcase app and its host |
+| `uv run lattice migrate` | Creates the `lattice` and `showcase` schemas and their tables |
+| `uv run lattice seed` | Adds the development users and the showcase's sample data |
 
-`make dev` starts the demo host with auto-reload at
+`make dev` starts the showcase host with auto-reload at
 <http://localhost:8000>.
 
 Sign in with one of the development accounts:
@@ -63,19 +63,19 @@ Signed in as the admin, try these. Each one shows a part of Lattice that your
 apps get for free.
 
 1. **The rail.** The icons on the left are the apps and their sections: Home,
-   the demo app's Work Queue, Jobs and Inbox, then Administration and Account
-   at the bottom.
-2. **A grid.** Open **Work Queue**:
+   the showcase's Overview, Grids, Reading pane, Charts, Forms and Flows, then
+   Administration and Account at the bottom. **Overview** links every page.
+2. **A grid.** Open **Grids › Items**:
    - switch views with the tabs;
    - filter by status and type in the search box;
    - select a few rows and choose **Assign**.
    The action asks for an owner, updates the rows and shows a toast. The URL
    keeps the view, filters and sort, so a link reopens the same list.
-3. **Ctrl+J.** Press **Ctrl J** and type `marine`:
-   - results come from pages, work items, commands and help;
+3. **Ctrl+J.** Press **Ctrl J** and type `pipeline`:
+   - results come from pages, items, commands and help;
    - the chips at the top filter by source;
    - the pane on the right previews the highlighted result.
-4. **F1.** On the Work Queue, press **F1**. Help opens at the topic for that
+4. **F1.** On Items, press **F1**. Help opens at the topic for that
    page.
 5. **Theme.** Use the moon icon in the top bar, or **Account › Preferences**,
    to switch light, dark or system. Density, page size and time format are
@@ -96,22 +96,24 @@ lattice/                 the core package
   testing.py             pytest fixtures for core and app tests
   help/                  these docs
   templates/  static/    shell layout and macros; CSS and JavaScript
-apps/demo/               lattice-demo: the example app and its tests
-hosts/demo/              lattice-demo-host: runs Lattice with the demo app
+apps/showcase/           lattice-showcase: every component on sample data, and its tests
+hosts/showcase/          lattice-showcase-host: runs Lattice with the showcase
 lattice/sql/             Lattice's named queries; sql/schema/ holds its migrations
 tests/                   tests of the core
 compose.yaml             Postgres for development and tests
 docs/                    architecture and decision records
 ```
 
-The demo app in `apps/demo/` is the best source of working examples. It shows
-three shapes of list:
+The showcase in `apps/showcase/` is the best source of working examples, one
+module per page:
 
-- **Work Queue** (`work_items.py`, `sql/work_items.sql`): a table with views,
-  bulk actions, a side panel, a detail page with an embedded list, and forms;
-- **Jobs** (`jobs.py`): a list that refreshes itself, with actions that
+- **Items** (`items.py`, `sql/items.sql`): a table grid with every column kind,
+  bulk actions and a side panel; the record page; the plain form pattern;
+- **Live updates** (`jobs.py`): a grid that refreshes itself, with actions that
   depend on each row's state;
-- **Inbox** (`inbox.py`): a message list with a reading pane.
+- **Reading pane** (`inbox.py`): a message list with a reading pane;
+- **Charts** (`charts.py`), **Specs and Free-form** (`specs.py`) and **Flows**
+  (`flows.py`).
 
 ## Everyday commands
 
@@ -121,7 +123,7 @@ three shapes of list:
 | `make test` | Run every test, core and apps. Run it before you hand off a change |
 | `make lint` | Run ruff and the import rules (apps import only `lattice.api`, and so on) |
 | `make db-up`, `make db-down` | Start or stop Postgres |
-| `make migration schema=demo m="add note table"` | Create the next numbered migration file for a schema |
+| `make migration schema=showcase m="add note table"` | Create the next numbered migration file for a schema |
 | `make migrate` | Apply new migrations |
 | `make reset` | Drop Lattice's and the apps' schemas, then migrate and seed again |
 | `uv run lattice docs build` | Regenerate the [Reference](../reference/index.md) after changing code it documents |

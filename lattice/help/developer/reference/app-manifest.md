@@ -18,7 +18,7 @@ What an app adds to a host. Listed once per app package.
 |---|---|---|---|
 | `key` | `str` | required | URL prefix /{key}, grid key prefix {key}. |
 | `label` | `str` | required | app name in menus, Help and Ctrl+J |
-| `icon` | `str` | `''` | icon registry name, e.g. "demo:app" |
+| `icon` | `str` | `''` | icon registry name, e.g. "showcase:app" |
 | `help_url` | `str` | `''` | listed in the shell's Help menu |
 | `nav` | `list[NavNode]` | `[]` | the app's pages; every page has a node |
 | `routers` | `list[APIRouter]` | `[]` | FastAPI routers, mounted as declared (paths start with /{key}) |

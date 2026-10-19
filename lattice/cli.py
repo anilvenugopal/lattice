@@ -8,7 +8,7 @@
     lattice dev [--port 8000]            run the host with reload
     lattice docs build|check             regenerate (or check) the Reference pages
 
-The host comes from LATTICE_HOST ("module:attribute", default demo_host.main:app).
+The host comes from LATTICE_HOST ("module:attribute", default showcase_host.main:app).
 """
 
 from __future__ import annotations
@@ -115,7 +115,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
     sub.add_parser("migrate", help="apply database migrations").set_defaults(run=migrate)
     p = sub.add_parser("new-migration", help="create the next numbered migration file for a schema")
-    p.add_argument("schema", help="lattice, or an app's key such as demo")
+    p.add_argument("schema", help="lattice, or an app's key such as showcase")
     p.add_argument("description", help='what changes, e.g. "add ticket table"')
     p.set_defaults(run=create_migration)
     sub.add_parser("reset", help="drop and rebuild the development database, then seed it "

@@ -5,7 +5,7 @@ order: 60
 keywords: contribute contributing change lattice core development rules code quality tests docs commit agents
 ---
 
-This page is for changing Lattice itself: the `lattice` package, the demo app
+This page is for changing Lattice itself: the `lattice` package, the showcase app
 and these docs. To build an app on Lattice, see [Building apps](building-apps/index.md).
 
 ## Where things live
@@ -21,7 +21,7 @@ and these docs. To build an app on Lattice, see [Building apps](building-apps/in
 | `lattice/cli.py`, `lattice/testing.py`, `lattice/reference.py` | The command, the test fixtures, the Reference generator |
 | `lattice/templates/`, `lattice/static/` | The shell, macros, grid templates; the five CSS layers; the scripts |
 | `lattice/help/` | These docs: the user guide and the developer guide |
-| `apps/demo/`, `hosts/demo/` | The demo app and the host that runs it |
+| `apps/showcase/`, `hosts/showcase/` | The showcase app and the host that runs it |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | The target design and the decision records |
 | `AGENTS.md` | Rules and recipes for coding agents; `CLAUDE.md` points to it |
 
@@ -67,7 +67,7 @@ make lint      # ruff and the import contracts
 ```
 
 Add or update a test for every route, action and permission you add. Core
-tests are in `tests/`; the demo app's are in `apps/demo/tests/`. Both commands
+tests are in `tests/`; the showcase's are in `apps/showcase/tests/`. Both commands
 must pass before a change is handed off. Report the count ("196 passed").
 
 ## Docs

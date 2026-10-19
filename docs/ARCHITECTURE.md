@@ -28,7 +28,7 @@ reach the target, are in the last two sections.
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ Host            strategiq-web · ops-console · demo               │
+│ Host            strategiq-web · ops-console · showcase           │
 │                 chooses apps, bindings, settings                 │
 ├──────────────────────────────────────────────────────────────────┤
 │ Business apps   strategiq · risk workbench · …                   │
@@ -76,11 +76,11 @@ lattice/                         (this repository, a uv workspace)
     static/css/                  the five CSS layers
     templates/                   shell layout, macros
   apps/
-    showcase…/                   the showcase apps that demonstrate every feature
+    showcase/                    the showcase: every component on sample data
   frontend/
     graph/                       the one built component (ADR 0005)
   hosts/
-    showcase/                    runs Lattice with the showcase apps
+    showcase/                    runs Lattice with the showcase
   docs/
 ```
 
@@ -220,7 +220,7 @@ small `data`. Inside a host they travel on an in-process bus. An app publishes
 inside its transaction, and the event is delivered after the commit:
 
 ```python
-db.publish("comments.added", subject="urn:lattice:demo.work_item:42", data={"comment_id": 7})
+db.publish("comments.added", subject="urn:lattice:showcase.item:42", data={"comment_id": 7})
 ```
 
 Events from another process, such as Taskline's workers, arrive through an
@@ -291,7 +291,7 @@ narrowed by the step 2 decisions (18 October 2026, recorded in
 - **One database, one engine.** Lattice and its apps share one database and one
   connection pool, created once. Each request is one transaction.
 - **Schemas.** Each app owns one Postgres schema, named after its key: `lattice`
-  for the kernel, `demo`, `incidents`, `strategiq`; taskline keeps `jobs`. An app
+  for the kernel, `showcase`, `incidents`, `strategiq`; taskline keeps `jobs`. An app
   never writes another app's schema; it may read Lattice's (a person's name from
   `lattice.app_user`).
 - **Migrations.** Plain `.sql` files in each app's `sql/schema/`, applied in
@@ -357,8 +357,8 @@ Chart.js 4 with plugins, vendored and loaded on first use.
 | Thresholds | `chartjs-plugin-annotation` |
 
 ```python
-ChartSpec(key="demo.work_by_week", title="Received per week", source=WORK_GRID,
-          kind="bar", x=Time("received_at", "week"), series="status", stacked=True)
+ChartSpec(key="showcase.by_week", title="Created per week", source=ITEMS_GRID,
+          kind="bar", x=Time("created_at", "week"), series="status", stacked=True)
 ```
 
 - **A chart's source is a GridSpec.** The grid's query, view, filters, search
@@ -516,11 +516,11 @@ Not yet placed in the order of work. Each will get its own plan when it is start
 
 ## 10. Where Lattice is today
 
-Steps 1 to 5 are done. What remains:
+Steps 1 to 6 are done. What remains:
 
 | Area | Today | Target |
 |---|---|---|
-| Package | `lattice` core, `apps/demo`, `hosts/demo`, `lattice.api`, import contracts | Showcase apps instead of the demo; ecosystem apps in their own repositories |
+| Package | `lattice` core, `apps/showcase`, `hosts/showcase`, `lattice.api`, import contracts | Ecosystem apps in their own repositories |
 | Apps | `AppManifest` and `create_app(apps=[…])` with namespace checks | + settings, bindings, permissions, references, panels, events per manifest |
 | Database | Postgres 17; one database, a schema and SQL migrations per app; named SQL queries, no ORM | Unchanged; bindings to separate databases when an app needs one |
 | Permissions | Declared by apps, grouped into roles that administrators edit | + per-binding scopes |
@@ -533,7 +533,7 @@ Steps 1 to 5 are done. What remains:
 
 ## 11. Order of work
 
-Each step ends with tests passing and the demo running, and each is reviewed
+Each step ends with tests passing and the showcase running, and each is reviewed
 before the next starts.
 
 1. **Kernel restructure.** Done.
@@ -543,7 +543,7 @@ before the next starts.
    - Template search order, icon registry, named slots and `data-app` scoping
      ([ADR 0010](adr/0010-theming-and-overrides.md)), with the CSS test extended
      for host and app stylesheets.
-   - The example features move to `apps/demo`.
+   - The example features move to `apps/showcase`.
    - The `lattice` CLI and `LATTICE_` settings.
 2. **Postgres and plain SQL.** Done
    ([plan](plans/step-2-postgres-plain-sql.md)).
@@ -569,9 +569,9 @@ before the next starts.
    from JSON Schema and the document store
    ([ADR 0007](adr/0007-json-schema-forms.md)); the stepper, the tree and the
    graph, whose trial passed ([ADR 0005](adr/0005-graphs-xyflow-web-component.md)).
-6. **The showcase.** The demo app is replaced by showcase apps built around
-   Lattice's capabilities, each page saying what it shows and linking to the
-   docs.
+6. **The showcase.** Done ([plan](plans/step-6-showcase.md)): the demo app
+   is replaced by `apps/showcase`, one page per capability on sample data, each
+   saying what it shows and what it is built with.
 7. **Integration framework:** URN references with resolvers, record panels, and
    the CloudEvents bus, with its outbox reader ([ADR 0011](adr/0011-integration-standards.md)).
 8. **The showcase apps use the framework,** cooperating through references,

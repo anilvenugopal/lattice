@@ -1,7 +1,7 @@
 """Inline SVG icons (Lucide-style strokes, 24px grid). Use `{{ icon("name") }}` in templates.
 
 Lookup order (ADR 0010): `icon("search")` uses the host's replacement if it has one,
-then the core set below. `icon("demo:queue")` uses the icons the `demo` app declares.
+then the core set below. `icon("showcase:chart")` uses the icons the `showcase` app declares.
 Icons draw with `currentColor`, so they follow the light and dark themes.
 Unknown names render an empty box.
 """

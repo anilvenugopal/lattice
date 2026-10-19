@@ -12,8 +12,8 @@ keywords: navigation menu rail sidebar breadcrumb search ctrl j jump help f1 sho
   Hover over an icon to see its name.
 - **The sidebar** lists the pages of the area you are in. Areas with a single
   page have no sidebar.
-- **The top bar** shows where you are as breadcrumbs (Work Queue / Items /
-  WI-00042). Choose a breadcrumb to go back up.
+- **The top bar** shows where you are as breadcrumbs (Grids / Items /
+  IT-0042). Choose a breadcrumb to go back up.
 - **The status bar** at the bottom shows the environment (for example
   DEVELOPMENT or PRODUCTION), who you are signed in as, and your roles.
 

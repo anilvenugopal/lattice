@@ -19,7 +19,7 @@ Rules, checked when the folder is loaded (a broken file stops the host):
 - no placeholder is followed by `::` (write `CAST(:x AS date)`; `:x::date` is not bound).
 
 Values are bound with `:name` placeholders, never pasted into the SQL.
-Each statement is sent with a comment naming it (`/* lattice_demo/work_items.grid */`),
+Each statement is sent with a comment naming it (`/* lattice_showcase/items.grid */`),
 so database logs show where a query comes from.
 """
 
@@ -42,7 +42,7 @@ class SqlError(Exception):
 
 @dataclass(frozen=True)
 class Query:
-    key: str                      # "lattice_demo/work_items.grid"
+    key: str                      # "lattice_showcase/items.grid"
     sql: str                      # the body, as written in the file
     description: str
     path: Path
@@ -85,7 +85,7 @@ class Queries:
 
 
 def parse(path: Path, owner: str) -> dict[str, Query]:
-    """The named queries in one file. `owner` labels them in logs ("lattice", "lattice_demo")."""
+    """The named queries in one file. `owner` labels them in logs ("lattice", "lattice_showcase")."""
     lines = path.read_text(encoding="utf-8").splitlines()
     starts = [(i, m.group(1)) for i, line in enumerate(lines) if (m := _NAME.match(line))]
     if not starts:

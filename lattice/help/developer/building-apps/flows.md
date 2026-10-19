@@ -71,12 +71,12 @@ from lattice.api import Graph, GraphEdge, GraphNode, build_graph
 
 g = Graph(
     grid=WORK_GRID,             # node ids are this grid's row ids
-    nodes=[GraphNode("1", "WI-00001 intake", "New", "info", "/demo/work/1"),
-           GraphNode("2", "WI-00002 review", "In review", "warning", "/demo/work/2")],
+    nodes=[GraphNode("1", "IT-0001 intake", "New", "info", "/showcase/items/1"),
+           GraphNode("2", "IT-0002 review", "Active", "warning", "/showcase/items/2")],
     edges=[GraphEdge("1", "2", "next")],
     direction="LR")
 
-return render_page(request, "demo/flow.html", "work.flow", g=build_graph(request, db, g))
+return render_page(request, "showcase/flows.html", "flows", g=build_graph(request, db, g))
 ```
 
 ```jinja

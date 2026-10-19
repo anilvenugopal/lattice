@@ -11,7 +11,7 @@ change Lattice itself.
 | Section | Read it to |
 |---|---|
 | [Overview](overview.md) | Learn what Lattice is and the five ideas it is built on |
-| [Getting started](getting-started/index.md) | Run Lattice and the demo app on your machine, then [build your first app](getting-started/first-app.md) |
+| [Getting started](getting-started/index.md) | Run Lattice and the showcase on your machine, then [build your first app](getting-started/first-app.md) |
 | [Architecture](architecture/index.md) | See how Lattice is put together, and [where it is going](architecture/decisions.md) |
 | [Building apps](building-apps/index.md) | Build each part of an app: pages, grids, forms, components, styling, data, access, search, help and tests |
 | [Running Lattice](running/index.md) | Create and configure a host, set up sign-in, users and branding, and go to production |

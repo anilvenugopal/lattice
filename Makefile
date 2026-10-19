@@ -23,7 +23,7 @@ dev:  ## Run the host with reload on http://localhost:8000
 migrate:  ## Apply pending migrations
 	uv run lattice migrate
 
-migration:  ## New migration file: make migration schema=demo m="add ticket table"
+migration:  ## New migration file: make migration schema=showcase m="add ticket table"
 	uv run lattice new-migration $(schema) "$(m)"
 
 seed:  ## Add development users and each app's example data (skips if users exist)

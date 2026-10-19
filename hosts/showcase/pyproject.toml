@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lattice-showcase-host"
+version = "0.1.0"
+description = "A Lattice host that runs the showcase app."
+requires-python = ">=3.14"
+dependencies = ["lattice", "lattice-showcase"]
+
+[tool.uv.sources]
+lattice = { workspace = true }
+lattice-showcase = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["showcase_host"]

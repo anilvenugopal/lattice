@@ -1,0 +1,16 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card %}
+{% from "components/flows.html" import stepper, tree, graph %}
+{% block main %}
+<div class="page stack-lg">
+  {{ page_header("Flows", "A stepper for steps in order, a tree for hierarchies, and a graph for dependencies.") }}
+  {% call card("Stepper", "A linear flow: Step(label, state, note)") %}{{ stepper(steps) }}{% endcall %}
+  <div class="grid-2 grid-2--wide-left">
+    {% call card("Graph", "Item dependencies. Select a node for its actions; double-click to open it.", flush=True) %}{{ graph(graph_ctx) }}{% endcall %}
+    <div class="stack-lg">
+      {% call card("Tree", "Items and their child items") %}{{ tree(tree_nodes) }}{% endcall %}
+      {% call card("Vertical stepper") %}{{ stepper(steps[:4], vertical=true) }}{% endcall %}
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -22,7 +22,7 @@ named after the app's key:
 | Schema | Holds |
 |---|---|
 | `lattice` | Lattice's tables: users, roles, sessions, preferences, the audit log |
-| `demo` | The demo app's tables |
+| `showcase` | The showcase app's tables |
 | `helpdesk`, … | Each app's own tables |
 
 An app may read Lattice's tables, for example to join `lattice.app_user` for a
@@ -237,13 +237,13 @@ def seed(db: Db) -> None:
                assignee_id=rng.choice(people))
 ```
 
-The demo's `seed.py` and `sql/seed.sql` are a full example.
+The showcase's `seed.py` and `sql/seed.sql` are a full example.
 
 ## Background work
 
 `AppManifest.background` is an async function. The host starts it with the
 application and cancels it at shutdown. Use it for small periodic jobs in
-development and demos, such as the demo app's job simulator:
+development and demonstrations, such as the showcase's job simulator:
 
 ```python
 async def background() -> None:

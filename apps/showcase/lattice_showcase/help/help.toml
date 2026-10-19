@@ -1,0 +1,17 @@
+# Which help topic opens for each showcase page (F1 and "Help for this page").
+# Pages not listed open the showcase's help home.
+[pages]
+"overview"       = "index"
+"grids.items"    = "items"
+"grids.new"      = "items#create-and-edit"
+"grids.item"     = "items#the-record-page"
+"grids.jobs"     = "jobs"
+"inbox.inbox"    = "inbox"
+"inbox.starred"  = "inbox#folders"
+"inbox.archive"  = "inbox#folders"
+"charts"         = "charts"
+"forms.specs"    = "forms"
+"forms.new"      = "forms#specs"
+"forms.spec"     = "forms#specs"
+"forms.freeform" = "forms#free-form"
+"flows"          = "flows"

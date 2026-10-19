@@ -28,7 +28,7 @@ lattice new-migration [-h] schema description
 
 | Argument | Description |
 |---|---|
-| `schema` | Lattice, or an app's key such as demo. |
+| `schema` | Lattice, or an app's key such as showcase. |
 | `description` | What changes, e.g. "add ticket table". |
 
 ## reset

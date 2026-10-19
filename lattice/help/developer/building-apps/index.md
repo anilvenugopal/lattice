@@ -72,13 +72,16 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 
 ## Working examples
 
-The demo app in `apps/demo/lattice_demo/` uses every part:
+The showcase in `apps/showcase/lattice_showcase/` uses every part:
 
 | File | Shows |
 |---|---|
-| `work_items.py` | A table grid with views, filters, bulk actions with input fields, a side panel, a detail page, create and edit forms, home tiles and Ctrl+J |
+| `items.py` | A table grid with every column kind, views, filters, bulk actions with input fields, a star toggle, a side panel, the record page, create and edit forms, home tiles and Ctrl+J |
 | `jobs.py` | A grid that refreshes itself, actions that depend on each row's state, and a background task |
 | `inbox.py` | A split list with a reading pane, rows scoped to the signed-in user, and a star toggle |
-| `templates/demo/` | A detail page, panels and a form built from the shared macros |
-| `static/demo.css` | An app stylesheet scoped to `[data-app="demo"]` |
+| `charts.py` | Ten charts on the Items grid, linked to its filters |
+| `specs.py` | Forms from a Pydantic model, the document store, and a form with no schema |
+| `flows.py` | A stepper, a tree and a dependency graph with node actions |
+| `templates/showcase/` | Record page panels, the overview, and a form built from the shared macros |
+| `static/showcase.css` | An app stylesheet scoped to `[data-app="showcase"]` |
 | `help/` | Help topics with a Mermaid diagram, a callout and a `help.toml` |

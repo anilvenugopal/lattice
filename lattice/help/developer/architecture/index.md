@@ -152,7 +152,7 @@ One Postgres database holds everything, one schema per owner:
 | Schema | Holds | Files |
 |---|---|---|
 | `lattice` | `app_user`, `role`, `user_role`, `user_session`, `user_preference`, `audit_event`, and `utc_now()` | `lattice/sql/schema/`, queries in `lattice/sql/*.sql` |
-| `demo`, … | Each app's tables | The app's `sql/schema/`, queries in its `sql/*.sql` |
+| `showcase`, … | Each app's tables | The app's `sql/schema/`, queries in its `sql/*.sql` |
 
 ```mermaid
 flowchart LR

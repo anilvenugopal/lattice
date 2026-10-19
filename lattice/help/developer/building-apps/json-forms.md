@@ -23,10 +23,10 @@ class Settings(BaseModel):
     retries: int = Field(3, ge=0, le=10)
     notify: list[str] = []
 
-SETTINGS = FormSpec("demo.settings", schema=Settings,
+SETTINGS = FormSpec("showcase.settings", schema=Settings,
                     ui={"notify": {"help": "Email addresses told about failures."}})
 
-APP = AppManifest(key="demo", …, forms=[SETTINGS])
+APP = AppManifest(key="showcase", …, forms=[SETTINGS])
 ```
 
 ## Show and save it
@@ -35,23 +35,23 @@ APP = AppManifest(key="demo", …, forms=[SETTINGS])
 @router.get("/settings")
 def show(request: Request, db: Db = Depends(get_db)):
     form = build_form(request, SETTINGS, load_settings(db))
-    return render_page(request, "demo/settings.html", "settings", form=form)
+    return render_page(request, "showcase/settings.html", "settings", form=form)
 
 @router.post("/settings")
 async def save(request: Request, db: Db = Depends(get_db)):
     result = parse_form(request, SETTINGS, await request.form())
     if not result.ok:
-        return render_page(request, "demo/settings.html", "settings",
+        return render_page(request, "showcase/settings.html", "settings",
                            form=result.form, status_code=400)
     store_settings(db, result.data)
-    response = RedirectResponse("/demo/settings", status_code=303)
+    response = RedirectResponse("/showcase/settings", status_code=303)
     flash(response, request, "Settings saved.")
     return response
 ```
 
 ```jinja
 {% from "components/json_form.html" import json_form with context %}
-{% call card() %}{{ json_form(form, action="/demo/settings", cancel="/demo") }}{% endcall %}
+{% call card() %}{{ json_form(form, action="/showcase/settings", cancel="/showcase") }}{% endcall %}
 ```
 
 `parse_form` returns a `FormResult`:
@@ -135,7 +135,7 @@ The first that applies:
    and **Add field** adds a new key with a type. Nothing is validated.
 
 Register named schemas in the manifest:
-`schemas=[SchemaDef("demo.address", "Address", Address)]`.
+`schemas=[SchemaDef("showcase.address", "Address", Address)]`.
 
 ## Validation
 
@@ -152,15 +152,15 @@ keeps JSON documents in `lattice.document`. An app declares each kind:
 ```python
 from lattice.api import DocumentKind, documents
 
-POLICY = DocumentKind("demo.policy_template", "Policy template", schema=PolicyTemplate,
-                      title="{name}", edit="demo.policies.edit")
+POLICY = DocumentKind("showcase.policy_template", "Policy template", schema=PolicyTemplate,
+                      title="{name}", edit="showcase.policies.edit")
 
-APP = AppManifest(key="demo", …, documents=[POLICY])
+APP = AppManifest(key="showcase", …, documents=[POLICY])
 ```
 
 | Call | Does |
 |---|---|
-| `documents.create(db, user, POLICY, data)` | Validates, saves, records `demo.policy_template.created`; returns the id |
+| `documents.create(db, user, POLICY, data)` | Validates, saves, records `showcase.policy_template.created`; returns the id |
 | `documents.update(db, user, POLICY, id, data)` | Validates, replaces, records `….updated` |
 | `documents.get(db, POLICY, id)` | `id`, `title`, `data`, `schema_version`, timestamps; 404 when missing |
 | `documents.all_of(db, POLICY)` | Every document of the kind, newest first |
@@ -177,8 +177,8 @@ gives them.
   and a [record page](record-pages.md)'s history share the audit trail:
 
 ```python
-POLICIES = GridSpec(key="demo.policy_template", title="Policy templates",
-                    path="/demo/policies", query=documents.QUERY,
+POLICIES = GridSpec(key="showcase.policy_template", title="Policy templates",
+                    path="/showcase/policies", query=documents.QUERY,
                     params={"kind": POLICY.key},
                     columns=[Column("title", "Name", kind="strong"),
                              Column("updated_at", "Updated", kind="ago"),

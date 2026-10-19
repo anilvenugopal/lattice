@@ -1,0 +1,11 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header %}
+{% from "components/grid.html" import data_grid %}
+{% from "components/chart.html" import chart %}
+{% block main %}
+<div class="page stack-lg">
+  {{ page_header("Charts", "Ten ChartSpecs on the Items grid, counted in the database. Change the grid's tab, filters or search below and every chart follows.") }}
+  <div class="chart-row">{% for c in charts %}{{ chart(c) }}{% endfor %}</div>
+  {{ data_grid(grid) }}
+</div>
+{% endblock %}

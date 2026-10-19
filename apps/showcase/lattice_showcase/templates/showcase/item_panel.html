@@ -1,0 +1,14 @@
+{# Side panel body for an item. Context from items.panel(); labels and tones from the grid columns. #}
+{% from "components/macros.html" import prop_list, badge_for, user_chip, timeline, progress %}
+{{ prop_list([
+  ("Status", badge_for(spec.column("status"), item.status)),
+  ("Priority", badge_for(spec.column("priority"), item.priority)),
+  ("Owner", user_chip(row.owner)),
+  ("Progress", progress(item.progress)),
+  ("Amount", item.amount | money),
+  ("Due", time_tag(item.due_on, "date") if item.due_on else ""),
+]) }}
+{% if item.notes %}<h3 class="panel__section">Notes</h3><p class="prose">{{ item.notes }}</p>{% endif %}
+<h3 class="panel__section">Recent activity</h3>
+{{ timeline(events) }}
+<a class="btn btn--block u-mt-3" href="/showcase/items/{{ item.id }}">Open the record page</a>

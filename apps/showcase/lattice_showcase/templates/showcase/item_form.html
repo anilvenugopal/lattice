@@ -1,0 +1,31 @@
+{# The plain form pattern: posts, validates on the server, re-renders with errors or redirects. #}
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, field, select_field %}
+{% set v = values if values is defined else {} %}
+{% macro val(name) %}{{ v[name] if name in v and v[name] is not none else (item[name] if item and item[name] is not none else '') }}{% endmacro %}
+{% block main %}
+<div class="page page--narrow">
+  {{ page_header("Edit " ~ item.ref if item else "New item", "The plain form pattern: server-side validation, then a redirect and a toast.") }}
+  <form method="post" action="{{ '/showcase/items/%s/edit' % item.id if item else '/showcase/items/new' }}" class="stack-lg">
+    {{ csrf_field() }}
+    {% call card() %}
+      <div class="stack">
+        {{ field("name", "Name", val("name"), error=errors.name, required=True) }}
+        <div class="grid-2 grid-2--tight">
+          {{ select_field("category", "Category", categories, val("category") or "hardware") }}
+          {{ select_field("status", "Status", statuses, val("status") or "new") }}
+          {{ select_field("priority", "Priority", priorities, val("priority") or "normal") }}
+          {{ select_field("owner_id", "Owner", owners, val("owner_id"), blank="Unassigned") }}
+          {{ field("amount", "Amount", val("amount") or 0, type="number", error=errors.amount, attrs='step="0.01"') }}
+          {{ field("due_on", "Due", val("due_on"), type="date", error=errors.due_on) }}
+        </div>
+        {{ field("notes", "Notes", val("notes"), type="textarea") }}
+      </div>
+    {% endcall %}
+    <div class="form-actions">
+      <a class="btn btn--ghost" href="{{ '/showcase/items/%s' % item.id if item else '/showcase/items' }}">Cancel</a>
+      <button class="btn btn--primary" type="submit">{{ 'Save changes' if item else 'Create' }}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

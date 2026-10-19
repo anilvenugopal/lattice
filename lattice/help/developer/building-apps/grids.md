@@ -165,8 +165,9 @@ So the query can be as complex as SQL allows, and every column it returns can
 be shown, searched, filtered and sorted. Postgres merges the wrapping away
 before it runs, so it costs nothing (see [Grid performance](grid-performance.md)).
 
-**Joins.** Join as many tables as you need. The Work Queue joins the users
-table to show each item's owner by name (`apps/demo/lattice_demo/sql/work_items.sql`).
+**Joins.** Join as many tables as you need. The showcase's Items grid joins the
+users table to show each item's owner by name, and its own table for the parent's
+reference (`apps/showcase/lattice_showcase/sql/items.sql`).
 
 **Lookups, counts and computed values.** Anything SQL can compute becomes a
 column. For example, each customer with their number of open tickets and a
@@ -366,9 +367,9 @@ def customer(customer_id: int, request: Request, db: Db = Depends(get_db)):
 {% call card("Tickets", flush=True) %}{{ data_grid(tickets) }}{% endcall %}
 ```
 
-A working example is in the demo: open any work item. Under its details,
-**All work items from {account}** is the Work Queue grid fixed to that item's
-account (`detail()` in `apps/demo/lattice_demo/work_items.py`).
+A working example is in the showcase: open any item. **Other items in this
+category** is the Items grid fixed to that item's category (`_related()` in
+`apps/showcase/lattice_showcase/items.py`).
 
 ### What `fixed` does
 

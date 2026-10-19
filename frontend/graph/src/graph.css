@@ -18,7 +18,7 @@
   --xy-controls-button-color: var(--text-2);
   --xy-controls-button-border-color: var(--border);
   --xy-minimap-background-color: var(--surface-recessed);
-  --xy-minimap-mask-background-color: var(--surface-overlay);
+  --xy-minimap-mask-background-color: var(--surface-hover);
   --xy-selection-background-color: var(--surface-selected);
   --xy-selection-border: 1px dotted var(--brand);
 }

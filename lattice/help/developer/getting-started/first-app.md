@@ -26,7 +26,7 @@ flowchart LR
   N --> A[APP = AppManifest<br/>the package root]
   T[templates/notes/] --> A
   H[help/] --> A
-  A --> Host[demo host<br/>create_app]
+  A --> Host[showcase host<br/>create_app]
 ```
 
 ## Step 1: Create the package
@@ -420,7 +420,7 @@ are not listed open the app's help home.
 
 ## Step 9: Add the app to the host
 
-The demo host runs the demo app. Add Notes to it.
+The showcase host runs the showcase app. Add Notes to it.
 
 1. **Install the package.** In the root `pyproject.toml`:
    - add `"lattice-notes"` to the `dev` dependency group;
@@ -430,16 +430,16 @@ The demo host runs the demo app. Add Notes to it.
 2. **Import rules.** In the same file, under `[tool.importlinter]`, add
    `"lattice_notes"` to `root_packages`, and to `source_modules` in the two app
    contracts. `make lint` then checks that Notes imports only `lattice.api`.
-3. **Host dependency.** In `hosts/demo/pyproject.toml`, add `"lattice-notes"` to
+3. **Host dependency.** In `hosts/showcase/pyproject.toml`, add `"lattice-notes"` to
    `dependencies` and the same `[tool.uv.sources]` line.
-4. **Register the app.** In `hosts/demo/demo_host/main.py`:
+4. **Register the app.** In `hosts/showcase/showcase_host/main.py`:
 
    ```python
-   import lattice_demo
+   import lattice_showcase
    import lattice_notes
    from lattice.host import create_app
 
-   app = create_app(apps=[lattice_demo.APP, lattice_notes.APP])
+   app = create_app(apps=[lattice_showcase.APP, lattice_notes.APP])
    ```
 
 Then install the package and create the table:
@@ -581,8 +581,8 @@ Two of Lattice's own checks now cover Notes too:
 
 From here:
 
-- **Detail page.** Copy the pattern in `apps/demo/lattice_demo/work_items.py`
-  (`detail`, `edit_form`, `save`).
+- **Detail page.** Declare a `RecordPage` on the grid, as `DETAIL` in
+  `apps/showcase/lattice_showcase/items.py` ([Record pages](../building-apps/record-pages.md)).
 - **Side panel.** Add `panel=` to the grid.
 - **Home page tile.** Add `HomeTile("Pinned notes", GRID, view="pinned")` to
   the manifest's `tiles`.

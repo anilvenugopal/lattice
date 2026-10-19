@@ -2,12 +2,12 @@
 
 An app declares its permissions in its manifest:
 
-    Permission("demo.work.edit", "Edit work items",
+    Permission("showcase.items.edit", "Edit work items",
                "Create, edit, assign and approve work items.", default_roles=("editor",))
 
-Every check names a permission, never a role: `require("demo.work.edit")` on a
-route, `permission="demo.work.edit"` on a NavNode, GridSpec or Action, and
-`current_user.can("demo.work.edit")` in a template.
+Every check names a permission, never a role: `require("showcase.items.edit")` on a
+route, `permission="showcase.items.edit"` on a NavNode, GridSpec or Action, and
+`current_user.can("showcase.items.edit")` in a template.
 
 The catalogue (which permissions exist) comes from the code. Which role has
 which permission is data in lattice.role_permission, edited in Administration ›
@@ -34,7 +34,7 @@ class BadPermission(ValueError):
 
 @dataclass(frozen=True)
 class Permission:
-    key: str                                   # "{app}.{area}.{verb}", e.g. "demo.work.edit"
+    key: str                                   # "{app}.{area}.{verb}", e.g. "showcase.items.edit"
     label: str                                 # shown in Administration › Roles
     description: str = ""                      # one sentence: what it allows
     default_roles: tuple[str, ...] = ()        # granted once, when first migrated
@@ -52,7 +52,7 @@ def register(permissions: list[Permission], prefix: str) -> None:
     for p in permissions:
         if not _KEY.match(p.key):
             raise BadPermission(f"Permission {p.key!r}: use dotted lower_case words, "
-                                "e.g. 'demo.work.edit'")
+                                "e.g. 'showcase.items.edit'")
         if not p.key.startswith(prefix):
             raise BadPermission(f"Permission {p.key!r} must start with {prefix!r}")
         if p.key in CATALOGUE:

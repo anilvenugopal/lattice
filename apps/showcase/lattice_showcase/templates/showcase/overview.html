@@ -1,0 +1,18 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header %}
+{% block main %}
+<div class="page stack-lg">
+  {{ page_header("Showcase", "Every Lattice component on sample data. Each page names what it shows and how it is built.") }}
+  <div class="showcase-cards">
+    {% for title, href, text, built in pages %}
+    <a class="card showcase-card" href="{{ href }}">
+      <span class="showcase-card__title">{{ title }}</span>
+      <span class="showcase-card__text">{{ text }}</span>
+      <span class="showcase-card__built"><code>{{ built }}</code></span>
+    </a>
+    {% endfor %}
+  </div>
+  <p class="u-muted">How each is built: <a href="/help/lattice/developer/building-apps">Help › Building apps</a>.
+    The data is sample data; nothing here means anything.</p>
+</div>
+{% endblock %}

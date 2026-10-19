@@ -18,7 +18,7 @@ Both are checked on the server. Hiding a button is never the check.
 | Idea | What it is | Example | Who sets it |
 |---|---|---|---|
 | **User** | A person who can sign in | `editor@example.com` | Administrators, in Administration › Users |
-| **Permission** | One thing someone may do | `demo.work.edit`: create, edit, assign and approve work items | **Developers**, in the app's manifest |
+| **Permission** | One thing someone may do | `showcase.items.edit`: create, edit, assign and change items | **Developers**, in the app's manifest |
 | **Role** | A named set of permissions | Editor; or a custom "Auditor" with `lattice.audit.view` | **Administrators**, in Administration › Roles |
 
 A user has one or more roles. Their permissions are everything their roles
@@ -104,7 +104,7 @@ Roles do not decide which rows a user may see. The grid's query does:
 -- name: grid
 -- The signed-in user's messages: each user sees only their own.
 SELECT m.id, m.subject, m.received_at
-FROM demo.message m
+FROM showcase.message m
 WHERE m.owner_id = :user_id;
 ```
 
@@ -128,7 +128,7 @@ see that record in the list. Put the same condition in the record's own query:
 ```sql
 -- name: by_id
 -- One of the signed-in user's messages; no row if it is someone else's.
-SELECT id, subject, body, received_at FROM demo.message
+SELECT id, subject, body, received_at FROM showcase.message
 WHERE id = :id AND owner_id = :user_id;
 ```
 

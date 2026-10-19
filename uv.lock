@@ -5,8 +5,8 @@ requires-python = ">=3.14"
 [manifest]
 members = [
     "lattice",
-    "lattice-demo",
-    "lattice-demo-host",
+    "lattice-showcase",
+    "lattice-showcase-host",
 ]
 
 [[package]]
@@ -520,8 +520,8 @@ dependencies = [
 dev = [
     { name = "cryptography" },
     { name = "import-linter" },
-    { name = "lattice-demo" },
-    { name = "lattice-demo-host" },
+    { name = "lattice-showcase" },
+    { name = "lattice-showcase-host" },
     { name = "pytest" },
     { name = "ruff" },
 ]
@@ -549,16 +549,16 @@ requires-dist = [
 dev = [
     { name = "cryptography" },
     { name = "import-linter" },
-    { name = "lattice-demo", editable = "apps/demo" },
-    { name = "lattice-demo-host", editable = "hosts/demo" },
+    { name = "lattice-showcase", editable = "apps/showcase" },
+    { name = "lattice-showcase-host", editable = "hosts/showcase" },
     { name = "pytest" },
     { name = "ruff" },
 ]
 
 [[package]]
-name = "lattice-demo"
+name = "lattice-showcase"
 version = "0.1.0"
-source = { editable = "apps/demo" }
+source = { editable = "apps/showcase" }
 dependencies = [
     { name = "lattice" },
 ]
@@ -567,18 +567,18 @@ dependencies = [
 requires-dist = [{ name = "lattice", editable = "." }]
 
 [[package]]
-name = "lattice-demo-host"
+name = "lattice-showcase-host"
 version = "0.1.0"
-source = { editable = "hosts/demo" }
+source = { editable = "hosts/showcase" }
 dependencies = [
     { name = "lattice" },
-    { name = "lattice-demo" },
+    { name = "lattice-showcase" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "lattice", editable = "." },
-    { name = "lattice-demo", editable = "apps/demo" },
+    { name = "lattice-showcase", editable = "apps/showcase" },
 ]
 
 [[package]]

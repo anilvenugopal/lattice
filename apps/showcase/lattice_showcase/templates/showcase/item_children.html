@@ -1,0 +1,3 @@
+{# Record page panel: child items as a tree (items._children). #}
+{% from "components/flows.html" import tree %}
+{% if values.nodes %}{{ tree(values.nodes) }}{% else %}<p class="u-muted">No child items.</p>{% endif %}

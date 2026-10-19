@@ -286,12 +286,7 @@ def validate(schema: dict, data: Any) -> tuple[dict, list[str]]:
     validator = Draft202012Validator(schema, format_checker=Draft202012Validator.FORMAT_CHECKER)
     by_field: dict[str, str] = {}
     general: list[str] = []
-    for error in validator.iter_errors(data):
-        if error.validator in ("oneOf", "anyOf") and error.context:
-            # A nullable field fails its null branch too; report the other branch's reason.
-            real = [e for e in error.context
-                    if not (e.validator == "type" and e.validator_value == "null")]
-            error = best_match(real or error.context)
+    for error in _leaves(validator.iter_errors(data)):
         name = ROOT
         for part in error.absolute_path:
             name = child_name(name, part)
@@ -306,6 +301,27 @@ def validate(schema: dict, data: Any) -> tuple[dict, list[str]]:
         else:
             by_field.setdefault(name, message)
     return by_field, general
+
+
+def _leaves(errors):
+    """The errors to show. A oneOf/anyOf failure is replaced by the errors of the branch the
+    document meant: not the null branch of a nullable field, not a branch whose discriminator
+    (a `const`) the document doesn't match; the branch with the fewest errors among the rest."""
+    for error in errors:
+        if error.validator not in ("oneOf", "anyOf") or not error.context:
+            yield error
+            continue
+        branches: dict = {}
+        for e in error.context:
+            branches.setdefault(e.relative_schema_path[0], []).append(e)
+        meant = [errs for errs in branches.values()
+                 if not any(e.validator == "const" or (e.validator == "type"
+                                                       and e.validator_value == "null")
+                            for e in errs)]
+        if meant:
+            yield from _leaves(min(meant, key=len))
+        else:
+            yield best_match(error.context)
 
 
 def _message(error: ValidationError) -> str:

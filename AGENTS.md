@@ -50,8 +50,8 @@ are `LATTICE_*` environment variables (`.env.example`).
 | `lattice/cli.py` | `lattice migrate`, `new-migration`, `reset`, `create-user`, `seed`, `dev`, `docs build\|check` |
 | `lattice/testing.py` | Pytest fixtures for core and app tests (`db`, `users`, `client`, `as_user`, `host_apps`…) |
 | `lattice/templates/`, `lattice/static/` | Shell layout, shared macros, grid templates; the five CSS layers |
-| `apps/demo/` | `lattice-demo`: the example app (Work Queue, Jobs, Inbox), its `sql/` (schema `demo` and named queries), templates, styles, seed and tests |
-| `hosts/demo/` | `lattice-demo-host`: runs Lattice with the demo app |
+| `apps/showcase/` | `lattice-showcase`: every component on sample data (Items, Live updates, Reading pane, Charts, Specs, Free-form, Flows), its `sql/` (schema `showcase` and named queries), templates, styles, seed and tests |
+| `hosts/showcase/` | `lattice-showcase-host`: runs Lattice with the showcase app |
 | `tests/sql/`, `apps/*/tests/sql/` | Named queries the tests use to set up and check rows |
 | `compose.yaml` | Postgres 17 for development and tests |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | Target design and decisions. Read before changing anything they cover |
@@ -143,7 +143,7 @@ the layers below it. Apps import only `lattice.api`.
   permission. Hiding a button is not access control; the server checks all of
   them. `create_app` refuses an undeclared permission.
 - A grid's `query` is its access boundary. Rows a user may not see must be filtered
-  in that named query (see `apps/demo/lattice_demo/sql/inbox.sql`:
+  in that named query (see `apps/showcase/lattice_showcase/sql/inbox.sql`:
   `WHERE m.owner_id = :user_id`). Actions, panels, export and Ctrl+J results all
   go through it. A detail route loading a record by id applies the same condition.
 - Never log or render passwords, session tokens or OIDC tokens. Session ids in
@@ -208,13 +208,13 @@ a package exporting `APP = AppManifest(key="<name>", …, sql=HERE / "sql")`,
 `sql/schema/0001_<name>.sql`, named queries, and `tests/conftest.py` setting
 `host_apps`. Add it to a host's `create_app(apps=[…])`, the root dev dependencies,
 `testpaths`, ruff's `known-first-party` and the import contracts in
-`pyproject.toml`. Copy `apps/demo` for the shape.
+`pyproject.toml`. Copy `apps/showcase` for the shape.
 
 ### Add a detail page
 
 Declare a `RecordPage` on the list's grid and render it with
 `render_record_page(request, db, PAGE, id)`, as in
-`apps/demo/lattice_demo/work_items.py` (`DETAIL`). It reads the row through
+`apps/showcase/lattice_showcase/items.py` (`DETAIL`). It reads the row through
 the grid's query, shows the grid's row actions, properties, panels and the
 audit history. Guide: `lattice/help/developer/building-apps/record-pages.md`.
 
@@ -253,11 +253,13 @@ a row in `templates/account/preferences.html`, and read it with
   app's `slots=`.
 - Icon set: `create_app(icons_override={…})`.
 
-## The demo app
+## The showcase app
 
-`apps/demo` shows the patterns: a table grid with views, bulk actions and a
-detail page (Work Queue); a polling grid with state-dependent actions (Jobs); a
-split list and reading pane (Inbox). A real host replaces it with its own apps.
+`apps/showcase` shows every component on sample data, one module per page:
+`items.py` (table grid, record page, plain forms), `jobs.py` (polling grid with
+state-dependent actions), `inbox.py` (split list and reading pane), `charts.py`,
+`specs.py` (forms from JSON Schema, the document store, an inferred form) and
+`flows.py`. Its data means nothing; a real host replaces it with its own apps.
 
 ## Writing style
 

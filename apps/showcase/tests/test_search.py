@@ -1,0 +1,55 @@
+"""Ctrl+J: providers, filters, counts, previews, and access rules."""
+
+from pathlib import Path
+
+from lattice.api import sql_queries
+
+CHECK = sql_queries(Path(__file__).parent / "sql").checks
+
+
+def test_all_providers_with_counts(as_user, items):
+    html = as_user("viewer").get("/_search?q=item").text
+    assert 'data-provider="grid.showcase.items"' in html and 'data-provider="pages"' in html
+    assert 'data-provider="commands"' in html
+    assert '<span class="palette__count">6</span>' in html          # six work items match
+    assert "Show all 6 in Items" in html                       # five shown, one more
+
+
+def test_filter_by_one_provider(as_user, items):
+    html = as_user("viewer").get("/_search?q=item&provider=grid.showcase.items").text
+    assert html.count("data-palette-item") == 6
+    assert '<div class="palette__group">' not in html
+    assert 'palette__filter is-active" data-provider="grid.showcase.items"' in html
+
+
+def test_empty_query_lists_pages_and_commands(as_user, items):
+    html = as_user("viewer").get("/_search").text
+    assert 'href="/showcase/items"' in html and 'data-command="theme-dark"' in html
+    assert "/admin/users" not in html
+
+
+def test_unknown_provider_falls_back_to_all(as_user, items):
+    html = as_user("viewer").get("/_search?q=item&provider=nope").text
+    assert 'palette__filter is-active" data-provider=""' in html
+
+
+def test_previews_for_record_page_and_command(as_user, items):
+    c = as_user("viewer")
+    record = c.get(f"/_search/preview/grid.showcase.items/{items[1].id}").text
+    assert "IT-0002" in record and ">Open</a>" in record
+    assert "closePanel()" not in record and "runForPanel" not in record   # read-only
+    page = c.get("/_search/preview/pages/grids").text
+    assert "Items" in page and 'href="/showcase/items/new"' not in page   # needs showcase.items.edit
+    assert 'href="/showcase/items/new"' in as_user("editor").get("/_search/preview/pages/grids").text
+    command = c.get("/_search/preview/commands/signout").text
+    assert "End this session" in command
+
+
+def test_search_respects_roles_and_row_scoping(as_user, users, items, db):
+    c = as_user("editor")
+    other = db.value(CHECK.first_message_of, owner_id=users["viewer"].id)
+    assert "Hello viewer" not in c.get("/_search?q=hello").text
+    assert c.get(f"/_search/preview/grid.showcase.inbox/{other}").status_code == 404
+    viewer = as_user("viewer")
+    assert viewer.get("/_search/preview/pages/admin.users").status_code == 404
+    assert viewer.get("/_search/preview/nope/1").status_code == 404

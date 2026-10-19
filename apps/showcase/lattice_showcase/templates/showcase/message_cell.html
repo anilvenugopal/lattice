@@ -1,0 +1,11 @@
+{# Two-line message cell for the inbox grid (Column kind="template"). #}
+{% from "showcase/inbox_macros.html" import label_tag %}
+<div class="msg">
+  <div class="msg__top">
+    <span class="msg__from">{{ row.sender_name }}</span>
+    {% if row.has_attachment %}<span class="msg__clip" title="Has attachment">{{ icon('paperclip', 13) }}</span>{% endif %}
+    {% if row.labels %}{{ label_tag(row.labels) }}{% endif %}
+  </div>
+  <div class="msg__subject">{{ row.subject }}</div>
+  <div class="msg__snippet">{{ row.snippet }}</div>
+</div>

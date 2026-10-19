@@ -13,18 +13,18 @@ database. The browser only draws the result.
 from lattice.api import ChartSpec, Count, Sum, Threshold, Time
 
 BY_WEEK = ChartSpec(
-    key="demo.work_by_week", title="Received per week", source=WORK_GRID,
+    key="showcase.work_by_week", title="Received per week", source=WORK_GRID,
     kind="bar", x=Time("created_at", "week"), series="status", stacked=True)
 
 BY_LINE = ChartSpec(
-    key="demo.amount_by_line", title="Amount by line", source=WORK_GRID,
+    key="showcase.amount_by_line", title="Amount by line", source=WORK_GRID,
     kind="bar", x="line", y=Sum("amount", "Amount"), format="money", horizontal=True)
 ```
 
 List the charts in the manifest, as for grids:
 
 ```python
-APP = AppManifest(key="demo", …, grids=[WORK_GRID], charts=[BY_WEEK, BY_LINE])
+APP = AppManifest(key="showcase", …, grids=[WORK_GRID], charts=[BY_WEEK, BY_LINE])
 ```
 
 ## Put a chart on a page
@@ -34,7 +34,7 @@ Build its context in the route, and place it with the `chart` macro:
 ```python
 @router.get("/work/insights")
 def insights(request: Request, db: Db = Depends(get_db)):
-    return render_page(request, "demo/insights.html", "work.insights",
+    return render_page(request, "showcase/insights.html", "work.insights",
                        grid=build_grid(request, db, WORK_GRID),
                        charts=[build_chart(request, BY_WEEK), build_chart(request, BY_LINE)])
 ```

@@ -44,7 +44,7 @@ class Link:
     """A header button that opens a page, e.g. the record's edit form."""
 
     label: str
-    href: str                       # formatted with the row: "/demo/work/{id}/edit"
+    href: str                       # formatted with the row: "/showcase/items/{id}/edit"
     icon: str = ""
     tone: Literal["default", "primary", "danger", "ghost"] = "default"
     permission: str = ""

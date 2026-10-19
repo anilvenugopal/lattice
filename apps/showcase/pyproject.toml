@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lattice-showcase"
+version = "0.1.0"
+description = "Lattice showcase: every component on sample data, one page per capability."
+requires-python = ">=3.14"
+dependencies = ["lattice"]
+
+[tool.uv.sources]
+lattice = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["lattice_showcase"]

@@ -1,15 +1,15 @@
 """The document store (ADR 0007): JSON documents of kinds that apps declare.
 
-    POLICY = DocumentKind("demo.policy_template", "Policy template", schema=PolicyTemplate,
-                          title="{name}", edit="demo.policies.edit")
-    APP = AppManifest(…, documents=[POLICY])
+    SPEC = DocumentKind("showcase.spec", "Spec", schema=Spec,
+                        title="{name}", edit="showcase.specs.edit")
+    APP = AppManifest(…, documents=[SPEC])
 
-    doc_id = documents.create(db, user, POLICY, data)     # validated against the schema
-    data = documents.get(db, POLICY, doc_id)["data"]
+    doc_id = documents.create(db, user, SPEC, data)     # validated against the schema
+    data = documents.get(db, SPEC, doc_id)["data"]
 
 Each kind's schema is registered as a SchemaDef (id = the kind's key) and its form as a
-FormSpec with the same key, so `build_form(request, POLICY.form, data)` draws it. A grid
-of one kind runs `QUERY` with `params={"kind": POLICY.key}`; give it the kind's key, so its
+FormSpec with the same key, so `build_form(request, SPEC.form, data)` draws it. A grid
+of one kind runs `QUERY` with `params={"kind": SPEC.key}`; give it the kind's key, so its
 actions and the record page's history share the audit trail.
 
 Guide: lattice/help/developer/building-apps/json-forms.md#the-document-store.
@@ -94,7 +94,9 @@ def all_of(db: Db, kind: DocumentKind) -> list[dict]:
     return db.all(SQL.documents.of_kind, kind=kind.key)
 
 
-def delete(db: Db, user, kind: DocumentKind, ids: list[int]) -> None:
+def delete(db: Db, user, kind: DocumentKind, ids: list[int], *, record: bool = True) -> None:
+    """record=False from a grid action handler: the grid records its own audit event."""
     db.run(SQL.documents.delete, ids=list(ids), kind=kind.key)
-    audit.record_many(db, user.id, f"{kind.key}.deleted", f"Deleted {kind.label.lower()}",
-                      kind.key, list(ids))
+    if record:
+        audit.record_many(db, user.id, f"{kind.key}.deleted", f"Deleted {kind.label.lower()}",
+                          kind.key, list(ids))

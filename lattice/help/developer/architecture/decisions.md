@@ -40,7 +40,7 @@ grid views.
 **Ecosystem apps have their own repositories.** Taskline (the job engine, which
 never depends on Lattice), the Taskline UI (`lattice-taskline`, which also runs
 as an Ops console) and Incidents each live apart from Lattice and depend on it
-by git tag. This repository keeps the core and the showcase apps.
+by git tag. This repository keeps the core and the showcase.
 
 ## Where it stands
 
@@ -71,7 +71,8 @@ before the next starts.
 5. **Core components.** Done: saved grid views, charts, the record page
    component, forms from JSON Schema with the document store, and flows
    (stepper, tree and graph).
-6. **Showcase apps** replace the demo, built to show Lattice's capabilities.
+6. **The showcase.** Done: one app, one page per capability on sample data,
+   replaces the demo.
 7. **Integration framework:** URN references, record panels, the CloudEvents
    bus and its outbox reader.
 8. **The showcase apps use the framework.**

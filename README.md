@@ -17,12 +17,13 @@ in [AGENTS.md](AGENTS.md) keep every screen consistent.
 - One **standard data grid**: search, filters, views, sort, paging, multi-select,
   bulk and row actions with confirm/input dialogs, side panel or reading pane,
   column chooser, CSV export, live refresh, keyboard control, URL state
-- A demo app showing the grid in three shapes: Work Queue (submissions),
-  Jobs (live job list), Inbox (email browsing)
+- Charts, record pages, forms from JSON Schema with a document store, and
+  flows (stepper, tree, graph)
+- A showcase app with every component on sample data, one page per capability
 
 **Stack**: Python 3.14, FastAPI, Jinja2, HTMX, Alpine.js, Postgres 17, a uv
 workspace. Plain SQL in named `.sql` files, run through SQLAlchemy Core and
-psycopg 3; no ORM. No Node build.
+psycopg 3; no ORM. No Node build for apps (the graph component is built once and committed).
 
 ## Run
 
@@ -60,8 +61,8 @@ lattice/                 the core package
   testing.py             pytest fixtures for core and app tests
   help/                  the user guide and developer guide, served at /help
   templates/  static/    shell layout, macros; five CSS layers, JS
-apps/demo/               lattice-demo: the example app, its sql/ and its tests
-hosts/demo/              lattice-demo-host: runs Lattice with the demo app
+apps/showcase/           lattice-showcase: every component on sample data, its sql/ and tests
+hosts/showcase/          lattice-showcase-host: runs Lattice with the showcase
 compose.yaml             Postgres for development and tests
 tests/                   core tests
 ```

@@ -23,15 +23,13 @@ grid and reuses it:
 from lattice.api import Link, Panel, RecordPage, render_record_page
 
 DETAIL = RecordPage(
-    grid=GRID, nav_key="work.detail", title="{ref} · {title}", subtitle="{account}",
-    status="status", crumb="{ref}",
-    properties=["ref", "status", "priority", "owner", "amount", "received_at"],
-    links=[Link("Edit", "/demo/work/{id}/edit", icon="edit", tone="primary", permission=EDIT)],
-    panels=[Panel("description", "Description", "demo/work_item_description.html",
-                  load=_description)],
+    grid=GRID, nav_key="grids.item", title="{ref} · {name}", status="status", crumb="{ref}",
+    properties=["ref", "status", "priority", "owner", "amount", "due_on"],
+    links=[Link("Edit", "/showcase/items/{id}/edit", icon="edit", tone="primary", permission=EDIT)],
+    panels=[Panel("notes", "Notes", "showcase/item_notes.html", load=_notes)],
 )
 
-@router.get("/work/{item_id}")
+@router.get("/items/{item_id}")
 def detail(item_id: int, request: Request, db: Db = Depends(get_db)):
     return render_record_page(request, db, DETAIL, item_id)
 ```
@@ -71,16 +69,16 @@ user's rows), the browser returns to the list.
 A panel is a card drawn by the app's own template:
 
 ```python
-Panel("related", "All work items from {account}", "demo/work_item_related.html",
+Panel("related", "Other items in this category", "showcase/item_related.html",
       load=_related, place="full", flush=True)
 
 def _related(request: Request, db: Db, row: dict) -> dict:
     return {"grid": build_grid(request, db, GRID, sync_url=False,
-                               fixed={"account": row["account"]})}
+                               fixed={"category": row["category"]})}
 ```
 
 ```jinja
-{# demo/work_item_related.html #}
+{# showcase/item_related.html #}
 {% from "components/grid.html" import data_grid %}
 {{ data_grid(values.grid) }}
 ```

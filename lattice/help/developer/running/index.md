@@ -17,7 +17,7 @@ one, configuring it and running it.
 
 ## A host
 
-The demo host is the shape to copy:
+The showcase host is the shape to copy:
 
 ```text
 hosts/helpdesk/

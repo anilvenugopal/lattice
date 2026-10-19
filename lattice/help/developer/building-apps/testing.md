@@ -142,8 +142,8 @@ def tickets(db):
             for n, status in enumerate(["open", "closed"])]
 ```
 
-Each test module loads `CHECK` the same way. The demo's
-`apps/demo/tests/conftest.py` and `apps/demo/tests/sql/checks.sql` are a full
+Each test module loads `CHECK` the same way. The showcase's
+`apps/showcase/tests/conftest.py` and `apps/showcase/tests/sql/checks.sql` are a full
 example.
 
 ## Lattice's own checks
