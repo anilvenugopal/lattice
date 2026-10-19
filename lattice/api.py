@@ -29,6 +29,7 @@ from lattice.components.grid import (
     render_grid_page,
 )
 from lattice.components.manifest import AppManifest
+from lattice.components.record import Link, Panel, RecordPage, render_record_page
 from lattice.components.search.providers import SearchProvider, SearchResult
 from lattice.components.tiles import HomeTile
 from lattice.kernel.auth.csrf import csrf_protect
@@ -48,6 +49,8 @@ __all__ = [
     # Grid
     "Action", "ActionContext", "ActionResult", "Column", "Field", "Filter", "GridSpec",
     "Palette", "View", "build_grid", "render_grid_page",
+    # Record pages
+    "RecordPage", "Panel", "Link", "render_record_page",
     # Charts
     "ChartSpec", "Count", "Sum", "Avg", "Min", "Max", "Time", "Threshold", "build_chart",
     # Pages and feedback

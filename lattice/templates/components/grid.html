@@ -194,7 +194,14 @@
     </form>
   </div>
 
-  {# Confirm / input dialog for actions. Fields come from Action.fields. #}
+  {{ action_dialog() }}
+</div>
+{%- endmacro %}
+
+
+{# Confirm / input dialog for actions; fields come from Action.fields. Used inside an Alpine
+   component with `dialog` and `submitDialog()`: dataGrid (grid.js) and recordPage (record.js). #}
+{% macro action_dialog() -%}
   <div class="overlay" x-show="dialog.open" x-cloak @click.self="dialog.open = false"
        @keydown.escape.stop="dialog.open = false">
     <form class="dialog dialog--sm" @submit.prevent="submitDialog()">
@@ -227,5 +234,4 @@
       </div>
     </form>
   </div>
-</div>
 {%- endmacro %}

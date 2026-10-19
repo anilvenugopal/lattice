@@ -210,9 +210,11 @@ a package exporting `APP = AppManifest(key="<name>", …, sql=HERE / "sql")`,
 
 ### Add a detail page
 
-Copy the pattern in `apps/demo/lattice_demo/work_items.py` (`detail`, `edit_form`,
-`save`) and `templates/demo/work_item_detail.html`: `page_header` with status badge
-and actions, `prop_list` in a card, `timeline(audit.history(...))` for activity.
+Declare a `RecordPage` on the list's grid and render it with
+`render_record_page(request, db, PAGE, id)`, as in
+`apps/demo/lattice_demo/work_items.py` (`DETAIL`). It reads the row through
+the grid's query, shows the grid's row actions, properties, panels and the
+audit history. Guide: `lattice/help/developer/building-apps/record-pages.md`.
 
 ### Add a permission or a role
 

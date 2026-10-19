@@ -1,0 +1,56 @@
+{#
+  The record page (lattice/components/record.py): header with status, links and the grid's
+  row actions; Details from the grid's columns; the app's panels; the audit history.
+  Panel templates receive `record` (the row), `page` (the RecordPage) and `values` (from Panel.load).
+  Client behaviour: static/js/record.js (Alpine component `recordPage`).
+#}
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, prop_list, timeline %}
+{% from "components/grid.html" import action_dialog %}
+{% from "components/grid_cell.html" import cell %}
+{% block main %}
+{% set status_col = spec.column(page.status) if page.status else none %}
+<div class="page stack-lg record" id="record" x-data='recordPage({{ config | tojson }})'>
+  {% call page_header(title, subtitle,
+                      label_for(status_col, record[page.status]) if status_col else "",
+                      tone_for(status_col, record[page.status]) if status_col else "neutral") %}
+    <a class="btn btn--ghost" href="{{ config.back }}">{{ icon('chevron-left', 14) }}Back to list</a>
+    {% for link, href in links %}
+    <a class="btn btn--{{ link.tone }}" href="{{ href }}">{% if link.icon %}{{ icon(link.icon, 14) }}{% endif %}{{ link.label }}</a>
+    {% endfor %}
+    {% for a in actions %}
+    <button type="button" class="btn btn--{{ a.tone }}" @click="run({{ a.key | js }})" data-action="{{ a.key }}">
+      {% if a.icon %}{{ icon(a.icon, 14) }}{% endif %}{{ a.label }}</button>
+    {% endfor %}
+  {% endcall %}
+
+  {% set main_panels = panels | selectattr("panel.place", "equalto", "main") | list %}
+  {% set side_panels = panels | selectattr("panel.place", "equalto", "side") | list %}
+  {% macro panel_card(p) -%}
+    {% call card(p.label, flush=p.panel.flush) %}{% set values = p["values"] %}{% include p.panel.template %}{% endcall %}
+  {%- endmacro %}
+
+  <div class="grid-2 grid-2--wide-left">
+    <div class="stack-lg">
+      {% if page.properties %}
+      {% call card(page.details_title) %}
+        {% set items = [] %}
+        {% for key in page.properties %}{% set col = spec.column(key) %}
+          {% set _ = items.append((col.label, cell(col, record, spec) if col.kind != "star" else ("Yes" if record[key] else "No"))) %}
+        {% endfor %}
+        {{ prop_list(items, columns=2) }}
+      {% endcall %}
+      {% endif %}
+      {% for p in main_panels %}{{ panel_card(p) }}{% endfor %}
+    </div>
+    <div class="stack-lg">
+      {% for p in side_panels %}{{ panel_card(p) }}{% endfor %}
+      {% if events is not none %}{% call card("Activity") %}{{ timeline(events) }}{% endcall %}{% endif %}
+    </div>
+  </div>
+
+  {% for p in panels if p.panel.place == "full" %}{{ panel_card(p) }}{% endfor %}
+
+  {{ action_dialog() }}
+</div>
+{% endblock %}

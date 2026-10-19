@@ -24,7 +24,7 @@ def resolve_options(options, db: Db, user) -> list[tuple[str, str]]:
     return options(db, user) if callable(options) else options
 
 
-def _field_config(fld: Field, db, user) -> dict:
+def field_config(fld: Field, db, user) -> dict:
     return {"name": fld.name, "label": fld.label, "kind": fld.kind, "required": fld.required,
             "default": fld.default, "placeholder": fld.placeholder,
             "options": [list(o) for o in resolve_options(fld.options, db, user)]}
@@ -76,7 +76,7 @@ def build_grid(request: Request, db: Db, spec: GridSpec, *, views_in_nav: bool =
         "actions": {a.key: {
             "key": a.key, "label": a.label, "scope": a.scope, "href": a.href,
             "confirm": a.confirm, "tone": a.tone, "when": a.when,
-            "fields": [_field_config(f, db, user) for f in a.fields],
+            "fields": [field_config(f, db, user) for f in a.fields],
         } for a in actions},
     }
     return {

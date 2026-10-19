@@ -20,8 +20,11 @@ from lattice.api import (
     Filter,
     GridSpec,
     HomeTile,
+    Link,
     Palette,
+    Panel,
     Permission,
+    RecordPage,
     View,
     audit,
     build_grid,
@@ -30,6 +33,7 @@ from lattice.api import (
     get_db,
     render_grid_page,
     render_page,
+    render_record_page,
     require,
     sql_queries,
     users,
@@ -192,15 +196,31 @@ async def create(request: Request, db: Db = Depends(get_db), user=Depends(curren
     return RedirectResponse(f"/demo/work/{item_id}", status_code=303)
 
 
+def _description(request: Request, db: Db, row: dict) -> dict:
+    return {"description": db.one(SQL.by_id, id=row["id"])["description"]}
+
+
+def _related(request: Request, db: Db, row: dict) -> dict:
+    # The same grid, embedded and fixed to this item's account.
+    return {"grid": build_grid(request, db, GRID, sync_url=False, fixed={"account": row["account"]})}
+
+
+DETAIL = RecordPage(
+    grid=GRID, nav_key="work.detail", title="{ref} · {title}", subtitle="{account}",
+    status="status", crumb="{ref}",
+    properties=["ref", "status", "priority", "owner", "amount", "account", "received_at",
+                "updated_at"],
+    links=[Link("Edit", "/demo/work/{id}/edit", icon="edit", tone="primary", permission=EDIT)],
+    panels=[Panel("description", "Description", "demo/work_item_description.html",
+                  load=_description),
+            Panel("related", "All work items from {account}", "demo/work_item_related.html",
+                  load=_related, place="full", flush=True)],
+)
+
+
 @router.get("/work/{item_id}")
 def detail(item_id: int, request: Request, db: Db = Depends(get_db)):
-    item = db.one(SQL.by_id, id=item_id)
-    # The same grid, embedded and fixed to this item's account.
-    related = build_grid(request, db, GRID, sync_url=False, fixed={"account": item["account"]})
-    return render_page(request, "demo/work_item_detail.html", "work.detail",
-                       item=item, events=audit.history(db, "demo.work_items", item_id),
-                       spec=GRID, can_edit=request.state.user.can(EDIT),
-                       related=related, crumb=item["ref"])
+    return render_record_page(request, db, DETAIL, item_id)
 
 
 @router.get("/work/{item_id}/edit", dependencies=[Depends(require(EDIT))])

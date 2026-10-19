@@ -40,6 +40,15 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `build_grid` `(request, db, spec, views_in_nav=False, sync_url=True, fixed=None)` | function | Template context for components/grid.html: render it with `data_grid(grid)`. |
 | `render_grid_page` `(request, db, spec, nav_key, title='', subtitle='', views_in_nav=False)` | function | A full page holding one grid: the standard list screen. |
 
+## Record pages
+
+| Name | Kind | Description |
+|---|---|---|
+| `RecordPage` | class | One record of a grid as a full page: header, properties, panels and history. |
+| `Panel` | class | A section of the record page, drawn by the app's own template. |
+| `Link` | class | A header button that opens a page, e.g. the record's edit form. |
+| `render_record_page` `(request, db, page, record_id, **extra)` | function | The record page for one row. Extra keyword arguments reach the panel templates. |
+
 ## Charts
 
 | Name | Kind | Description |

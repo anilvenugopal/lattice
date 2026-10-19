@@ -103,7 +103,7 @@ same places on every page.
 |---|---|---|
 | **List** | `render_grid_page(request, db, GRID, nav_key)`. See [Grids](grids.md) | `/demo/work`, `/admin/users` |
 | **List and reader** | The same, with `layout="split"` on the grid | `/demo/inbox` |
-| **Record (detail)** | `page_header` with the status and actions, `card`s with `prop_list`, and a `timeline` of activity | `/demo/work/1`, `/admin/users/1` |
+| **Record (detail)** | `render_record_page(request, db, PAGE, id)`. See [Record pages](record-pages.md) | `/demo/work/1` |
 | **Form** | `page page--narrow`, a `card` of `field`s, then `form-actions`. See [Forms and feedback](forms-and-feedback.md) | `/demo/work/new` |
 | **Settings** | `card`s of `pref_row`s | `/account/preferences` |
 | **Dashboard** | `stat` tiles, then a `grid-2` of cards | `/` |
@@ -122,41 +122,29 @@ Page containers and layout helpers:
 
 ## A detail page
 
-The record page pattern, from `apps/demo/lattice_demo/templates/demo/work_item_detail.html`:
+Declare a [record page](record-pages.md) on the list's grid and render it:
 
-```jinja
-{% extends "base/shell.html" %}
-{% from "components/macros.html" import page_header, card, prop_list, badge_for, timeline %}
-{% block main %}
-<div class="page">
-  {% set status_col = spec.column("status") %}
-  {% call page_header(item.ref ~ " · " ~ item.title, item.account,
-                      label_for(status_col, item.status), tone_for(status_col, item.status)) %}
-    <a class="btn btn--ghost" href="/demo/work">{{ icon('chevron-left', 14) }}Back to list</a>
-    {% if can_edit %}<a class="btn btn--primary" href="/demo/work/{{ item.id }}/edit">Edit</a>{% endif %}
-  {% endcall %}
-  <div class="grid-2 grid-2--wide-left">
-    {% call card("Details") %}
-      {{ prop_list([("Reference", item.ref),
-                    ("Status", badge_for(status_col, item.status)),
-                    ("Received", time_tag(item.received_at, "datetime"))], columns=2) }}
-    {% endcall %}
-    {% call card("Activity") %}{{ timeline(events) }}{% endcall %}
-  </div>
-</div>
-{% endblock %}
+```python
+DETAIL = RecordPage(grid=GRID, nav_key="tickets.detail", title="{ref} · {subject}",
+                    status="status", properties=["ref", "customer", "owner", "opened_at"])
+
+@router.get("/tickets/{ticket_id}")
+def detail(ticket_id: int, request: Request, db: Db = Depends(get_db)):
+    return render_record_page(request, db, DETAIL, ticket_id)
 ```
 
-Three rules for detail pages:
+It follows the three rules for detail pages for you:
 
-- **Same rows as the list.** The route must apply the same row scoping as
-  the grid's `query`. If a user cannot see a row in the list, the detail route
-  returns 404 for it.
-- **Status from the column.** Show the status with
-  `badge_for(spec.column("status"), value)`, so the label and tone match the
-  list.
-- **Breadcrumb.** Pass `crumb=` with the record's name. Its node is
-  `hidden=True`, with the list node as its parent.
+- **Same rows as the list.** The row is read through the grid's `query`, so a
+  record the user cannot see in the list is a 404.
+- **Status from the column.** The badge uses the status `Column`'s labels and
+  tones, as the list does.
+- **Breadcrumb.** The record's title, under its hidden node, whose parent is the
+  list node.
+
+A page that needs a layout the record page can't give is still written by hand
+with `page_header`, `card`, `prop_list` and `timeline`; follow the same three
+rules. `/admin/users/1` is one: its edit form is the page.
 
 ## The help link
 
