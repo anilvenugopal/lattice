@@ -51,7 +51,7 @@ by git tag. This repository keeps the core and the showcase apps.
 | Access | Permissions declared by apps, grouped into roles administrators edit | + scopes per database binding |
 | Grid | A named SQL query, offset paging, a time limit | Data sources, keyset paging, async sources |
 | Between apps | Nothing needed yet | URN references, record panels, CloudEvents, published views |
-| Components | Grid, Ctrl+J, help, tiles, macros, timeline | Also charts, forms, stepper, tree, graph, record page, saved views |
+| Components | Grid with saved views, charts, record page, JSON Schema forms, document store, stepper, tree, graph; Ctrl+J, help, tiles, macros, timeline | Panels from other apps on the record page |
 
 ## Order of the work
 
@@ -68,9 +68,9 @@ before the next starts.
    are sets of them, every check names a permission.
 4. **Integration standards.** Done: ADR 0011, this order of work, and what
    Taskline must provide.
-5. **Core components:** charts, forms from JSON Schema with the document store,
-   flows (stepper, tree, then the graph trial), the record page component and
-   saved grid views.
+5. **Core components.** Done: saved grid views, charts, the record page
+   component, forms from JSON Schema with the document store, and flows
+   (stepper, tree and graph).
 6. **Showcase apps** replace the demo, built to show Lattice's capabilities.
 7. **Integration framework:** URN references, record panels, the CloudEvents
    bus and its outbox reader.

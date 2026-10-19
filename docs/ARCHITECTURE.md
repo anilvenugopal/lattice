@@ -344,34 +344,36 @@ class GridSource(Protocol):
 
 ### 6.2 Charts
 
-Chart.js 4 with plugins, vendored like htmx (no build).
+Built in step 5 ([Charts](../lattice/help/developer/building-apps/charts.md)).
+Chart.js 4 with plugins, vendored and loaded on first use.
 [ADR 0004](adr/0004-charts-chartjs.md).
 
 | Need | Plugin |
 |---|---|
 | Time series, zoom and pan | time scale + `chartjs-adapter-date-fns`, `chartjs-plugin-zoom` |
-| Maps (choropleth, bubble) | `chartjs-chart-geo` with vendored TopoJSON (world, countries) |
-| Calendar heatmap, matrices | `chartjs-chart-matrix` |
+| World map (choropleth) | `chartjs-chart-geo` with vendored TopoJSON (Natural Earth countries) |
+| Calendar heatmap | `chartjs-chart-matrix` |
 | Treemap, flows | `chartjs-chart-treemap`, `chartjs-chart-sankey` |
-| Thresholds and markers | `chartjs-plugin-annotation` |
+| Thresholds | `chartjs-plugin-annotation` |
 
 ```python
-ChartSpec(key="runs_per_day", source=RUNS_GRID, kind="bar",
-          x=Time("created_at", unit="day"), y=Count(), group_by="status",
-          tones_from=RUNS_GRID.column("status"))
+ChartSpec(key="demo.work_by_week", title="Received per week", source=WORK_GRID,
+          kind="bar", x=Time("received_at", "week"), series="status", stacked=True)
 ```
 
-- **Filter linking.** A chart built on a grid's source can share that grid's
-  view, filters and search on a page. Filter the grid and the chart follows, as
-  in Foundry Workshop.
-- **Aggregation runs in the database** (group by, date truncation), not in the
-  browser.
-- **Colours are read from the CSS tokens**, so charts follow dark mode and the
-  tone of each status.
+- **A chart's source is a GridSpec.** The grid's query, view, filters, search
+  and fixed filters narrow the rows, so the grid's query stays the access
+  boundary.
+- **Filter linking.** A chart on the same page as its grid follows the grid's
+  view, filters and search, as in Foundry Workshop.
+- **Aggregation runs in the database** (`GROUP BY`, `date_trunc`); the largest
+  categories are kept and the rest add up to "Other".
+- **Colours come from `--chart-*` tokens**, and a series on a status column
+  takes that column's tones, in light and dark.
 
 ### 6.3 Graphs, flows and trees
 
-Three components, from simplest to richest:
+Built in step 5 ([Flows](../lattice/help/developer/building-apps/flows.md)).
 
 | Component | Built with | For |
 |---|---|---|
@@ -379,32 +381,23 @@ Three components, from simplest to richest:
 | **Tree** | HTML and CSS, collapsible | Hierarchies: taskline lineage (parent run → child runs), dependency trees without shared nodes |
 | **Graph** | Svelte Flow (xyflow) compiled to a web component, with dagre layout | DAGs and process maps where users navigate and act from the graph |
 
-The graph component:
-[ADR 0005](adr/0005-graphs-xyflow-web-component.md).
+The graph component, `<lt-graph>`:
+[ADR 0005](adr/0005-graphs-xyflow-web-component.md), accepted after its spike.
 
-```html
-<lt-graph spec='{{ graph | tojson }}'></lt-graph>
-```
-
-- **Nodes carry references.** Clicking a node opens its preview, or its record,
-  through the reference registry.
-- **Node actions use the grid's action model** (`actions_for(user)`,
-  `applies(row)`) and the same action endpoint, so "Retry task" means the same
-  thing in a grid and in a graph.
+- **Node actions are a grid's actions** (`actions_for(user)`, `applies(row)`),
+  read per node through the grid's query and run through the grid's action
+  endpoint, so "Retry task" means the same thing in a grid and in a graph.
+- **Nodes link to records** (`href`). Opening a reference's preview through the
+  reference registry comes with step 7.
 - **It is built once** in `frontend/graph/` (Vite, Svelte, xyflow, dagre), and
   the output file is committed to `static/`. App authors never run npm.
-- **A spike comes first.** Before the graph is adopted, a spike must show:
-  - the web component inside htmx swaps;
-  - dark mode from the CSS tokens;
-  - a 200-node DAG with automatic layout;
-  - keyboard focus;
-  - its size.
-
-  React Flow is the fallback if the spike fails.
+- **Spike results:** works in htmx swaps; dark mode from the tokens; a 200-node
+  DAG in about half a second; keyboard focus; 327 KB (100 KB compressed).
 
 ### 6.4 Forms (JSON in, JSON out)
 
-[ADR 0007](adr/0007-json-schema-forms.md).
+Built in step 5 ([Forms from JSON Schema](../lattice/help/developer/building-apps/json-forms.md)).
+[ADR 0007](adr/0007-json-schema-forms.md), accepted.
 
 - **One schema language: JSON Schema 2020-12.** A Pydantic model provides one
   through `model_json_schema()`. A template JSON is an example, and a schema is
@@ -412,10 +405,11 @@ The graph component:
 - **Schema resolution order:**
   1. an explicit `schema=` parameter;
   2. the document's `$schema`;
-  3. a registry match on a type or kind field;
+  3. a registered schema (`SchemaDef`), by id;
   4. a schema inferred from the document, which renders it as it is.
 
-  The user can apply a different schema, and the form re-renders with it.
+  With `switchable=True` the user can apply another registered schema, and the
+  form re-renders with it.
 - **Round trip.** Fields the schema does not describe are shown under "Other
   fields" and returned unchanged. Data is never dropped because a schema is
   narrower than the document.
@@ -428,21 +422,29 @@ The graph component:
   with a discriminator. A raw JSON tab is the fallback for anything else.
   Validation on the server (the `jsonschema` library) is authoritative; HTML
   constraints only help the user.
-- **CRUD through `FormSpec(schema, ui, load, save)`.** The spec is
-  storage-independent: `load` returns a dict, `save` receives one.
-- **Document store.** `lattice.kernel.documents` stores mixed-shape records
-  (kind, schema id and version, JSONB data, audit). It is for configuration,
-  templates and low-volume records, not for business entities that are
-  filtered, joined or reported on.
+- **`FormSpec(key, schema, ui)` is storage-independent.** `build_form` draws
+  a document; `parse_form` reads the post back and validates it; the app's
+  route loads and saves. Edits that change the form's shape post to
+  `/_form/{key}/render`.
+- **Document store.** `lattice.document` stores mixed-shape records (kind,
+  schema version, title, JSONB data, audit), declared as `DocumentKind`s. It is
+  for configuration, templates and low-volume records, not for business
+  entities that are filtered, joined or reported on. A grid of one kind binds
+  the kind with `GridSpec.params`.
 - **Form builder, later.** It is the form renderer applied to a schema that
   describes the supported subset of JSON Schema, with a live preview. Build it
   when two apps need it.
 
 ### 6.5 Other components
 
-- **Timeline:** the audit and event history (exists as the `timeline` macro).
-- **Stat tiles:** home and dashboard counts (exist).
-- **Record view:** section 4.3.
+- **Record page:** `RecordPage` on a GridSpec: header with status and the
+  grid's row actions, properties from the grid's columns, the app's panels and
+  the audit history ([Record pages](../lattice/help/developer/building-apps/record-pages.md)).
+  Panels from other apps (section 4.3) come with step 7.
+- **Saved grid views:** a user's grid state under a name, shared with everyone
+  by holders of `lattice.views.share`.
+- **Timeline:** the audit and event history (the `timeline` macro).
+- **Stat tiles:** home and dashboard counts.
 
 ## 7. The taskline app
 
@@ -514,7 +516,7 @@ Not yet placed in the order of work. Each will get its own plan when it is start
 
 ## 10. Where Lattice is today
 
-Steps 1 to 3 are done. What remains:
+Steps 1 to 5 are done. What remains:
 
 | Area | Today | Target |
 |---|---|---|
@@ -524,7 +526,7 @@ Steps 1 to 3 are done. What remains:
 | Permissions | Declared by apps, grouped into roles that administrators edit | + per-binding scopes |
 | Grid | Named SQL query, offset paging, a time limit, sync | Data sources, keyset paging, async sources |
 | Cross-app | None yet; standards decided ([ADR 0011](adr/0011-integration-standards.md)) | URN references, record panels, CloudEvents |
-| Components | Grid, Ctrl+J, help, tiles, macros, timeline, stats | + charts, JSON Schema forms, stepper, tree, graph, record page, saved grid views |
+| Components | Grid with saved views, charts, record page, JSON Schema forms and the document store, stepper, tree, graph; Ctrl+J, help, tiles, macros, timeline | + panels from other apps on the record page |
 | CSS | Five ITCSS layers; app stylesheets scoped by `data-app`; host theme limited to brand tokens; all checked | Unchanged; `--app-accent` read by core when an app needs an accent |
 | Branding | Settings for name and logos; host folder (`theme.css`, page overrides); icon registry; named slots | Unchanged |
 | Settings | `LATTICE_` prefix | + per-app prefixes (`LATTICE_{KEY}_`) |
@@ -561,12 +563,12 @@ before the next starts.
    (URN references, CloudEvents, published views, OpenAPI) and this order of
    work. What Taskline must provide is written up in
    `docs/integrations/taskline-requirements.md`.
-5. **Core components,** each with its own plan:
-   - charts: Chart.js with its plugins ([ADR 0004](adr/0004-charts-chartjs.md));
-   - forms from JSON Schema, and the document store ([ADR 0007](adr/0007-json-schema-forms.md));
-   - flows: the stepper and the tree, then the graph trial ([ADR 0005](adr/0005-graphs-xyflow-web-component.md));
-   - the record page component;
-   - saved grid views, personal and shared.
+5. **Core components.** Done ([plan](plans/step-5-core-components.md)):
+   saved grid views, personal and shared; charts with Chart.js and its plugins
+   ([ADR 0004](adr/0004-charts-chartjs.md)); the record page component; forms
+   from JSON Schema and the document store
+   ([ADR 0007](adr/0007-json-schema-forms.md)); the stepper, the tree and the
+   graph, whose trial passed ([ADR 0005](adr/0005-graphs-xyflow-web-component.md)).
 6. **The showcase.** The demo app is replaced by showcase apps built around
    Lattice's capabilities, each page saying what it shows and linking to the
    docs.

@@ -1,8 +1,9 @@
 # Step 5 plan: core components
 
-Status: **in progress** on the `step-5` branch. You asked me to proceed without
-stopping for approval until Taskline is needed, so the decisions below are mine.
-Each names the alternative, so any of them can be reversed at review.
+Status: **done** on the `step-5` branch (18 October 2026). You asked me to
+proceed without stopping for approval until Taskline is needed, so the
+decisions below are mine. Each names the alternative, so any of them can be
+reversed at review. How the result differs from the plan is at the end.
 
 ## What step 5 delivers
 
@@ -156,3 +157,21 @@ page updated. ADR 0007 and 0005 move to Accepted when their stage passes.
 - **The form builder:** when two apps need it (ADR 0007).
 - **Dashboards** as a saved arrangement of charts: the showcase (step 6) shows
   charts on pages; a dashboard builder waits for a need.
+
+## How the result differs from the plan
+
+| Area | Plan | Result, and why |
+|---|---|---|
+| Saved views | Edit and delete in the menu | As planned, plus **Save changes to "…"** when the user changes an open view of their own. Deleting asks in a dialog, not the browser's `confirm()` |
+| Charts | `tones_from=` to colour series | Not needed: a series or category on a status column takes that column's tones automatically |
+| Charts | — | Category charts keep the 12 largest values; with counts and sums the rest add up to a grey **Other** |
+| Record page | Header, properties, panels, history | Also `Link`s (such as **Edit**) in the header, and panels placed `main`, `side` or `full` width. The demo's work item page uses it |
+| Forms | Arrays edited in the browser | Every edit that changes the form's shape (add, remove, move, choose a variant, add a field, switch tabs, apply a schema) posts to `/_form/{key}/render` and redraws on the server: no form JavaScript, one place for the rules |
+| Forms | `FormSpec(schema, ui, load, save)` | `FormSpec(key, schema, ui)`; the app's route loads and saves, as for every other form |
+| Document store | In the kernel | In `components/documents.py` (it uses the form validation); storage is the `lattice.document` table and named queries |
+| Grid | — | **New: `GridSpec.params`**, fixed values bound into the grid's query. The document store needs one query for many kinds |
+| Graph | Node actions from the grid | Only actions without input fields: those with fields stay in the grid's dialogs |
+| Graph | — | Library builds keep whitespace and leave `process.env`; the build config fixes both. 327 KB (100 KB compressed) |
+| Rules | "No npm build" | Now "except the graph component, built once and committed" (AGENTS.md) |
+| Dependencies | — | `jsonschema` 4.26 (with `referencing` and `rpds-py`) for validation |
+| Docs | — | The "Not built yet" help page is gone: everything on it exists. New pages: Charts, Record pages, Forms from JSON Schema, Flows |

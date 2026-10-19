@@ -11,6 +11,7 @@ import secrets
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
+from lattice.components.flows import Step, TreeNode
 from lattice.components.grid import (
     REGISTRY,
     Action,
@@ -421,7 +422,13 @@ def system_page(request: Request, db: Db = Depends(get_db)):
 
 @router.get("/ui-kit", dependencies=[Depends(require(SYSTEM_VIEW))])
 def ui_kit(request: Request):
-    return render_page(request, "admin/ui_kit.html", "admin.uikit")
+    steps = [Step("Received", "done", "Oct 12"), Step("Review", "done", "2 days"),
+             Step("Approve", "current"), Step("Bind"), Step("Archive", "skipped")]
+    tree_nodes = [TreeNode("Parent run", badge="Failed", tone="danger", children=[
+        TreeNode("Child run", badge="Succeeded", tone="success", note="2.1 s"),
+        TreeNode("Retry", badge="Running", tone="info")])]
+    return render_page(request, "admin/ui_kit.html", "admin.uikit", steps=steps,
+                       tree_nodes=tree_nodes)
 
 
 
