@@ -118,7 +118,9 @@ flowchart LR
    build the breadcrumbs, set the title and choose the help topic for F1.
 4. **Browser.** The page is plain server-rendered HTML. HTMX swaps in partial
    updates (grid rows, panels) and Alpine.js handles small client-side state
-   (menus, dialogs). There is no single-page app and no JavaScript build step.
+   (menus, dialogs). There is no single-page app and no JavaScript build step
+   for apps: the one compiled component, the graph, is built once inside
+   Lattice and shipped as a file.
 
 ## Lattice's own apps
 
@@ -130,14 +132,17 @@ Lattice ships three apps of its own, built with the same `AppManifest` as yours:
 
 Every host runs them.
 
-## Not built yet
+## Components beyond the grid
 
-Charts, graphs and forms generated from JSON Schema are planned but do not
-exist yet. See [Not built yet](building-apps/not-built-yet.md).
+[Charts](building-apps/charts.md), [record pages](building-apps/record-pages.md),
+[forms from JSON Schema](building-apps/json-forms.md) with the document store, and
+[flows](building-apps/flows.md) (stepper, tree and graph) are built the same way as
+the grid: declared in Python, placed with a macro.
 
 ## The stack
 
 Python 3.14, FastAPI, Jinja2 templates, HTMX and Alpine.js (vendored, no npm),
+Chart.js for charts, Svelte Flow for the graph (compiled once, committed),
 and Postgres 17. Database access is plain SQL in named `.sql` files, run
 through SQLAlchemy Core with the psycopg 3 driver; there is no ORM. The
 workspace is managed with uv.

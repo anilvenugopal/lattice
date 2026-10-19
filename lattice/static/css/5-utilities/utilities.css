@@ -7,3 +7,4 @@
 .u-truncate { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .u-text-right { text-align: right !important; }
 .u-mt-3 { margin-top: var(--sp-3) !important; }
+.u-sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

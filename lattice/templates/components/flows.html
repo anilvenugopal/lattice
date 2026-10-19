@@ -1,0 +1,51 @@
+{#
+  Flows (lattice/components/flows.py):
+    {% from "components/flows.html" import stepper, tree, graph %}
+    {{ stepper(steps) }}  {{ stepper(steps, vertical=true) }}  {{ tree(nodes) }}  {{ graph(g) }}
+#}
+{% macro stepper(steps, vertical=false) -%}
+<ol class="stepper{% if vertical %} stepper--vertical{% endif %}">
+  {% for s in steps %}
+  <li class="stepper__step is-{{ s.state }}"{% if s.state == "current" %} aria-current="step"{% endif %}>
+    <span class="stepper__dot" aria-hidden="true">
+      {%- if s.state == "done" %}{{ icon('check', 12) }}{% elif s.state == "failed" %}{{ icon('x', 12) }}{% else %}{{ loop.index }}{% endif -%}
+    </span>
+    <span class="stepper__text">
+      {% if s.href %}<a class="stepper__label" href="{{ s.href }}">{{ s.label }}</a>{% else %}<span class="stepper__label">{{ s.label }}</span>{% endif %}
+      {% if s.note %}<span class="stepper__note">{{ s.note }}</span>{% endif %}
+      <span class="u-sr-only">({{ s.state }})</span>
+    </span>
+  </li>
+  {% endfor %}
+</ol>
+{%- endmacro %}
+
+{% macro tree(nodes) -%}
+<ul class="tree" role="tree">{% for n in nodes %}{{ _tree_node(n) }}{% endfor %}</ul>
+{%- endmacro %}
+
+{% macro _tree_node(n) -%}
+<li class="tree__node" role="treeitem"{% if n.children %} aria-expanded="{{ 'true' if n.open else 'false' }}"{% endif %}>
+  {% if n.children %}
+  <details class="tree__branch" {% if n.open %}open{% endif %}
+           @toggle="$el.parentElement.setAttribute('aria-expanded', $el.open)">
+    <summary class="tree__row">{{ icon('chevron-right', 13) }}{{ _tree_label(n) }}</summary>
+    <ul class="tree" role="group">{% for c in n.children %}{{ _tree_node(c) }}{% endfor %}</ul>
+  </details>
+  {% else %}
+  <div class="tree__row tree__row--leaf">{{ _tree_label(n) }}</div>
+  {% endif %}
+</li>
+{%- endmacro %}
+
+{% macro _tree_label(n) -%}
+{% if n.href %}<a href="{{ n.href }}" class="tree__label">{{ n.label }}</a>{% else %}<span class="tree__label">{{ n.label }}</span>{% endif %}
+{% if n.badge %}<span class="badge tone-{{ n.tone }}">{{ n.badge }}</span>{% endif %}
+{% if n.note %}<span class="tree__note">{{ n.note }}</span>{% endif %}
+{%- endmacro %}
+
+{# The graph web component; its script loads once per page (a module is never run twice). #}
+{% macro graph(g) -%}
+<script type="module" src="/static/js/vendor/graph/lt-graph.js"></script>
+<lt-graph class="graph" data-height="{{ g.height }}" spec="{{ g.spec | tojson | forceescape }}"></lt-graph>
+{%- endmacro %}

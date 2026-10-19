@@ -18,7 +18,9 @@ Python 3.14, FastAPI + Jinja2 + HTMX + Alpine.js, Postgres 17, a uv workspace.
 **Plain SQL, no ORM:** every statement is a named query in a `sql/*.sql` file,
 run through SQLAlchemy Core with the psycopg 3 driver. Server-rendered.
 **No SPA, no npm build, no CSS framework.** Vendored JS lives in
-`lattice/static/js/vendor/`.
+`lattice/static/js/vendor/`. The one exception is the graph component: built
+from `frontend/graph/` with `npm run build`, and its output file committed
+(ADR 0005). Rebuild it only when changing that component; apps never run npm.
 
 ```bash
 make db-up     # start Postgres (compose.yaml, port 5436); once per machine boot

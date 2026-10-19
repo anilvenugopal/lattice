@@ -76,6 +76,17 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `InvalidDocument` | class | The data does not satisfy the kind's schema. |
 | `documents` | module | The document store (ADR 0007): JSON documents of kinds that apps declare. |
 
+## Flows
+
+| Name | Kind | Description |
+|---|---|---|
+| `Step` | class | One step of a linear flow. |
+| `TreeNode` | class | One node of a tree. Nodes with children collapse. |
+| `Graph` | class | A DAG or process map, laid out automatically (dagre). |
+| `GraphNode` | class |  |
+| `GraphEdge` | class |  |
+| `build_graph` `(request, db, graph)` | function | Context for the graph macro. Node actions are those the user may run that apply to the node's row, read through the grid's query: a node the grid would not show gets none. |
+
 ## Pages and feedback
 
 | Name | Kind | Description |

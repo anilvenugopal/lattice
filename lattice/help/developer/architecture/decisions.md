@@ -102,7 +102,7 @@ Taken while planning step 2, on 18 October 2026:
 | 0002 | One core package with enforced boundaries; each app its own package | Accepted |
 | 0003 | Apps plug in through a manifest and kernel contracts | Accepted |
 | 0004 | Charts with Chart.js and its plugins | Accepted |
-| 0005 | Graphs with Svelte Flow compiled to a web component | Proposed, needs a spike |
+| 0005 | Graphs with Svelte Flow compiled to a web component | Accepted |
 | 0006 | The taskline UI is a Lattice app, bundled or as an Ops console | Accepted |
 | 0007 | Forms rendered from JSON Schema, JSON in and JSON out | Accepted |
 | 0008 | Grid rows come from data sources with keyset paging | Proposed |

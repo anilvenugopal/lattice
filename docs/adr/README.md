@@ -12,7 +12,7 @@ is a new record that names the one it replaces.
 | [0002](0002-one-core-package-apps-as-packages.md) | One core package with enforced boundaries; each app its own package | Accepted |
 | [0003](0003-app-manifest-and-contracts.md) | Apps plug in through a manifest and kernel contracts | Accepted |
 | [0004](0004-charts-chartjs.md) | Charts with Chart.js and its plugins | Accepted |
-| [0005](0005-graphs-xyflow-web-component.md) | Graphs with Svelte Flow compiled to a web component | Proposed, needs a spike |
+| [0005](0005-graphs-xyflow-web-component.md) | Graphs with Svelte Flow compiled to a web component | Accepted |
 | [0006](0006-taskline-as-lattice-app.md) | The taskline UI is a Lattice app, bundled or as an Ops console | Accepted |
 | [0007](0007-json-schema-forms.md) | Forms rendered from JSON Schema, JSON in and JSON out | Accepted |
 | [0008](0008-grid-data-sources.md) | Grid rows come from data sources with keyset paging | Proposed |

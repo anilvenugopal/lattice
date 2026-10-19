@@ -94,7 +94,18 @@ Object.assign(window.app, (function () {
     if (form) form.submit();
   }
 
-  return { csrf, post: (url, body) => request('POST', url, body), toast, isTyping, signOut };
+  // A toast shown after the page reloads, for actions whose result is the reloaded page.
+  function toastAfterReload(message, tone = 'success') {
+    try { sessionStorage.setItem('lattice.toast', JSON.stringify({ message, tone })); } catch (_) { /* private mode */ }
+    window.location.reload();
+  }
+  document.addEventListener('alpine:initialized', () => {
+    let saved = null;
+    try { saved = JSON.parse(sessionStorage.getItem('lattice.toast')); sessionStorage.removeItem('lattice.toast'); } catch (_) { /* none */ }
+    if (saved) toast(saved.message, saved.tone);
+  });
+
+  return { csrf, post: (url, body) => request('POST', url, body), toast, toastAfterReload, isTyping, signOut };
 })());
 
 document.addEventListener('alpine:init', () => {

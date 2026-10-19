@@ -17,6 +17,7 @@ from lattice.components.chart import (
     build_chart,
 )
 from lattice.components.documents import DocumentKind, InvalidDocument
+from lattice.components.flows import Graph, GraphEdge, GraphNode, Step, TreeNode, build_graph
 from lattice.components.forms import FormResult, FormSpec, SchemaDef, build_form, parse_form
 from lattice.components.grid import (
     Action,
@@ -59,6 +60,8 @@ __all__ = [
     # Forms from JSON Schema
     "FormSpec", "SchemaDef", "FormResult", "build_form", "parse_form",
     "DocumentKind", "InvalidDocument", "documents",
+    # Flows
+    "Step", "TreeNode", "Graph", "GraphNode", "GraphEdge", "build_graph",
     # Pages and feedback
     "render", "render_page", "flash", "toast",
     # Requests and access

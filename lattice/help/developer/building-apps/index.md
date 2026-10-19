@@ -60,6 +60,7 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 | [Record pages](record-pages.md) | `RecordPage`: the standard detail page for one grid row, with its actions, panels and history |
 | [Grid performance](grid-performance.md) | What the database runs for a grid, what is expensive on large tables, and how to keep grids fast |
 | [Forms from JSON Schema](json-forms.md) | `FormSpec`: a form drawn from a Pydantic model or JSON Schema, JSON in and out; the document store |
+| [Flows](flows.md) | Stepper, tree and graph: steps of a process, hierarchies, and DAGs with node actions |
 | [Forms and feedback](forms-and-feedback.md) | Form posts, validation, CSRF, toasts and flash messages |
 | [UI components](ui-components.md) | Macros, buttons, tones, icons, keyboard and accessibility |
 | [Styling](styling.md) | The five CSS layers, tokens, light and dark, an app's own stylesheet |
@@ -68,7 +69,6 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 | [Ctrl+J search](search.md) | Making pages and records findable, custom sources, commands |
 | [Writing help](writing-help.md) | Help topics, sections, callouts, diagrams and the F1 map |
 | [Testing](testing.md) | The fixtures, what to test and how |
-| [Not built yet](not-built-yet.md) | Graphs, flows and trees: planned, not available yet, and what to use meanwhile |
 
 ## Working examples
 

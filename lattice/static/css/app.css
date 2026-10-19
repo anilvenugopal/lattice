@@ -33,6 +33,7 @@
 @import url("4-components/grid.css") layer(components);
 @import url("4-components/chart.css") layer(components);
 @import url("4-components/forms.css") layer(components);
+@import url("4-components/flows.css") layer(components);
 @import url("4-components/palette.css") layer(components);
 @import url("4-components/help.css") layer(components);
 @import url("4-components/auth.css") layer(components);
