@@ -249,7 +249,8 @@ def _time_limit(db: Db) -> Iterator[None]:
         savepoint.rollback()
 
 
-def _run(db: Db, stmt, user) -> list[dict]:
+def read(db: Db, stmt, user) -> list[dict]:
+    """Run a statement built on a grid query, within the grid time limit."""
     with _time_limit(db):
         return [dict(r) for r in db.conn.execute(stmt, {"user_id": user.id}).mappings()]
 
@@ -270,13 +271,13 @@ def fetch_page(spec: GridSpec, db: Db, user, gq: GridQuery) -> GridPage:
     page = GridPage(rows=[], total=_count(db, stmt, user), page=gq.page, size=gq.size)
     page.page = gq.page = min(gq.page, page.pages)
     stmt = _ordered(stmt, g, spec, gq).limit(gq.size).offset((gq.page - 1) * gq.size)
-    page.rows = _run(db, stmt, user)
+    page.rows = read(db, stmt, user)
     return page
 
 
 def fetch_all(spec: GridSpec, db: Db, user, gq: GridQuery, limit: int) -> list[dict]:
     stmt, g = filtered(spec, db, user, gq)
-    return _run(db, _ordered(stmt, g, spec, gq).limit(limit), user)
+    return read(db, _ordered(stmt, g, spec, gq).limit(limit), user)
 
 
 def fetch_by_ids(spec: GridSpec, db: Db, user, ids: list) -> list[dict]:
@@ -285,4 +286,4 @@ def fetch_by_ids(spec: GridSpec, db: Db, user, ids: list) -> list[dict]:
     ids = _coerce_all(g.shape.types.get("id"), ids)
     if not ids:
         return []
-    return _run(db, select(g.sq).where(g.c.id.in_(ids)), user)
+    return read(db, select(g.sq).where(g.c.id.in_(ids)), user)

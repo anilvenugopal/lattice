@@ -1,0 +1,8 @@
+/* Charts (components/chart.html, static/js/charts.js). */
+.chart__head { align-items: center; }
+.chart__body { position: relative; padding: var(--sp-3) var(--sp-4) var(--sp-4); transition: opacity var(--dur); }
+.chart__body.is-loading { opacity: 0.55; }
+.chart__box { position: relative; width: 100%; }
+.chart__note { padding: var(--sp-8) 0; font-size: var(--fs-md); color: var(--text-3); text-align: center; }
+.chart__note--error { color: var(--danger); }
+.chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--sp-4); }

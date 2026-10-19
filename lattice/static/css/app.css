@@ -31,6 +31,7 @@
 @import url("4-components/content.css") layer(components);
 @import url("4-components/brand.css") layer(components);
 @import url("4-components/grid.css") layer(components);
+@import url("4-components/chart.css") layer(components);
 @import url("4-components/palette.css") layer(components);
 @import url("4-components/help.css") layer(components);
 @import url("4-components/auth.css") layer(components);

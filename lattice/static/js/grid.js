@@ -76,6 +76,8 @@ function dataGrid(config) {
       if (config.syncUrl && !opts.quiet) history.replaceState(null, '', config.path + (qs ? '?' + qs : ''));
       this.updateFilterState();
       this.saved.state = this.stateString();
+      // Charts on the same grid follow its search, filters and view (static/js/charts.js).
+      window.dispatchEvent(new CustomEvent('gridstate', { detail: { key: config.key, params: qs } }));
       return htmx.ajax('GET', url, { target: this.$refs.body, swap: 'innerHTML' }).then(() => {
         this.loading = false;
         if (opts.quiet) {

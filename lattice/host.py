@@ -21,6 +21,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
 from lattice.components import tiles
+from lattice.components.chart import router as chart_router
 from lattice.components.grid import router as grid_router
 from lattice.components.grid.engine import GridTimeout
 from lattice.components.help import content as help_content
@@ -70,6 +71,13 @@ def _check(app: AppManifest) -> None:
             fail(f"grid key {grid.key!r} must start with {app.key + '.'!r}")
         if not grid.path.startswith(app.prefix + "/") and grid.path != app.prefix:
             fail(f"grid {grid.key!r} path {grid.path!r} must start with {app.prefix}")
+    for chart in app.charts:
+        if not chart.key.startswith(app.key + "."):
+            fail(f"chart key {chart.key!r} must start with {app.key + '.'!r}")
+        try:
+            chart.check()
+        except ValueError as exc:
+            fail(str(exc))
     if app.templates and app.templates.is_dir():
         extra = sorted(p.name for p in app.templates.iterdir() if p.name != app.key)
         if extra:
@@ -114,6 +122,8 @@ def _register(app: AppManifest, platform: bool) -> None:
         slots.add(slot_name, template)
     for grid in app.grids:
         grid_router.register(grid)
+    for chart in app.charts:
+        chart_router.register(chart)
     for tile in app.tiles:
         tiles.register_tile(tile)
     for provider in app.search:
@@ -141,6 +151,7 @@ def _check_permissions() -> None:
     for spec in grid_router.REGISTRY.values():
         named.append((f"grid {spec.key!r}", spec.permission))
         named += [(f"action {spec.key}.{a.key}", a.permission) for a in spec.actions]
+    named += [(f"chart {c.key!r}", c.permission) for c in chart_router.REGISTRY.values()]
     named += [(f"Ctrl+J source {p.key!r}", p.permission) for p in search_providers.registered()]
     named += [(f"help topic {t.url}", t.permission)
               for app in help_content.HELP.values() for t in app.topics.values()]
@@ -156,6 +167,7 @@ def _reset_registries() -> None:
     icons.reset()
     slots.reset()
     grid_router.REGISTRY.clear()
+    chart_router.REGISTRY.clear()
     tiles.TILES.clear()
     search_providers.reset()
 
@@ -221,7 +233,7 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
         web.mount("/static/host", StaticFiles(directory=host_static))
     web.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
     web.add_middleware(AuthMiddleware)
-    for router in (auth_routes.router, grid_router.router, search_router.router,
+    for router in (auth_routes.router, grid_router.router, chart_router.router, search_router.router,
                    help_router.router):
         web.include_router(router)
     for app, mount in ordered:

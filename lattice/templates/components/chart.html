@@ -1,0 +1,23 @@
+{#
+  A chart over a grid's rows. Build the context with build_chart() and render:
+    {% from "components/chart.html" import chart %}{{ chart(c) }}
+  Client behaviour lives in static/js/charts.js (Alpine component `ltChart`).
+#}
+{% macro chart(c) -%}
+<section class="card chart" id="chart-{{ c.spec.key }}" x-data='ltChart({{ c.config | tojson }})'
+         data-height="{{ c.spec.height }}">
+  <header class="card__head chart__head">
+    <h3 class="card__title">{{ c.spec.title }}</h3>
+    <span class="dg__spacer"></span>
+    <button type="button" class="btn btn--link btn--sm" x-show="zoomable" x-cloak @click="resetZoom()"
+            data-tip="Drag across the chart to zoom; Shift-drag pans">Reset zoom</button>
+  </header>
+  <div class="chart__body" :class="{ 'is-loading': loading }">
+    <div class="chart__box" x-ref="box" x-show="!empty && !error">
+      <canvas x-ref="canvas" role="img" aria-label="{{ c.spec.title }}"></canvas>
+    </div>
+    <p class="chart__note" x-show="empty && !error" x-cloak>{{ c.spec.empty_text }}</p>
+    <p class="chart__note chart__note--error" x-show="error" x-cloak x-text="error"></p>
+  </div>
+</section>
+{%- endmacro %}

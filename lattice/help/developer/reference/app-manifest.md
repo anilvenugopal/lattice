@@ -23,6 +23,7 @@ What an app adds to a host. Listed once per app package.
 | `nav` | `list[NavNode]` | `[]` | the app's pages; every page has a node |
 | `routers` | `list[APIRouter]` | `[]` | FastAPI routers, mounted as declared (paths start with /{key}) |
 | `grids` | `list[GridSpec]` | `[]` | registered for actions, export, Ctrl+J and tiles |
+| `charts` | `list[ChartSpec]` | `[]` | served at /_chart/{key}/data |
 | `search` | `list[SearchProvider]` | `[]` | extra Ctrl+J sources |
 | `tiles` | `list[HomeTile]` | `[]` | count tiles on the home page |
 | `templates` | `Path \| None` | `None` | Folder holding templates/{key}/…; searched before core templates. |

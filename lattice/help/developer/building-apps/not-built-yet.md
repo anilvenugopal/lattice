@@ -1,8 +1,8 @@
 ---
 title: Not built yet
-summary: Charts, graphs and generated forms are planned but do not exist yet. What is planned, where each stands, and what to use meanwhile.
+summary: Graphs and generated forms are planned but do not exist yet. What is planned, where each stands, and what to use meanwhile.
 order: 110
-keywords: charts chart.js graphs flows svelte flow xyflow dag stepper tree json schema forms form builder roadmap planned missing
+keywords: graphs flows svelte flow xyflow dag stepper tree json schema forms form builder roadmap planned missing
 ---
 
 Some components you might expect are **planned but not built**. They are not
@@ -12,40 +12,11 @@ until then.
 
 | Component | Status | Step of the plan |
 |---|---|---|
-| Charts | Decided ([ADR 0004](https://github.com/anilvenugopal/lattice/blob/main/docs/adr/0004-charts-chartjs.md), accepted) | 7 |
-| Graphs, flows and trees | Proposed; needs a trial first ([ADR 0005](https://github.com/anilvenugopal/lattice/blob/main/docs/adr/0005-graphs-xyflow-web-component.md)) | 8 |
-| Forms generated from JSON Schema | Proposed ([ADR 0007](https://github.com/anilvenugopal/lattice/blob/main/docs/adr/0007-json-schema-forms.md)) | 9 |
+| Graphs, flows and trees | Proposed; needs a trial first ([ADR 0005](https://github.com/anilvenugopal/lattice/blob/main/docs/adr/0005-graphs-xyflow-web-component.md)) | 5 |
+| Forms generated from JSON Schema | Proposed ([ADR 0007](https://github.com/anilvenugopal/lattice/blob/main/docs/adr/0007-json-schema-forms.md)) | 5 |
 
-Steps 2 to 6 come first: Postgres, permissions, links between apps, grid data
-sources and the taskline app. The full order is in
-[Decisions and direction](../architecture/decisions.md).
-
-## Charts
-
-**Planned:** a chart component built on Chart.js 4, vendored like HTMX, so
-there is no build step. It comes with plugins for:
-
-- time series, with zoom and pan;
-- maps (choropleth and bubble);
-- calendar heatmaps and matrices;
-- treemaps and flows (sankey);
-- threshold lines and markers.
-
-An app will declare a chart in Python, as it declares a grid:
-
-- **One spec.** A `ChartSpec` names the chart type, the x and y values, the
-  aggregation and the grouping.
-- **Database aggregation.** The database does the counting and grouping; the
-  browser only draws.
-- **Linked to a grid.** A chart on the same page as a grid can share its view
-  and filters, so both change together.
-- **Theme colours.** Colours come from the theme, including status tones, so
-  charts work in light and dark.
-
-**Until then:** there is no chart support. For counts on a page, use `stat`
-tiles (see [UI components](ui-components.md)) or home page tiles
-(`HomeTile`). For a progress figure, use the `progress` macro or a grid column
-of kind `progress`.
+Both are being built now, in step 5, after [Charts](charts.md). The full
+order is in [Decisions and direction](../architecture/decisions.md).
 
 ## Graphs, flows and trees
 

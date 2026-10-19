@@ -40,6 +40,20 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `build_grid` `(request, db, spec, views_in_nav=False, sync_url=True, fixed=None)` | function | Template context for components/grid.html: render it with `data_grid(grid)`. |
 | `render_grid_page` `(request, db, spec, nav_key, title='', subtitle='', views_in_nav=False)` | function | A full page holding one grid: the standard list screen. |
 
+## Charts
+
+| Name | Kind | Description |
+|---|---|---|
+| `ChartSpec` | class | One chart over a grid's rows. |
+| `Count` | class | Rows per group. |
+| `Sum` | class |  |
+| `Avg` | class |  |
+| `Min` | class |  |
+| `Max` | class |  |
+| `Time` | class | A time dimension: the column truncated to `unit` (Postgres date_trunc). |
+| `Threshold` | class | A horizontal line across a bar, line or area chart, e.g. a target or a limit. |
+| `build_chart` `(request, chart, linked=True, fixed=None)` | function | Context for one chart on a page. |
+
 ## Pages and feedback
 
 | Name | Kind | Description |

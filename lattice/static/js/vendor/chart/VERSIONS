@@ -1,0 +1,14 @@
+Chart.js and plugins, vendored from npm on 18 October 2026 (all MIT; hammer.js MIT).
+Loaded on first use by static/js/charts.js. Source maps removed.
+
+chart.min.js             chart.js 4.5.1                  dist/chart.umd.min.js
+adapter-date-fns.min.js  chartjs-adapter-date-fns 3.0.0  dist/chartjs-adapter-date-fns.bundle.min.js (includes date-fns)
+hammer.min.js            hammerjs 2.0.8                  hammer.min.js (touch gestures for zoom)
+zoom.min.js              chartjs-plugin-zoom 2.2.0       dist/chartjs-plugin-zoom.min.js
+annotation.min.js        chartjs-plugin-annotation 3.1.0 dist/chartjs-plugin-annotation.min.js
+matrix.min.js            chartjs-chart-matrix 3.1.0      dist/chartjs-chart-matrix.min.js
+treemap.min.js           chartjs-chart-treemap 4.2.2     dist/chartjs-chart-treemap.min.js
+sankey.min.js            chartjs-chart-sankey 0.19.1     dist/chartjs-chart-sankey.min.js
+geo.min.js               chartjs-chart-geo 4.3.6         build/index.umd.min.js (includes topojson-client, d3-geo)
+
+static/maps/countries-110m.json   world-atlas 2.0.2 (ISC), Natural Earth 1:110m countries

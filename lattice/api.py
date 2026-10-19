@@ -4,6 +4,17 @@ Everything else under `lattice` is internal and may change without notice.
 Removing or changing a name here is a breaking change.
 """
 
+from lattice.components.chart import (
+    Avg,
+    ChartSpec,
+    Count,
+    Max,
+    Min,
+    Sum,
+    Threshold,
+    Time,
+    build_chart,
+)
 from lattice.components.grid import (
     Action,
     ActionContext,
@@ -37,6 +48,8 @@ __all__ = [
     # Grid
     "Action", "ActionContext", "ActionResult", "Column", "Field", "Filter", "GridSpec",
     "Palette", "View", "build_grid", "render_grid_page",
+    # Charts
+    "ChartSpec", "Count", "Sum", "Avg", "Min", "Max", "Time", "Threshold", "build_chart",
     # Pages and feedback
     "render", "render_page", "flash", "toast",
     # Requests and access

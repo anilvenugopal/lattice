@@ -56,6 +56,7 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 |---|---|
 | [Pages and navigation](pages-and-navigation.md) | `NavNode`, `render_page`, page types, detail pages, breadcrumbs |
 | [Grids](grids.md) | `GridSpec` in depth: columns, filters, views, actions, panels, layouts, embedding |
+| [Charts](charts.md) | `ChartSpec`: bar, line, area, pie, calendar, treemap, sankey and map charts on a grid's rows, linked to its filters |
 | [Grid performance](grid-performance.md) | What the database runs for a grid, what is expensive on large tables, and how to keep grids fast |
 | [Forms and feedback](forms-and-feedback.md) | Form posts, validation, CSRF, toasts and flash messages |
 | [UI components](ui-components.md) | Macros, buttons, tones, icons, keyboard and accessibility |
@@ -65,7 +66,7 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 | [Ctrl+J search](search.md) | Making pages and records findable, custom sources, commands |
 | [Writing help](writing-help.md) | Help topics, sections, callouts, diagrams and the F1 map |
 | [Testing](testing.md) | The fixtures, what to test and how |
-| [Not built yet](not-built-yet.md) | Charts, graphs and generated forms: planned, not available yet, and what to use meanwhile |
+| [Not built yet](not-built-yet.md) | Graphs and generated forms: planned, not available yet, and what to use meanwhile |
 
 ## Working examples
 

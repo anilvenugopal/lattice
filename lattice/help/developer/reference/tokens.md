@@ -106,6 +106,21 @@ Components style themselves with these tokens (`var(--text-2)`, `var(--sp-3)`), 
 | `--tone-accent-bg` | `#F3EFFC` | `#261C42` |  |
 | `--tone-accent-fg` | `#5B3BA8` | `#BFAAF0` |  |
 | `--tone-accent-bd` | `#D5C8F2` | `#3A2B66` |  |
+| `--chart-1` | `#2E57A8` | `#8FAADC` |  |
+| `--chart-2` | `#D4820F` | `#EDB45A` |  |
+| `--chart-3` | `#1F8A8A` | `#5CC2C2` |  |
+| `--chart-4` | `#8E4BA8` | `#C08AD6` |  |
+| `--chart-5` | `#C2547A` | `#E58DAD` |  |
+| `--chart-6` | `#7A8A2E` | `#B5C46A` |  |
+| `--chart-7` | `#2F8FD0` | `#79BCEB` |  |
+| `--chart-8` | `#7A5CC8` | `#A993E6` |  |
+| `--chart-neutral` | `#94A3B8` | `#64748B` |  |
+| `--chart-info` | `#4C74C4` | `#8FAADC` |  |
+| `--chart-success` | `#2E8F5E` | `#6CC495` |  |
+| `--chart-warning` | `#D4820F` | `#EDB45A` |  |
+| `--chart-danger` | `#BE2D44` | `#E8657A` |  |
+| `--chart-accent` | `#7A5CC8` | `#A993E6` |  |
+| `--chart-grid` | `#E7EAF0` | `#232B3F` |  |
 | `--focus-ring` | `0 0 0 3px rgba(46, 87, 168, 0.28)` | `0 0 0 3px rgba(143, 170, 220, 0.35)` |  |
 | `--shadow-sm` | `0 1px 2px rgba(15, 22, 41, 0.06)` | `0 1px 2px rgba(0, 0, 0, 0.4)` |  |
 | `--shadow-md` | `0 4px 12px rgba(15, 22, 41, 0.10), 0 1px 3px rgba(15, 22, 41, 0.06)` | `0 4px 14px rgba(0, 0, 0, 0.45)` |  |

@@ -37,6 +37,11 @@
   --p-dk-danger-bg: #3A151C;  --p-dk-danger-fg: #F09AA8;  --p-dk-danger-bd: #5A1F2A;
   --p-dk-accent-bg: #261C42;  --p-dk-accent-fg: #BFAAF0;  --p-dk-accent-bd: #3A2B66;
   --p-shadow-ink: 15, 22, 41;
+  /* chart series (charts.js reads --chart-*) */
+  --p-teal-500: #1F8A8A; --p-teal-300: #5CC2C2; --p-plum-500: #8E4BA8; --p-plum-300: #C08AD6;
+  --p-rose-500: #C2547A; --p-rose-300: #E58DAD; --p-olive-500: #7A8A2E; --p-olive-300: #B5C46A;
+  --p-sky-500: #2F8FD0; --p-sky-300: #79BCEB; --p-violet-500: #7A5CC8; --p-violet-300: #A993E6;
+  --p-green-300: #6CC495; --p-amber-300: #EDB45A;
 
   /* Scales (theme independent) */
   --font-ui: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -101,6 +106,14 @@
   --tone-warning-bg: var(--p-amber-050); --tone-warning-fg: var(--p-amber-700); --tone-warning-bd: var(--p-amber-200);
   --tone-danger-bg: var(--p-red-050);    --tone-danger-fg: var(--p-red-700);    --tone-danger-bd: var(--p-red-200);
   --tone-accent-bg: var(--p-violet-050); --tone-accent-fg: var(--p-violet-700); --tone-accent-bd: var(--p-violet-200);
+
+  /* Charts: series colours in order, and one colour per tone */
+  --chart-1: var(--p-navy-500); --chart-2: var(--p-amber-500); --chart-3: var(--p-teal-500);
+  --chart-4: var(--p-plum-500); --chart-5: var(--p-rose-500); --chart-6: var(--p-olive-500);
+  --chart-7: var(--p-sky-500);  --chart-8: var(--p-violet-500);
+  --chart-neutral: var(--p-gray-400); --chart-info: var(--p-navy-400); --chart-success: var(--p-green-500);
+  --chart-warning: var(--p-amber-500); --chart-danger: var(--p-red-500); --chart-accent: var(--p-violet-500);
+  --chart-grid: var(--p-gray-150);
 
   --focus-ring: 0 0 0 3px rgba(46, 87, 168, 0.28);
   --shadow-sm: 0 1px 2px rgba(var(--p-shadow-ink), 0.06);
@@ -172,6 +185,13 @@
   --tone-warning-bg: var(--p-dk-warning-bg); --tone-warning-fg: var(--p-dk-warning-fg); --tone-warning-bd: var(--p-dk-warning-bd);
   --tone-danger-bg: var(--p-dk-danger-bg);   --tone-danger-fg: var(--p-dk-danger-fg);   --tone-danger-bd: var(--p-dk-danger-bd);
   --tone-accent-bg: var(--p-dk-accent-bg);   --tone-accent-fg: var(--p-dk-accent-fg);   --tone-accent-bd: var(--p-dk-accent-bd);
+
+  --chart-1: var(--p-navy-300); --chart-2: var(--p-amber-300); --chart-3: var(--p-teal-300);
+  --chart-4: var(--p-plum-300); --chart-5: var(--p-rose-300); --chart-6: var(--p-olive-300);
+  --chart-7: var(--p-sky-300);  --chart-8: var(--p-violet-300);
+  --chart-neutral: var(--p-gray-500); --chart-info: var(--p-navy-300); --chart-success: var(--p-green-300);
+  --chart-warning: var(--p-amber-300); --chart-danger: var(--p-red-400); --chart-accent: var(--p-violet-300);
+  --chart-grid: var(--p-gray-800);
 
   --focus-ring: 0 0 0 3px rgba(143, 170, 220, 0.35);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);

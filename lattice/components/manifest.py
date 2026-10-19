@@ -8,6 +8,7 @@ from pathlib import Path
 
 from fastapi import APIRouter
 
+from lattice.components.chart import ChartSpec
 from lattice.components.grid import GridSpec
 from lattice.components.search.providers import SearchProvider
 from lattice.components.tiles import HomeTile
@@ -29,6 +30,7 @@ class AppManifest:
     routers: list[APIRouter] = field(default_factory=list)
     # registered for actions, export, Ctrl+J and tiles
     grids: list[GridSpec] = field(default_factory=list)
+    charts: list[ChartSpec] = field(default_factory=list)  # served at /_chart/{key}/data
     search: list[SearchProvider] = field(default_factory=list)  # extra Ctrl+J sources
     tiles: list[HomeTile] = field(default_factory=list)  # count tiles on the home page
     # Folder holding templates/{key}/…; searched before core templates.
