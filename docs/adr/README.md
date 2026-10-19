@@ -18,5 +18,6 @@ is a new record that names the one it replaces.
 | [0008](0008-grid-data-sources.md) | Grid rows come from data sources with keyset paging | Proposed |
 | [0009](0009-permissions.md) | Permissions declared by apps, grouped into roles | Accepted |
 | [0010](0010-theming-and-overrides.md) | Theming and overrides: the host owns the brand, apps style only their own pages | Proposed |
+| [0011](0011-integration-standards.md) | Integration standards: URN references, CloudEvents, published views, OpenAPI between processes | Accepted |
 
 Statuses: Proposed, Accepted, Superseded by NNNN.

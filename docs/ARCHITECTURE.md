@@ -21,7 +21,7 @@ reach the target, are in the last two sections.
 | **Business app** | An app for one business domain. It may use service apps | strategiq, a risk workbench |
 | **Host** | A deployable web application: Lattice plus a chosen list of apps plus configuration | `strategiq-web`, an Ops console |
 | **Binding** | A named database connection an app declares, mapped to a URL by the host | `taskline.default`, `taskline.prod` |
-| **Reference** | A typed pointer to a record in any app: `kind:id` | `submission:123`, `job_run:9f2…` |
+| **Reference** | A pointer to a record in any app: a URN, `urn:lattice:{kind}:{id}` (ADR 0011) | `urn:lattice:strategiq.submission:123`, `urn:lattice:taskline.run:9f2…` |
 | **Record panel** | A section an app contributes to other apps' record pages | the "Jobs" panel on a strategiq document |
 
 ## 2. Layers
@@ -76,19 +76,32 @@ lattice/                         (this repository, a uv workspace)
     static/css/                  the five CSS layers
     templates/                   shell layout, macros
   apps/
-    demo/                        today's examples (work queue, jobs, inbox)
-    taskline/                    lattice-taskline (ADR 0006)
-    incidents/                   lattice-incidents
+    showcase…/                   the showcase apps that demonstrate every feature
   frontend/
     graph/                       the one built component (ADR 0005)
   hosts/
-    demo/                        runs Lattice with the demo app
+    showcase/                    runs Lattice with the showcase apps
   docs/
 ```
 
-Business apps live in their own repositories and depend on `lattice` and the
-service apps they need. For example, strategiq adds a `strategiq-web` package
-and a host.
+**Every other app has its own repository** and depends on `lattice` (and on
+the service apps it needs):
+
+| Repository | Holds | Depends on |
+|---|---|---|
+| `lattice` | The core package and the showcase apps | — |
+| `taskline` | The job engine (a library, no UI) | — (never on Lattice) |
+| `lattice-taskline` | The Taskline UI app, and an Ops console host | `lattice`, `taskline` |
+| `lattice-incidents` | The Incidents app | `lattice` |
+| `strategiq`, … | Business apps and their hosts | `lattice`, and the service apps they use |
+
+**How a repository depends on another:**
+
+- **Releases:** a git tag (`lattice @ git+…@v0.4.0`) until there are several
+  consumers, then a private package index.
+- **Development:** an editable path source in `uv`
+  (`lattice = { path = "../lattice", editable = true }`), so changes in Lattice
+  are seen at once.
 
 ### Boundaries inside `lattice`
 
@@ -164,23 +177,25 @@ limited (4.6).
 
 ### 4.2 References
 
-A reference is `kind:id`. An app registers each kind it owns with a resolver:
+A reference is a URN, `urn:lattice:{kind}:{id}`, whose kind starts with the
+owning app's key ([ADR 0011](adr/0011-integration-standards.md)). An app
+registers each kind it owns with a resolver:
 
 ```python
-ReferenceKind("submission", label="Submission",
+ReferenceKind("strategiq.submission", label="Submission",
               resolve=lambda db, user, id: Resolved(title=..., url=f"/strategiq/submissions/{id}",
                                                     preview=...))
 ```
 
-Any template can then show a reference with `{{ ref("submission:123") }}`, which
+Any template can then show a reference with `{{ ref("urn:lattice:strategiq.submission:123") }}`, which
 renders a link with the record's title and the same preview Ctrl+J shows.
 Anything stored across apps is stored as a reference: taskline's job references,
 incidents' affected records, comments and attachments.
 
 Taskline already records references with a kind, label and link
 (`jobs.job_reference`, `jobs.reference_kind`). The taskline app maps them onto
-this registry, so a job started for `document:doc-1` links back to strategiq's
-document page.
+this registry, so a job started for `urn:lattice:strategiq.document:doc-1` links
+back to strategiq's document page.
 
 ### 4.3 Record panels and the record view
 
@@ -199,17 +214,24 @@ view. It does not need code for each service app.
 
 ### 4.4 Events
 
-An in-process event bus. An app publishes after its transaction commits:
+Events are CloudEvents ([ADR 0011](adr/0011-integration-standards.md)): a
+`type` such as `taskline.run.failed`, a `subject` that is the record's URN, and
+small `data`. Inside a host they travel on an in-process bus. An app publishes
+inside its transaction, and the event is delivered after the commit:
 
 ```python
-events.publish("job.failed", ref="job_run:9f2…", data={"job": "ingest_document", "error": "..."})
+db.publish("comments.added", subject="urn:lattice:demo.work_item:42", data={"comment_id": 7})
 ```
+
+Events from another process, such as Taskline's workers, arrive through an
+outbox the host reads. Events from remote systems arrive over HTTP, in the
+CloudEvents HTTP binding.
 
 Subscribers run in the publishing process, after the commit. For example,
 incidents subscribes to `job.failed` to open or update an incident, and
-notifications subscribes to `incident.created`. Event names are
-`{app}.{event}`, and payloads are small: references and a few fields, never
-whole records.
+notifications subscribes to `incidents.created`. Event types are
+`{app}.{event}`, and data is small: references and a few fields, never whole
+records.
 
 There is no delivery guarantee across a crash between the commit and the
 subscriber. If an event must survive that, the publisher adds an outbox table
@@ -284,7 +306,7 @@ narrowed by the step 2 decisions (18 October 2026, recorded in
   databases are then separate commits, and audit records and events are written
   after the app's commit.
 - **Sync now, async with taskline.** Lattice is sync. An async engine on the
-  same URL is added in step 6, when the taskline app calls taskline's async API.
+  same URL is added in step 9, when the Taskline app calls taskline's async API.
 - **Tests** create a Postgres database per test, copied from a template migrated
   once per run.
 
@@ -475,38 +497,34 @@ Lattice app, not part of the taskline package.
   - an `incident` reference kind;
   - a Ctrl+J provider;
   - a home tile;
-  - events `incident.created` and `incident.resolved` for notifications.
+  - events `incidents.created` and `incidents.resolved` for notifications.
 
 Its own design document comes before it is built.
 
 ## 9. Other planned features
 
-In priority order. Each will get its own design note when it is started.
+Not yet placed in the order of work. Each will get its own plan when it is started.
 
-1. **Record view framework** (4.3). Panels, references and the incidents and
-   taskline integrations depend on it.
-2. **Saved views for grids**, personal and shared, also used by charts.
-3. **Notifications** service app: in-app notifications from events, email later.
-   Today's Inbox example becomes its UI.
-4. **Comments and attachments** on any record, keyed by reference.
-5. **API tokens and per-app JSON APIs**, for incident ingestion and calls
-   between services.
-6. **Lattice's own background work runs on taskline**, for example large CSV
-   exports and bulk actions. The demo Jobs grid is then replaced by the real one.
+1. **Notifications** service app: in-app notifications from events, email later.
+2. **Comments and attachments** on any record, keyed by reference.
+3. **API tokens and per-app JSON APIs** (OpenAPI, ADR 0011), for incident
+   ingestion and calls between services.
+4. **Lattice's own background work on Taskline**, when the host includes it:
+   large CSV exports and bulk actions.
 
 ## 10. Where Lattice is today
 
-Step 1 (kernel restructure) is done. What remains:
+Steps 1 to 3 are done. What remains:
 
 | Area | Today | Target |
 |---|---|---|
-| Package | `lattice` core, `apps/demo`, `hosts/demo`, `lattice.api`, import contracts | Unchanged |
+| Package | `lattice` core, `apps/demo`, `hosts/demo`, `lattice.api`, import contracts | Showcase apps instead of the demo; ecosystem apps in their own repositories |
 | Apps | `AppManifest` and `create_app(apps=[…])` with namespace checks | + settings, bindings, permissions, references, panels, events per manifest |
 | Database | Postgres 17; one database, a schema and SQL migrations per app; named SQL queries, no ORM | Unchanged; bindings to separate databases when an app needs one |
 | Permissions | Declared by apps, grouped into roles that administrators edit | + per-binding scopes |
 | Grid | Named SQL query, offset paging, a time limit, sync | Data sources, keyset paging, async sources |
-| Cross-app | None needed yet | References, record panels, events |
-| Components | Grid, Ctrl+J, tiles, macros, timeline, stats | + form, chart, stepper, tree, graph, record view |
+| Cross-app | None yet; standards decided ([ADR 0011](adr/0011-integration-standards.md)) | URN references, record panels, CloudEvents |
+| Components | Grid, Ctrl+J, help, tiles, macros, timeline, stats | + charts, JSON Schema forms, stepper, tree, graph, record page, saved grid views |
 | CSS | Five ITCSS layers; app stylesheets scoped by `data-app`; host theme limited to brand tokens; all checked | Unchanged; `--app-accent` read by core when an app needs an accent |
 | Branding | Settings for name and logos; host folder (`theme.css`, page overrides); icon registry; named slots | Unchanged |
 | Settings | `LATTICE_` prefix | + per-app prefixes (`LATTICE_{KEY}_`) |
@@ -539,25 +557,39 @@ before the next starts.
    ([plan](plans/step-3-permissions.md)): apps declare permissions, roles are
    sets of them edited in Administration › Roles, every check names a
    permission. Binding scopes wait for bindings.
-4. **References, record panels, events,** and the record view.
-5. **Grid data sources** with keyset paging and async sources, an optional
-   estimated count for large lists, and CSV export streamed from the database.
-6. **`lattice-taskline` spike** against strategiq's taskline:
-   - runs grid and run detail with the stepper;
-   - queues;
-   - cancel and retry;
-   - the Jobs panel on a strategiq record.
-7. **Chart component** with the plugins.
-8. **`<lt-graph>` spike** (Svelte Flow) on taskline lineage. Adopt it or fall
-   back to React Flow.
-9. **JSON form renderer** and the document store.
-10. **Incidents app**, after its own design document.
+4. **Integration standards.** Done: [ADR 0011](adr/0011-integration-standards.md)
+   (URN references, CloudEvents, published views, OpenAPI) and this order of
+   work. What Taskline must provide is written up in
+   `docs/integrations/taskline-requirements.md`.
+5. **Core components,** each with its own plan:
+   - charts: Chart.js with its plugins ([ADR 0004](adr/0004-charts-chartjs.md));
+   - forms from JSON Schema, and the document store ([ADR 0007](adr/0007-json-schema-forms.md));
+   - flows: the stepper and the tree, then the graph trial ([ADR 0005](adr/0005-graphs-xyflow-web-component.md));
+   - the record page component;
+   - saved grid views, personal and shared.
+6. **The showcase.** The demo app is replaced by showcase apps built around
+   Lattice's capabilities, each page saying what it shows and linking to the
+   docs.
+7. **Integration framework:** URN references with resolvers, record panels, and
+   the CloudEvents bus, with its outbox reader ([ADR 0011](adr/0011-integration-standards.md)).
+8. **The showcase apps use the framework,** cooperating through references,
+   panels and events.
+9. **Taskline in the ecosystem:**
+   - Taskline moves to its own repository, and its public contract is built
+     (`docs/integrations/taskline-requirements.md`);
+   - in Lattice: an async database engine, grid data sources with keyset paging
+     ([ADR 0008](adr/0008-grid-data-sources.md)), and database bindings for
+     several instances;
+   - `lattice-taskline` in its own repository: runs, run detail with the
+     stepper, queues, workers, cancel and retry, run job, schedules, a Jobs
+     panel on any record, and an Ops console host.
+10. **Incidents** in its own repository, after its own design document.
 
 ## 12. Open questions
 
 | # | Question | Notes |
 |---|---|---|
 | O-1 | Where do business apps live: their own repositories (recommended) or `apps/` here? | Own repositories keep Lattice free of business code |
-| O-2 | How are Lattice and its apps distributed to other repositories: git dependencies or a private package index? | Git dependencies with tags work until there are several consumers |
+| O-2 | How are Lattice and its apps distributed to other repositories? | Decided: git tags for releases, editable path sources for development, a private package index once there are several consumers (section 3) |
 | O-3 | Does the Ops console need its own sign-in, or does it use the same OIDC provider as the business hosts? | Affects how users and permissions are shared across hosts |
-| O-4 | Who owns the reference kinds taskline already registers (`document`)? | Proposed: the business app registers the kind in Lattice; taskline only stores it |
+| O-4 | Who owns the reference kinds taskline already registers (`document`)? | Decided by ADR 0011: the owning app (`strategiq.document`); Taskline only stores the kind |
