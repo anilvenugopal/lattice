@@ -22,12 +22,13 @@ Values are bound, never pasted into the SQL. A list becomes a Postgres array
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Any
 
 from psycopg.types.json import Jsonb
 from sqlalchemy import Connection, Engine, create_engine
+from starlette.requests import Request
 
 from lattice.kernel.config import settings
 from lattice.kernel.sql import Query
@@ -64,6 +65,14 @@ class Db:
 
     def __init__(self, conn: Connection):
         self.conn = conn
+        self.after_commit: list[Callable[[], None]] = []   # run once the transaction commits
+
+    def publish(self, type: str, subject: str = "", data: dict | None = None) -> None:
+        """Announce an event (a CloudEvent, ADR 0011). Subscribers receive it after this
+        transaction commits; if it rolls back, nobody does. `type` is "{app}.{event}" and
+        must be declared in that app's manifest `publishes`."""
+        from lattice.kernel import events  # events imports this module
+        events.publish(self, type, subject, data)
 
     def _execute(self, query: Query, values: dict[str, Any]):
         if not isinstance(query, Query):
@@ -92,12 +101,18 @@ class Db:
 
 @contextmanager
 def transaction() -> Iterator[Db]:
-    """A `Db` in its own transaction: committed on success, rolled back on an exception."""
+    """A `Db` in its own transaction: committed on success, rolled back on an exception.
+    Work queued in `db.after_commit` (event delivery) runs once the commit succeeds."""
     with engine().begin() as conn:
-        yield Db(conn)
+        db = Db(conn)
+        yield db
+    for callback in db.after_commit:
+        callback()
 
 
-def get_db() -> Iterator[Db]:
-    """Route dependency: the request's `Db`, in one transaction for the whole request."""
+def get_db(request: Request) -> Iterator[Db]:
+    """Route dependency: the request's `Db`, in one transaction for the whole request.
+    Also on `request.state.db`, for template helpers such as `ref()`."""
     with transaction() as db:
+        request.state.db = db
         yield db

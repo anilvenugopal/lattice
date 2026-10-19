@@ -20,6 +20,7 @@ from lattice.kernel.auth import csrf
 from lattice.kernel.auth.cookies import set_cookie
 from lattice.kernel.auth.sessions import COOKIE_NAME, load_session
 from lattice.kernel.database import transaction
+from lattice.kernel.web import CURRENT_REQUEST
 
 PUBLIC_PREFIXES = ("/static/", "/auth/login", "/auth/oidc/", "/health")
 CHANGE_PASSWORD_EXEMPT = ("/auth/change-password", "/auth/logout")
@@ -47,6 +48,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
         token = request.cookies.get(csrf.COOKIE_NAME) or csrf.new_token()
         request.state.csrf_token = token
         request.state.user = None
+        CURRENT_REQUEST.set(request)
         response = await self._gate(request, call_next)
         if csrf.COOKIE_NAME not in request.cookies:
             set_cookie(response, request, csrf.COOKIE_NAME, token, httponly=False)

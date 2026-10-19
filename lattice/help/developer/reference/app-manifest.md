@@ -27,6 +27,11 @@ What an app adds to a host. Listed once per app package.
 | `forms` | `list[FormSpec]` | `[]` | JSON Schema forms: /_form/{key}/render |
 | `schemas` | `list[SchemaDef]` | `[]` | named schemas forms can apply |
 | `documents` | `list[DocumentKind]` | `[]` | kinds in the document store |
+| `references` | `list[ReferenceKind]` | `[]` | Working with other apps (ADR 0011): kinds of record others may reference, panels on other apps' record pages, events this app announces and receives, and outboxes to read. |
+| `panels` | `list[RecordPanel]` | `[]` |  |
+| `publishes` | `list[str]` | `[]` | event types: "{key}.{event}" |
+| `subscribes` | `dict[str, Subscriber]` | `{}` | event type -> handler |
+| `feeds` | `list[EventFeed]` | `[]` |  |
 | `search` | `list[SearchProvider]` | `[]` | extra Ctrl+J sources |
 | `tiles` | `list[HomeTile]` | `[]` | count tiles on the home page |
 | `templates` | `Path \| None` | `None` | Folder holding templates/{key}/…; searched before core templates. |

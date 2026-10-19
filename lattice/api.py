@@ -33,7 +33,9 @@ from lattice.components.grid import (
     render_grid_page,
 )
 from lattice.components.manifest import AppManifest
-from lattice.components.record import Link, Panel, RecordPage, render_record_page
+from lattice.components.record import Link, Panel, RecordPage, RecordPanel, render_record_page
+from lattice.components.references import Ref, ReferenceKind, Resolved, parse, urn
+from lattice.components.references import resolve as resolve_ref
 from lattice.components.search.providers import SearchProvider, SearchResult
 from lattice.components.tiles import HomeTile
 from lattice.kernel.auth.csrf import csrf_protect
@@ -42,6 +44,7 @@ from lattice.kernel.auth.permissions import Permission
 from lattice.kernel.config import settings
 from lattice.kernel.database import Db, NotFound, get_db, transaction
 from lattice.kernel.dev_seed import DEV_USERS
+from lattice.kernel.events import CloudEvent, EventFeed
 from lattice.kernel.nav import NavNode
 from lattice.kernel.services import audit, users
 from lattice.kernel.sql import Query, sql_queries
@@ -55,6 +58,9 @@ __all__ = [
     "Palette", "View", "build_grid", "render_grid_page",
     # Record pages
     "RecordPage", "Panel", "Link", "render_record_page",
+    # Working across apps (ADR 0011)
+    "Ref", "ReferenceKind", "Resolved", "urn", "parse", "resolve_ref", "RecordPanel",
+    "CloudEvent", "EventFeed",
     # Charts
     "ChartSpec", "Count", "Sum", "Avg", "Min", "Max", "Time", "Threshold", "build_chart",
     # Forms from JSON Schema

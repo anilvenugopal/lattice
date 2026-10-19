@@ -222,6 +222,7 @@ def _related(request: Request, db: Db, row: dict) -> dict:
 
 DETAIL = RecordPage(
     grid=GRID, nav_key="grids.item", title="{ref} · {name}", status="status", crumb="{ref}",
+    reference_kind="showcase.item",       # other apps' panels for items appear here
     properties=["ref", "status", "priority", "owner", "category", "amount", "progress", "score",
                 "tags", "country", "parent_ref", "due_on", "updated_at"],
     links=[Link("Edit", "/showcase/items/{id}/edit", icon="edit", tone="primary",

@@ -73,9 +73,10 @@ before the next starts.
    (stepper, tree and graph).
 6. **The showcase.** Done: one app, one page per capability on sample data,
    replaces the demo.
-7. **Integration framework:** URN references, record panels, the CloudEvents
-   bus and its outbox reader.
-8. **The showcase apps use the framework.**
+7. **Integration framework.** Done: URN references, record panels, the
+   CloudEvents bus and event feeds.
+8. **The showcase uses the framework.** Done: the Comments app comments on any
+   record; the showcase reacts to new comments.
 9. **Taskline in the ecosystem:** Taskline in its own repository with its
    public contract; in Lattice, an async engine, grid data sources and database
    bindings; then the `lattice-taskline` app and Ops console.

@@ -30,3 +30,8 @@ UPDATE showcase.message SET folder = :folder WHERE id = ANY(:ids);
 -- name: delete
 -- Delete messages.
 DELETE FROM showcase.message WHERE id = ANY(:ids);
+
+-- name: notify
+-- Put a message in one user's inbox, from Lattice itself.
+INSERT INTO showcase.message (owner_id, sender_name, sender_email, subject, body)
+VALUES (:owner_id, :sender_name, 'notifications@lattice.local', :subject, :body);

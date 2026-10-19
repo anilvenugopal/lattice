@@ -78,3 +78,7 @@ UPDATE showcase.item SET starred = NOT starred WHERE id = ANY(:ids);
 -- name: delete
 -- Delete items.
 DELETE FROM showcase.item WHERE id = ANY(:ids);
+
+-- name: owner
+-- Who owns an item, for a notification.
+SELECT i.ref, i.name, i.owner_id FROM showcase.item i WHERE i.id = :id;

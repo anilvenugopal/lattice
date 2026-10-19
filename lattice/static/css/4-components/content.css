@@ -98,3 +98,9 @@ a.stat:hover { text-decoration: none; border-color: var(--border-strong); box-sh
 .statusbar__end { margin-left: auto; display: flex; align-items: center; gap: var(--sp-3); }
 .statusbar__env { padding: 0 6px; font-weight: var(--fw-semibold); letter-spacing: 0.04em; background: var(--wash-on-dark); border-radius: var(--r-sm); }
 .statusbar__env--development { color: var(--text-on-accent); background: var(--accent); }
+
+/* References to records in any app: {{ ref(urn) }} (components/references.py). */
+.ref { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--sp-1); min-width: 0; }
+.ref__title { font-weight: var(--fw-medium); }
+.ref__sub { font-size: var(--fs-sm); color: var(--text-3); }
+.ref--missing { font-size: var(--fs-md); font-style: italic; color: var(--text-3); }

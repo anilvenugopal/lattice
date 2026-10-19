@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "lattice-comments"
+version = "0.1.0"
+description = "Comments on any record in any Lattice app, by reference."
+requires-python = ">=3.14"
+dependencies = ["lattice"]
+
+[tool.uv.sources]
+lattice = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["lattice_comments"]

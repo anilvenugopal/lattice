@@ -420,7 +420,7 @@ are not listed open the app's help home.
 
 ## Step 9: Add the app to the host
 
-The showcase host runs the showcase app. Add Notes to it.
+The showcase host runs the showcase and Comments apps. Add Notes to it.
 
 1. **Install the package.** In the root `pyproject.toml`:
    - add `"lattice-notes"` to the `dev` dependency group;
@@ -428,18 +428,20 @@ The showcase host runs the showcase app. Add Notes to it.
    - add `"apps/notes/tests"` to `testpaths`;
    - add `"lattice_notes"` to ruff's `known-first-party`.
 2. **Import rules.** In the same file, under `[tool.importlinter]`, add
-   `"lattice_notes"` to `root_packages`, and to `source_modules` in the two app
-   contracts. `make lint` then checks that Notes imports only `lattice.api`.
+   `"lattice_notes"` to `root_packages`, to `source_modules` in the two app
+   contracts, and to the `modules` of the independence contract. `make lint` then
+   checks that Notes imports only `lattice.api` and no other app.
 3. **Host dependency.** In `hosts/showcase/pyproject.toml`, add `"lattice-notes"` to
    `dependencies` and the same `[tool.uv.sources]` line.
 4. **Register the app.** In `hosts/showcase/showcase_host/main.py`:
 
    ```python
-   import lattice_showcase
+   import lattice_comments
    import lattice_notes
+   import lattice_showcase
    from lattice.host import create_app
 
-   app = create_app(apps=[lattice_showcase.APP, lattice_notes.APP])
+   app = create_app(apps=[lattice_showcase.APP, lattice_comments.APP, lattice_notes.APP])
    ```
 
 Then install the package and create the table:

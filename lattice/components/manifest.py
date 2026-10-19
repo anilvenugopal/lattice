@@ -12,10 +12,13 @@ from lattice.components.chart import ChartSpec
 from lattice.components.documents import DocumentKind
 from lattice.components.forms import FormSpec, SchemaDef
 from lattice.components.grid import GridSpec
+from lattice.components.record import RecordPanel
+from lattice.components.references import ReferenceKind
 from lattice.components.search.providers import SearchProvider
 from lattice.components.tiles import HomeTile
 from lattice.kernel.auth.permissions import Permission
 from lattice.kernel.database import Db
+from lattice.kernel.events import EventFeed, Subscriber
 from lattice.kernel.nav import NavNode
 
 
@@ -36,6 +39,13 @@ class AppManifest:
     forms: list[FormSpec] = field(default_factory=list)  # JSON Schema forms: /_form/{key}/render
     schemas: list[SchemaDef] = field(default_factory=list)  # named schemas forms can apply
     documents: list[DocumentKind] = field(default_factory=list)  # kinds in the document store
+    # Working with other apps (ADR 0011): kinds of record others may reference, panels on
+    # other apps' record pages, events this app announces and receives, and outboxes to read.
+    references: list[ReferenceKind] = field(default_factory=list)
+    panels: list[RecordPanel] = field(default_factory=list)
+    publishes: list[str] = field(default_factory=list)      # event types: "{key}.{event}"
+    subscribes: dict[str, Subscriber] = field(default_factory=dict)  # event type -> handler
+    feeds: list[EventFeed] = field(default_factory=list)
     search: list[SearchProvider] = field(default_factory=list)  # extra Ctrl+J sources
     tiles: list[HomeTile] = field(default_factory=list)  # count tiles on the home page
     # Folder holding templates/{key}/…; searched before core templates.

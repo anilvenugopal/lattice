@@ -5,6 +5,7 @@ requires-python = ">=3.14"
 [manifest]
 members = [
     "lattice",
+    "lattice-comments",
     "lattice-showcase",
     "lattice-showcase-host",
 ]
@@ -520,6 +521,7 @@ dependencies = [
 dev = [
     { name = "cryptography" },
     { name = "import-linter" },
+    { name = "lattice-comments" },
     { name = "lattice-showcase" },
     { name = "lattice-showcase-host" },
     { name = "pytest" },
@@ -549,11 +551,23 @@ requires-dist = [
 dev = [
     { name = "cryptography" },
     { name = "import-linter" },
+    { name = "lattice-comments", editable = "apps/comments" },
     { name = "lattice-showcase", editable = "apps/showcase" },
     { name = "lattice-showcase-host", editable = "hosts/showcase" },
     { name = "pytest" },
     { name = "ruff" },
 ]
+
+[[package]]
+name = "lattice-comments"
+version = "0.1.0"
+source = { editable = "apps/comments" }
+dependencies = [
+    { name = "lattice" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "lattice", editable = "." }]
 
 [[package]]
 name = "lattice-showcase"
@@ -572,12 +586,14 @@ version = "0.1.0"
 source = { editable = "hosts/showcase" }
 dependencies = [
     { name = "lattice" },
+    { name = "lattice-comments" },
     { name = "lattice-showcase" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "lattice", editable = "." },
+    { name = "lattice-comments", editable = "apps/comments" },
     { name = "lattice-showcase", editable = "apps/showcase" },
 ]
 

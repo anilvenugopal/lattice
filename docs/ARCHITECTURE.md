@@ -516,7 +516,7 @@ Not yet placed in the order of work. Each will get its own plan when it is start
 
 ## 10. Where Lattice is today
 
-Steps 1 to 6 are done. What remains:
+Steps 1 to 8 are done. What remains:
 
 | Area | Today | Target |
 |---|---|---|
@@ -525,8 +525,8 @@ Steps 1 to 6 are done. What remains:
 | Database | Postgres 17; one database, a schema and SQL migrations per app; named SQL queries, no ORM | Unchanged; bindings to separate databases when an app needs one |
 | Permissions | Declared by apps, grouped into roles that administrators edit | + per-binding scopes |
 | Grid | Named SQL query, offset paging, a time limit, sync | Data sources, keyset paging, async sources |
-| Cross-app | None yet; standards decided ([ADR 0011](adr/0011-integration-standards.md)) | URN references, record panels, CloudEvents |
-| Components | Grid with saved views, charts, record page, JSON Schema forms and the document store, stepper, tree, graph; Ctrl+J, help, tiles, macros, timeline | + panels from other apps on the record page |
+| Cross-app | URN references with resolvers, record panels, CloudEvents on an in-process bus, event feeds from outboxes ([ADR 0011](adr/0011-integration-standards.md)) | CloudEvents over HTTP, with API tokens |
+| Components | Grid with saved views, charts, record page with other apps' panels, JSON Schema forms and the document store, stepper, tree, graph; Ctrl+J, help, tiles, macros, timeline | Unchanged |
 | CSS | Five ITCSS layers; app stylesheets scoped by `data-app`; host theme limited to brand tokens; all checked | Unchanged; `--app-accent` read by core when an app needs an accent |
 | Branding | Settings for name and logos; host folder (`theme.css`, page overrides); icon registry; named slots | Unchanged |
 | Settings | `LATTICE_` prefix | + per-app prefixes (`LATTICE_{KEY}_`) |
@@ -572,10 +572,13 @@ before the next starts.
 6. **The showcase.** Done ([plan](plans/step-6-showcase.md)): the demo app
    is replaced by `apps/showcase`, one page per capability on sample data, each
    saying what it shows and what it is built with.
-7. **Integration framework:** URN references with resolvers, record panels, and
-   the CloudEvents bus, with its outbox reader ([ADR 0011](adr/0011-integration-standards.md)).
-8. **The showcase apps use the framework,** cooperating through references,
-   panels and events.
+7. **Integration framework.** Done ([plan](plans/step-7-integration-framework.md)):
+   URN references with resolvers, record panels, the CloudEvents bus, and event
+   feeds that read outboxes ([ADR 0011](adr/0011-integration-standards.md)).
+8. **The showcase uses the framework.** Done: a second app, Comments, comments
+   on any record by reference; the showcase resolves its items and specs, shows
+   the Comments panel on item pages, and tells an item's owner about new
+   comments.
 9. **Taskline in the ecosystem:**
    - Taskline moves to its own repository, and its public contract is built
      (`docs/integrations/taskline-requirements.md`);

@@ -49,6 +49,20 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `Link` | class | A header button that opens a page, e.g. the record's edit form. |
 | `render_record_page` `(request, db, page, record_id, **extra)` | function | The record page for one row. Extra keyword arguments reach the panel templates. |
 
+## Working across apps (ADR 0011)
+
+| Name | Kind | Description |
+|---|---|---|
+| `Ref` | class | A parsed reference. |
+| `ReferenceKind` | class |  |
+| `Resolved` | class | What a reference shows: its title, link and, optionally, a status badge. |
+| `urn` `(kind, record_id)` | function | The reference to one record: urn("showcase.item", 42) -> "urn:lattice:showcase.item:42". |
+| `parse` `(value)` | function |  |
+| `resolve_ref` `(db, user, value)` | function | The reference as this user may see it; None for an unknown kind, a missing record, or one the user may not see. |
+| `RecordPanel` | class | A panel an app adds to other apps' record pages, matched on reference kind (ADR 0011). |
+| `CloudEvent` | class | A CloudEvents 1.0 event, as subscribers receive it. |
+| `EventFeed` | class | Another system's outbox, read into the bus: a named query returning CloudEvent columns (id, type, source, subject, time, data) for rows with `id > :after`, in id order, at most `:limit`. The host polls it and keeps its cursor in lattice.event_feed. |
+
 ## Charts
 
 | Name | Kind | Description |
@@ -110,8 +124,8 @@ from lattice.api import AppManifest, GridSpec, render_page
 | Name | Kind | Description |
 |---|---|---|
 | `Db` | class | Runs named queries on one connection, inside its transaction. |
-| `get_db` `()` | function | Route dependency: the request's `Db`, in one transaction for the whole request. |
-| `transaction` `()` | function | A `Db` in its own transaction: committed on success, rolled back on an exception. |
+| `get_db` `(request)` | function | Route dependency: the request's `Db`, in one transaction for the whole request. Also on `request.state.db`, for template helpers such as `ref()`. |
+| `transaction` `()` | function | A `Db` in its own transaction: committed on success, rolled back on an exception. Work queued in `db.after_commit` (event delivery) runs once the commit succeeds. |
 | `NotFound` | class | `Db.one` found no row. Routes turn it into a 404. |
 | `Query` | class |  |
 | `sql_queries` `(folder)` | function | Load every `*.sql` file in `folder` (not its `schema/` migrations). Loaded once. |

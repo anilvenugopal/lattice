@@ -128,6 +128,12 @@ the layers below it. Apps import only `lattice.api`.
   - grid keys start with `{key}.`;
   - templates live in `templates/{key}/`, static files in `static/` (served at
     `/static/{key}/`), icons as `{key}:name`, slot templates in `{key}/`.
+- **Across apps** (ADR 0011): refer to another app's record by URN
+  (`urn:lattice:{kind}:{id}`, drawn with `{{ ref(urn) }}`), never by foreign key;
+  declare `references=` (kinds and resolvers), `panels=` (RecordPanels on other
+  apps' record pages), `publishes=` and `subscribes=` (CloudEvents, delivered after
+  commit) and `feeds=` (outboxes). Guide:
+  `lattice/help/developer/building-apps/working-across-apps.md`.
 - Background work: `background=` (an async function started with the host).
   Example data: `seed=` (run by `lattice seed`).
 

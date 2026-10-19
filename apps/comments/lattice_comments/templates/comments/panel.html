@@ -1,0 +1,25 @@
+{# The Comments panel, on any record page (RecordPanel) and redrawn by POST /comments/…:
+   `subject` is the record's Ref, `values` comes from comments._panel(). #}
+<div class="comments" data-app="comments">
+  {% for c in values.comments %}
+  <article class="comments__item">
+    <header class="comments__meta">
+      <strong>{{ c.author or "Someone" }}</strong> · {{ time_tag(c.created_at) }}
+      {% if values.can_moderate or (values.can_write and c.author_id == values.user_id) %}
+      <button type="button" class="icon-btn icon-btn--sm comments__delete" aria-label="Delete comment"
+              hx-post="/comments/{{ c.id }}/delete" hx-target="closest .comments" hx-swap="outerHTML">{{ icon('trash', 13) }}</button>
+      {% endif %}
+    </header>
+    <p class="comments__body">{{ c.body }}</p>
+  </article>
+  {% else %}
+  <p class="u-muted">No comments yet.</p>
+  {% endfor %}
+  {% if values.can_write %}
+  <form class="comments__form" hx-post="/comments/add" hx-target="closest .comments" hx-swap="outerHTML">
+    <input type="hidden" name="subject" value="{{ subject.urn }}">
+    <textarea class="input" name="body" rows="2" placeholder="Add a comment" aria-label="Comment" required></textarea>
+    <button type="submit" class="btn btn--sm">Comment</button>
+  </form>
+  {% endif %}
+</div>

@@ -2,12 +2,13 @@
   The record page (lattice/components/record.py): header with status, links and the grid's
   row actions; Details from the grid's columns; the app's panels; the audit history.
   Panel templates receive `record` (the row), `page` (the RecordPage) and `values` (from Panel.load).
+  Other apps' RecordPanels receive `subject` (the record's Ref) and `values`, not the row.
   Client behaviour: static/js/record.js (Alpine component `recordPage`).
 #}
 {% extends "base/shell.html" %}
 {% from "components/macros.html" import page_header, card, prop_list, timeline %}
 {% from "components/grid.html" import action_dialog %}
-{% from "components/grid_cell.html" import cell %}
+{% from "components/grid_cell.html" import cell with context %}
 {% block main %}
 {% set status_col = spec.column(page.status) if page.status else none %}
 <div class="page stack-lg record" id="record" x-data='recordPage({{ config | tojson }})'>
@@ -27,7 +28,7 @@
   {% set main_panels = panels | selectattr("panel.place", "equalto", "main") | list %}
   {% set side_panels = panels | selectattr("panel.place", "equalto", "side") | list %}
   {% macro panel_card(p) -%}
-    {% call card(p.label, flush=p.panel.flush) %}{% set values = p["values"] %}{% include p.panel.template %}{% endcall %}
+    {% call card(p.label, flush=p.panel.flush) %}{% set values = p["values"] %}{% set subject = p.subject %}{% include p.panel.template %}{% endcall %}
   {%- endmacro %}
 
   <div class="grid-2 grid-2--wide-left">

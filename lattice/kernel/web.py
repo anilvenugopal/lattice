@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from contextvars import ContextVar
 from datetime import date, datetime
 from pathlib import Path
 from urllib.parse import quote
@@ -98,6 +99,11 @@ def money(value) -> str:
 def csrf_field(request: Request) -> Markup:
     token = escape(request.state.csrf_token)
     return Markup(f'<input type="hidden" name="csrf_token" value="{token}">')
+
+
+# The request being handled, for template helpers that need it inside macros imported
+# without context (e.g. `ref()` in a grid cell). Set by AuthMiddleware for every request.
+CURRENT_REQUEST: ContextVar[Request | None] = ContextVar("lattice_request", default=None)
 
 
 env.globals.update(

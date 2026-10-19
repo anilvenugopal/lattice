@@ -1,0 +1,9 @@
+/* Comments panel, wherever it appears. Components layer, scoped to the app (ADR 0010). */
+@layer components {
+[data-app="comments"] .comments__item { padding: var(--sp-2) 0; border-bottom: 1px solid var(--border-faint); }
+[data-app="comments"] .comments__meta { display: flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-sm); color: var(--text-3); }
+[data-app="comments"] .comments__meta strong { color: var(--text); font-weight: var(--fw-medium); }
+[data-app="comments"] .comments__delete { margin-left: auto; }
+[data-app="comments"] .comments__body { margin: var(--sp-1) 0 0; font-size: var(--fs-md); white-space: pre-wrap; }
+[data-app="comments"] .comments__form { display: flex; flex-direction: column; align-items: flex-end; gap: var(--sp-2); margin-top: var(--sp-3); }
+}

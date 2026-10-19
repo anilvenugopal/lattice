@@ -20,7 +20,8 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException
 
-from lattice.components import forms, tiles
+from lattice.components import forms, references, tiles
+from lattice.components import record as record_component
 from lattice.components.chart import router as chart_router
 from lattice.components.forms import render as form_router
 from lattice.components.grid import router as grid_router
@@ -32,7 +33,7 @@ from lattice.components.help import search as help_search
 from lattice.components.manifest import AppManifest
 from lattice.components.search import providers as search_providers
 from lattice.components.search import router as search_router
-from lattice.kernel import css_rules, icons, nav, slots
+from lattice.kernel import css_rules, events, icons, nav, slots
 from lattice.kernel.auth import permissions
 from lattice.kernel.auth import routes as auth_routes
 from lattice.kernel.auth.middleware import AuthMiddleware, is_htmx
@@ -75,6 +76,12 @@ def _check(app: AppManifest) -> None:
     for spec in app.forms:
         if not spec.key.startswith(app.key + "."):
             fail(f"form key {spec.key!r} must start with {app.key + '.'!r}")
+    for name, items in (("reference kind", [k.key for k in app.references]),
+                        ("record panel", [p.key for p in app.panels]),
+                        ("event type", app.publishes), ("event feed", [f.key for f in app.feeds])):
+        for key in items:
+            if not key.startswith(app.key + "."):
+                fail(f"{name} {key!r} must start with {app.key + '.'!r}")
     for kind in app.documents:
         if not kind.key.startswith(app.key + "."):
             fail(f"document kind {kind.key!r} must start with {app.key + '.'!r}")
@@ -141,6 +148,15 @@ def _register(app: AppManifest, platform: bool) -> None:
     for kind in app.documents:
         forms.register_schema(kind.schema_def())
         forms.register_form(kind.form)
+    for kind in app.references:
+        references.register(kind)
+    record_component.PANELS.extend(app.panels)
+    for event_type in app.publishes:
+        events.PUBLISHED[event_type] = app.key
+    for event_type, handler in app.subscribes.items():
+        events.SUBSCRIBERS.setdefault(event_type, []).append((app.key, handler))
+    for feed in app.feeds:
+        events.FEEDS[feed.key] = feed
     for tile in app.tiles:
         tiles.register_tile(tile)
     for provider in app.search:
@@ -162,6 +178,24 @@ def _load_help(ordered: list[tuple[AppManifest, str]], platform: list[AppManifes
     search_providers.register_provider(help_provider.PROVIDER)
 
 
+def _check_contracts(app_keys: set[str]) -> None:
+    """Catch typos between apps: a subscription or panel that names another app in this host
+    must name an event type or reference kind that app declares. Naming an app the host
+    doesn't run is fine: that subscription or panel simply never applies."""
+    for event_type, handlers in events.SUBSCRIBERS.items():
+        if event_type.split(".")[0] in app_keys and event_type not in events.PUBLISHED:
+            apps = ", ".join(sorted({app for app, _ in handlers}))
+            raise AppError(f"App {apps!r} subscribes to {event_type!r}, which its app does "
+                           "not publish")
+    for panel in record_component.PANELS:
+        if panel.kinds != "*":
+            unknown = [k for k in panel.kinds
+                       if k.split(".")[0] in app_keys and k not in references.KINDS]
+            if unknown:
+                raise AppError(f"Record panel {panel.key!r} names reference kinds no app "
+                               f"declares: {', '.join(unknown)}")
+
+
 def _check_permissions() -> None:
     """Every permission a page, grid, action, Ctrl+J source or help topic names is declared."""
     named = [(f"nav node {n.key!r}", n.permission) for n in nav.NODES]
@@ -170,6 +204,7 @@ def _check_permissions() -> None:
         named += [(f"action {spec.key}.{a.key}", a.permission) for a in spec.actions]
     named += [(f"chart {c.key!r}", c.permission) for c in chart_router.REGISTRY.values()]
     named += [(f"form {f.key!r}", f.permission) for f in forms.FORMS.values()]
+    named += [(f"record panel {p.key!r}", p.permission) for p in record_component.PANELS]
     named += [(f"Ctrl+J source {p.key!r}", p.permission) for p in search_providers.registered()]
     named += [(f"help topic {t.url}", t.permission)
               for app in help_content.HELP.values() for t in app.topics.values()]
@@ -188,6 +223,9 @@ def _reset_registries() -> None:
     chart_router.REGISTRY.clear()
     forms.FORMS.clear()
     forms.SCHEMAS.clear()
+    references.KINDS.clear()
+    record_component.PANELS.clear()
+    events.reset()
     tiles.TILES.clear()
     search_providers.reset()
 
@@ -221,6 +259,7 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
         _register(app, platform=app in platform_first + platform_last)
     _load_help(ordered, platform_first + platform_last)
     _check_permissions()
+    _check_contracts({a.key for a, _ in ordered})
     icons.set_host_icons(icons_override or {})
     for slot_name, template in (slot_templates or {}).items():
         slots.add(slot_name, template)
@@ -237,6 +276,8 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
     @asynccontextmanager
     async def lifespan(_: FastAPI):
         tasks = [asyncio.create_task(a.background()) for a, _ in ordered if a.background]
+        if events.FEEDS and settings.app_env != "test":     # tests read feeds themselves
+            tasks.append(asyncio.create_task(events.run_feeds()))
         yield
         for task in tasks:
             task.cancel()

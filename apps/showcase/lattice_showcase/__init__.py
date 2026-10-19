@@ -8,7 +8,7 @@ data; nothing here models a business.
 from pathlib import Path
 
 from lattice.api import AppManifest, NavNode
-from lattice_showcase import charts, flows, inbox, items, jobs, overview, specs
+from lattice_showcase import charts, flows, inbox, items, jobs, links, overview, specs
 from lattice_showcase.seed import seed
 
 HERE = Path(__file__).parent
@@ -33,6 +33,8 @@ APP = AppManifest(
     charts=charts.CHARTS,
     documents=[specs.SPEC, specs.NOTE],
     forms=[specs.FREEFORM],
+    references=links.REFERENCES,
+    subscribes={"comments.added": links.notify_owner},
     permissions=[*items.PERMISSIONS, *specs.PERMISSIONS],
     tiles=[*items.TILES, *jobs.TILES, *inbox.TILES],
     background=jobs.background,

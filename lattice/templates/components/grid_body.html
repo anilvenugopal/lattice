@@ -1,5 +1,5 @@
 {# Table, footer and pager. Rendered inside components/grid.html and alone by GET /_grid/{key}/rows. #}
-{% from "components/grid_cell.html" import cell %}
+{% from "components/grid_cell.html" import cell with context %}
 {% from "components/macros.html" import empty_state %}
 {% set spec = grid.spec %}{% set page = grid.page %}
 {% set multi = spec.selection == "multi" %}

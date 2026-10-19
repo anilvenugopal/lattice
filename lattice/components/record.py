@@ -20,6 +20,7 @@ from fastapi import HTTPException, Request
 from lattice.components.grid import engine
 from lattice.components.grid.render import field_config
 from lattice.components.grid.spec import GridSpec
+from lattice.components.references import Ref
 from lattice.kernel.database import Db
 from lattice.kernel.services import audit
 from lattice.kernel.web import fmt, fmt_url, render_page
@@ -37,6 +38,31 @@ class Panel:
     place: Literal["main", "side", "full"] = "main"  # left column, right column, or full width below
     permission: str = ""            # who sees it; empty = everyone who can open the record
     flush: bool = False             # no padding in the card body, e.g. for a grid
+
+
+@dataclass
+class RecordPanel:
+    """A panel an app adds to other apps' record pages, matched on reference kind (ADR 0011).
+
+    It works from the record's reference, not the other app's row: its template receives
+    `subject` (a Ref, with .urn, .kind and .id) and `values` from `load`.
+    """
+
+    key: str                        # "{app}.{name}", unique in the host
+    label: str                      # card heading
+    template: str                   # "{app}/…html"
+    kinds: list[str] | str = "*"    # reference kinds it applies to, or "*" for every kind
+    # (request, db, subject) -> template values; None: none
+    load: Callable[[Request, Db, Ref], dict] | None = None
+    place: Literal["main", "side", "full"] = "side"
+    permission: str = ""
+    flush: bool = False
+
+    def applies(self, kind: str) -> bool:
+        return self.kinds == "*" or kind in self.kinds
+
+
+PANELS: list[RecordPanel] = []
 
 
 @dataclass
@@ -67,6 +93,9 @@ class RecordPage:
     history: bool = True            # the audit timeline of the grid's actions on this row
     back: str = ""                  # "Back to list" target; default: the grid's path
     crumb: str = ""                 # breadcrumb text, formatted with the row; default: title
+    # The record's reference kind ("showcase.item"): other apps' RecordPanels for it appear
+    # after the app's own panels. Empty: none.
+    reference_kind: str = ""
 
     def __post_init__(self):
         unknown = [k for k in self.properties + ([self.status] if self.status else [])
@@ -99,6 +128,13 @@ def render_record_page(request: Request, db: Db, page: RecordPage, record_id: An
         if user.can(panel.permission):
             values = panel.load(request, db, row) if panel.load else {}
             panels.append({"panel": panel, "label": fmt(panel.label, row), "values": values})
+    if page.reference_kind:
+        subject = Ref(page.reference_kind, str(row["id"]))
+        for panel in PANELS:
+            if panel.applies(subject.kind) and user.can(panel.permission):
+                values = panel.load(request, db, subject) if panel.load else {}
+                panels.append({"panel": panel, "label": panel.label, "values": values,
+                               "subject": subject})
     title = fmt(page.title, row)
     return render_page(
         request, "components/record_page.html", page.nav_key,
