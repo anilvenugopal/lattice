@@ -16,12 +16,12 @@ reach the target, are in the last two sections.
 |---|---|---|
 | **Kernel** | The platform services every application uses: application registry, auth, users, permissions, navigation, search, references, events, audit, preferences, settings, database bindings, migrations | `lattice.kernel` |
 | **Component** | A UI element any page can embed, declared in Python, rendered by a template, driven by its own JS and CSS | grid, form, chart, graph, stepper, tree, timeline, record view |
-| **Application (app)** | A Python package that adds pages, data and behaviour through an `AppManifest` | `lattice-taskline`, `lattice-incidents`, `strategiq-web` |
-| **Service app** | An app other apps use: it offers panels, search, references and events, and has no business domain of its own | Jobs (taskline), Incidents, Notifications |
+| **Application (app)** | A Python package that adds pages, data and behaviour through an `AppManifest` | `taskline-ui`, `lattice-incidents`, `strategiq-web` |
+| **Service app** | An app other apps use: it offers panels, search, references and events, and has no business domain of its own | Taskline UI, Incidents, Comments |
 | **Business app** | An app for one business domain. It may use service apps | strategiq, a risk workbench |
 | **Host** | A deployable web application: Lattice plus a chosen list of apps plus configuration | `strategiq-web`, an Ops console |
 | **Binding** | A named database connection an app declares, mapped to a URL by the host | `taskline.default`, `taskline.prod` |
-| **Reference** | A pointer to a record in any app: a URN, `urn:lattice:{kind}:{id}` (ADR 0011) | `urn:lattice:strategiq.submission:123`, `urn:lattice:taskline.run:9f2…` |
+| **Reference** | A pointer to a record in any app: a URN, `urn:lattice:{kind}:{id}` (ADR 0011) | `urn:lattice:strategiq.submission:123`, `urn:lattice:taskline.run:9f2…` (built by Taskline UI) |
 | **Record panel** | A section an app contributes to other apps' record pages | the "Jobs" panel on a strategiq document |
 
 ## 2. Layers
@@ -33,7 +33,7 @@ reach the target, are in the last two sections.
 ├──────────────────────────────────────────────────────────────────┤
 │ Business apps   strategiq · risk workbench · …                   │
 ├──────────────────────────────────────────────────────────────────┤
-│ Service apps    taskline (Jobs) · incidents · notifications      │
+│ Service apps    Taskline UI · comments · incidents               │
 ├──────────────────────────────────────────────────────────────────┤
 │ Components      grid · form · chart · graph · stepper · tree ·   │
 │                 timeline · record view                           │
@@ -91,7 +91,7 @@ the service apps it needs):
 |---|---|---|
 | `lattice` | The core package and the showcase apps | — |
 | `taskline` | The job engine (a library, no UI) | — (never on Lattice) |
-| `lattice-taskline` | The Taskline UI app, and an Ops console host | `lattice`, `taskline` |
+| `taskline-ui` | Taskline UI: the admin screens for Taskline, a Lattice app ([ADR 0012](adr/0012-taskline-ui-and-contract.md)) | `lattice`, `taskline` |
 | `lattice-incidents` | The Incidents app | `lattice` |
 | `strategiq`, … | Business apps and their hosts | `lattice`, and the service apps they use |
 
@@ -129,29 +129,24 @@ Every app package exposes one `AppManifest`. The host passes the manifests to
 `create_app`.
 
 ```python
-# lattice_taskline/__init__.py
+# taskline_ui/__init__.py (Taskline UI, in its own repository)
 APP = AppManifest(
-    key="taskline",                         # URL prefix, template folder, settings prefix, permission prefix
+    key="taskline",                         # URL prefix, template folder, permission prefix
     label="Jobs",
     icon="taskline:app",                    # from the app's own icons; follows the theme
     icons={"app": "<path …/>"},
-    help_url="https://…/taskline",          # listed in the Help menu
-    permissions=[Permission("taskline.view"), Permission("taskline.operate")],
-    bindings=["default"],                   # or one per instance, see 6.4
+    permissions=[Permission("taskline.runs.view", …), Permission("taskline.runs.operate", …)],
     nav=[...],                              # NavNodes, under /taskline/...
     routers=[...],
-    grids=[...], search=[...], tiles=[...],
-    reference_kinds=[ReferenceKind("job_run", resolve=...)],
-    record_panels=[RecordPanel("Jobs", kinds="*", render=...)],
-    publishes=["job.failed", "job.succeeded"],
-    subscribes={},
-    migrations=None,                        # taskline migrates its own schema
-    settings=TasklineSettings,              # pydantic, env prefix LATTICE_TASKLINE_
+    grids=[...], search=[...], tiles=[...], # grids read Taskline's taskline_api views
+    references=[ReferenceKind("taskline.run", "Run", resolve_run)],
+    panels=[RecordPanel("taskline.jobs", "Jobs", "taskline/jobs_panel.html", kinds="*", …)],
+    sql=HERE / "sql",                       # named queries over taskline_api; Taskline migrates itself
     background=None,                        # optional async task started with the host
 )
 
 # host: strategiq-web
-app = create_app(apps=[lattice_taskline.APP, lattice_incidents.APP, strategiq_web.APP],
+app = create_app(apps=[strategiq_web.APP, taskline_ui.APP, lattice_comments.APP],
                  host_dir=Path(__file__).parent)      # templates/, static/theme.css
 ```
 
@@ -215,7 +210,7 @@ view. It does not need code for each service app.
 ### 4.4 Events
 
 Events are CloudEvents ([ADR 0011](adr/0011-integration-standards.md)): a
-`type` such as `taskline.run.failed`, a `subject` that is the record's URN, and
+`type` such as `comments.added`, a `subject` that is the record's URN, and
 small `data`. Inside a host they travel on an in-process bus. An app publishes
 inside its transaction, and the event is delivered after the commit:
 
@@ -223,19 +218,20 @@ inside its transaction, and the event is delivered after the commit:
 db.publish("comments.added", subject="urn:lattice:showcase.item:42", data={"comment_id": 7})
 ```
 
-Events from another process, such as Taskline's workers, arrive through an
-outbox the host reads. Events from remote systems arrive over HTTP, in the
-CloudEvents HTTP binding.
+Another process's state is read, not streamed: an app that must react to
+Taskline's finished runs reads `taskline_api.run` on a timer for a time window
+and remembers which runs it has handled ([ADR 0012](adr/0012-taskline-ui-and-contract.md)).
+Events from remote systems will arrive over HTTP, in the CloudEvents HTTP
+binding, when API tokens exist.
 
 Subscribers run in the publishing process, after the commit. For example,
-incidents subscribes to `job.failed` to open or update an incident, and
-notifications subscribes to `incidents.created`. Event types are
+the showcase subscribes to `comments.added` to tell an item's owner, and
+notifications will subscribe to `incidents.created`. Event types are
 `{app}.{event}`, and data is small: references and a few fields, never whole
 records.
 
 There is no delivery guarantee across a crash between the commit and the
-subscriber. If an event must survive that, the publisher adds an outbox table
-and the event is sent from it. Add that only for an event that needs it.
+subscriber. A reaction that must not be missed reads state instead, as above.
 
 ### 4.5 Permissions
 
@@ -280,7 +276,7 @@ The host owns the brand. Apps style only their own pages.
 
 ## 5. Data
 
-Postgres only. [ADR 0001](adr/0001-postgres-with-per-app-bindings.md), as
+Postgres 18 only (18 since [ADR 0012](adr/0012-taskline-ui-and-contract.md), for Taskline). [ADR 0001](adr/0001-postgres-with-per-app-bindings.md), as
 narrowed by the step 2 decisions (18 October 2026, recorded in
 [Decisions and direction](../lattice/help/developer/architecture/decisions.md)).
 
@@ -301,12 +297,13 @@ narrowed by the step 2 decisions (18 October 2026, recorded in
 - **No cross-app keys.** Apps refer to each other's records by reference, never
   by foreign key.
 - **Bindings, later.** A separate database for one app (the host maps a named
-  binding to its own URL) is not built. It comes when an app needs one, first
-  the taskline Ops console with one binding per taskline instance. Writes in two
+  binding to its own URL) is not built. It comes when an app needs one, such as
+  an Ops console over several Taskline instances (deferred, ADR 0012). Writes in two
   databases are then separate commits, and audit records and events are written
   after the app's commit.
-- **Sync now, async with taskline.** Lattice is sync. An async engine on the
-  same URL is added in step 9, when the Taskline app calls taskline's async API.
+- **Sync, with async actions.** Lattice's database access is sync. Grid actions
+  may be `async`, so an app can await a library's async API (Taskline's
+  commands, which use Taskline's own connection). Lattice has no async engine.
 - **Tests** create a Postgres database per test, copied from a template migrated
   once per run.
 
@@ -324,9 +321,11 @@ Every component checks the same permissions and uses the same action model.
 
 ### 6.1 Grid
 
-Today's grid ([Grids](../lattice/help/developer/building-apps/grids.md)) with one change: the rows come from a
-**data source** instead of only a named SQL query.
-[ADR 0008](adr/0008-grid-data-sources.md).
+Today's grid ([Grids](../lattice/help/developer/building-apps/grids.md)). Proposed, not built: rows from a
+**data source** instead of only a named SQL query
+([ADR 0008](adr/0008-grid-data-sources.md)). Taskline UI doesn't need it, since
+it reads Taskline's views with ordinary grids; it waits for an Ops console over
+several databases.
 
 ```python
 class GridSource(Protocol):
@@ -336,7 +335,6 @@ class GridSource(Protocol):
 ```
 
 - `SqlSource(query)` is today's behaviour and stays the default.
-- An async source wraps an async API, such as taskline's `Queries`.
 - A merged source combines several sources and sorts the result by one key. The
   taskline Ops console uses it to list runs from several instances together.
   This is why paging is keyset (a cursor), not offset: offsets cannot be merged
@@ -446,45 +444,49 @@ Built in step 5 ([Forms from JSON Schema](../lattice/help/developer/building-app
 - **Timeline:** the audit and event history (the `timeline` macro).
 - **Stat tiles:** home and dashboard counts.
 
-## 7. The taskline app
+## 7. Taskline UI
 
-`lattice-taskline` is the admin UI that taskline's requirements describe
-(FR-22, FR-35, FR-44). It also answers taskline's open question 2: the UI is a
-Lattice app, not part of the taskline package.
-[ADR 0006](adr/0006-taskline-as-lattice-app.md).
+Taskline UI (`taskline-ui`, package `taskline_ui`, app key `taskline`) is the
+admin UI that Taskline's requirements describe (FR-22, FR-35). It is a Lattice
+app in its own repository, built only from Lattice's components and Taskline's
+published contract ([ADR 0012](adr/0012-taskline-ui-and-contract.md), which
+updates [ADR 0006](adr/0006-taskline-as-lattice-app.md)).
 
-- **It uses taskline's public API only.** It reads through `taskline.queries`;
-  cancel, retry and schedule changes go through taskline's commands. It never
-  reads the `jobs` tables directly, so taskline can change its schema.
+```text
+   Taskline UI ──uses──► Lattice    (lattice.api)
+        │
+        └─────uses──► Taskline      (taskline_api views; async commands in taskline.api)
+
+   Lattice  ✗  never imports Taskline
+   Taskline ✗  never imports Lattice or Taskline UI
+```
+
+- **Reads** the `taskline_api` views (`run`, `task`, `reference`, `event`,
+  `queue`, `worker`, `instance`, later `schedule`) with Lattice grids and named
+  queries. Never the `jobs` tables.
+- **Acts** through Taskline's async commands (`cancel_run`, `retry_run`,
+  `requeue`, `submit_job`) from async grid actions, passing the user as `actor`.
+  They commit in Taskline's own transaction; Lattice's audit record follows.
+- **No events.** Taskline publishes none.
 - **Pages:**
   - Runs (grid; filters for status, producer, job, correlation id, reference, date);
-  - Run detail (stepper of task instances, event timeline, references, cancel and retry);
+  - Run detail (record page: stepper of tasks, event timeline, references, cancel and retry);
   - Lineage (tree, then graph);
-  - Queues and workers (counts, oldest waiting, live workers, reaper alive);
-  - Schedules (grid plus forms: create, pause, resume, delete);
-  - Run job (a form generated from the job's declared inputs).
-- **Contributions to other apps:**
-  - a Jobs record panel for any record kind;
-  - a `job_run` reference kind;
-  - a Ctrl+J provider;
-  - home tiles (running, failed);
-  - events `job.failed` and `job.succeeded`, from taskline hooks.
-- **Two modes, one package:**
-  - **Bundled.** Strategiq's host includes it with one binding: strategiq's
-    taskline database.
-  - **Ops console.** A host includes it with several bindings, one per taskline
-    instance. Every row id carries its instance (`prod/9f2…`), the grids have an
-    Instance column and filter, and lists across instances use a merged source
-    (6.1).
-- **Python 3.14.** Taskline requires it, so hosts that include this app run on
-  3.14. Lattice targets 3.14.
+  - Queues and workers;
+  - Schedules, when Taskline's scheduler exists;
+  - Run job (a form from the job's input JSON Schema).
+- **Contributions to other apps:** a Jobs record panel, the `taskline.run`
+  reference kind, a Ctrl+J provider and home tiles.
+- **One instance per host for now.** An Ops console over several instances is
+  deferred.
+- **Postgres 18 and Python 3.14,** as Taskline requires.
 
 ## 8. The incidents app (outline)
 
 `lattice-incidents` collects problems from every app in one place.
 
 - **Sources:**
-  - events (`job.failed` from taskline, and others);
+  - failed Taskline runs, read from `taskline_api.run` on a timer;
   - manual entry;
   - an ingestion API with tokens, for systems outside Lattice.
 - **Deduplication** by a fingerprint (source, kind, reference), so repeated
@@ -508,7 +510,7 @@ Its own design document comes before it is built.
 Not yet placed in the order of work. Each will get its own plan when it is started.
 
 1. **Notifications** service app: in-app notifications from events, email later.
-2. **Comments and attachments** on any record, keyed by reference.
+2. **Attachments** on any record, keyed by reference (comments exist, step 8).
 3. **API tokens and per-app JSON APIs** (OpenAPI, ADR 0011), for incident
    ingestion and calls between services.
 4. **Lattice's own background work on Taskline**, when the host includes it:
@@ -522,10 +524,10 @@ Steps 1 to 8 are done. What remains:
 |---|---|---|
 | Package | `lattice` core, `apps/showcase`, `hosts/showcase`, `lattice.api`, import contracts | Ecosystem apps in their own repositories |
 | Apps | `AppManifest` and `create_app(apps=[…])` with namespace checks | + settings, bindings, permissions, references, panels, events per manifest |
-| Database | Postgres 17; one database, a schema and SQL migrations per app; named SQL queries, no ORM | Unchanged; bindings to separate databases when an app needs one |
+| Database | Postgres 18; one database, a schema and SQL migrations per app; named SQL queries, no ORM | Unchanged; bindings to separate databases when an app needs one |
 | Permissions | Declared by apps, grouped into roles that administrators edit | + per-binding scopes |
 | Grid | Named SQL query, offset paging, a time limit, sync | Data sources, keyset paging, async sources |
-| Cross-app | URN references with resolvers, record panels, CloudEvents on an in-process bus, event feeds from outboxes ([ADR 0011](adr/0011-integration-standards.md)) | CloudEvents over HTTP, with API tokens |
+| Cross-app | URN references with resolvers, record panels, CloudEvents on an in-process bus ([ADR 0011](adr/0011-integration-standards.md)) | CloudEvents over HTTP, with API tokens |
 | Components | Grid with saved views, charts, record page with other apps' panels, JSON Schema forms and the document store, stepper, tree, graph; Ctrl+J, help, tiles, macros, timeline | Unchanged |
 | CSS | Five ITCSS layers; app stylesheets scoped by `data-app`; host theme limited to brand tokens; all checked | Unchanged; `--app-accent` read by core when an app needs an accent |
 | Branding | Settings for name and logos; host folder (`theme.css`, page overrides); icon registry; named slots | Unchanged |
@@ -561,8 +563,8 @@ before the next starts.
    permission. Binding scopes wait for bindings.
 4. **Integration standards.** Done: [ADR 0011](adr/0011-integration-standards.md)
    (URN references, CloudEvents, published views, OpenAPI) and this order of
-   work. What Taskline must provide is written up in
-   `docs/integrations/taskline-requirements.md`.
+   work. What Taskline must provide was agreed with Taskline on 19 October
+   ([ADR 0012](adr/0012-taskline-ui-and-contract.md), `docs/integrations/taskline.md`).
 5. **Core components.** Done ([plan](plans/step-5-core-components.md)):
    saved grid views, personal and shared; charts with Chart.js and its plugins
    ([ADR 0004](adr/0004-charts-chartjs.md)); the record page component; forms
@@ -573,21 +575,20 @@ before the next starts.
    is replaced by `apps/showcase`, one page per capability on sample data, each
    saying what it shows and what it is built with.
 7. **Integration framework.** Done ([plan](plans/step-7-integration-framework.md)):
-   URN references with resolvers, record panels, the CloudEvents bus, and event
-   feeds that read outboxes ([ADR 0011](adr/0011-integration-standards.md)).
+   URN references with resolvers, record panels and the CloudEvents bus
+   ([ADR 0011](adr/0011-integration-standards.md)). An event-feed reader was
+   built and then removed ([ADR 0012](adr/0012-taskline-ui-and-contract.md)).
 8. **The showcase uses the framework.** Done: a second app, Comments, comments
    on any record by reference; the showcase resolves its items and specs, shows
    the Comments panel on item pages, and tells an item's owner about new
    comments.
-9. **Taskline in the ecosystem:**
-   - Taskline moves to its own repository, and its public contract is built
-     (`docs/integrations/taskline-requirements.md`);
-   - in Lattice: an async database engine, grid data sources with keyset paging
-     ([ADR 0008](adr/0008-grid-data-sources.md)), and database bindings for
-     several instances;
-   - `lattice-taskline` in its own repository: runs, run detail with the
-     stepper, queues, workers, cancel and retry, run job, schedules, a Jobs
-     panel on any record, and an Ops console host.
+9. **Taskline UI** ([ADR 0012](adr/0012-taskline-ui-and-contract.md)):
+   - Taskline builds its public contract: the `taskline_api` views and async
+     commands, released as 0.2.0 (its plan steps 8 to 11);
+   - in Lattice: async grid actions (done) and Postgres 18 (done);
+   - Taskline UI in its own repository, `taskline-ui`: runs, run detail with the
+     stepper, queues, workers, cancel and retry, run job, a Jobs panel on any
+     record.
 10. **Incidents** in its own repository, after its own design document.
 
 ## 12. Open questions

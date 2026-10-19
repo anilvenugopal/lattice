@@ -268,6 +268,21 @@ All of it is one transaction, saved when the request succeeds.
 
 **If the handler raises, nothing is saved:** neither its changes nor the audit events.
 
+**A handler may be `async def`.** The endpoint awaits it, so it can call a
+library's async API, such as Taskline's commands:
+
+```python
+async def cancel(ctx: ActionContext) -> str:
+    for run_id in ctx.ids:
+        await taskline.api.cancel_run(run_id, actor=f"lattice:user:{ctx.user.id}")
+    return f"Cancelled {ctx.count} run(s)."
+```
+
+Such a library commits its own work in its own transaction, before the
+request's. If the request then failed, the library's change would stand without
+Lattice's audit event, so record what you need in the library too (Taskline
+records the `actor`).
+
 Options for a `select` field or a filter can be a list of `(value, label)`
 pairs or a function `(db, user)` that returns one, such as `users.options` for
 a list of people.

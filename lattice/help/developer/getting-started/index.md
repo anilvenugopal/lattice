@@ -19,7 +19,7 @@ You need:
   or Docker with Compose (run `make` with `COMPOSE="docker compose"`).
 
 You do not need Node.js or a Postgres install of your own. `compose.yaml` runs
-Postgres 17 in a container, on port 5436, with its data in a volume.
+Postgres 18 in a container, on port 5436, with its data in a volume.
 
 ## Run it
 

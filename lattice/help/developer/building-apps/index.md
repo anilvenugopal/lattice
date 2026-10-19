@@ -66,7 +66,7 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 | [Styling](styling.md) | The five CSS layers, tokens, light and dark, an app's own stylesheet |
 | [Data and audit](data-and-audit.md) | Tables and migrations, named SQL queries, `Db` and transactions, the audit log, seed data, background work |
 | [Access control](access-control.md) | Users, roles and permissions; `require`, `permission=` and `can`; row scoping and what the server checks |
-| [Working across apps](working-across-apps.md) | References as URNs, panels on other apps' record pages, CloudEvents and event feeds |
+| [Working across apps](working-across-apps.md) | References as URNs, panels on other apps' record pages, and CloudEvents |
 | [Ctrl+J search](search.md) | Making pages and records findable, custom sources, commands |
 | [Writing help](writing-help.md) | Help topics, sections, callouts, diagrams and the F1 map |
 | [Testing](testing.md) | The fixtures, what to test and how |

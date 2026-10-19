@@ -21,7 +21,7 @@ in [AGENTS.md](AGENTS.md) keep every screen consistent.
   flows (stepper, tree, graph)
 - A showcase app with every component on sample data, one page per capability
 
-**Stack**: Python 3.14, FastAPI, Jinja2, HTMX, Alpine.js, Postgres 17, a uv
+**Stack**: Python 3.14, FastAPI, Jinja2, HTMX, Alpine.js, Postgres 18, a uv
 workspace. Plain SQL in named `.sql` files, run through SQLAlchemy Core and
 psycopg 3; no ORM. No Node build for apps (the graph component is built once and committed).
 
@@ -29,7 +29,7 @@ psycopg 3; no ORM. No Node build for apps (the graph component is built once and
 
 ```bash
 cp .env.example .env     # optional; defaults work for development
-make db-up               # start Postgres 17 (compose.yaml, port 5436, podman-compose)
+make db-up               # start Postgres 18 (compose.yaml, port 5436, podman-compose)
 make setup               # install the workspace, lattice migrate, lattice seed
 make dev                 # lattice dev: http://localhost:8000
 ```

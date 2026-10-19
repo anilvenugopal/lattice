@@ -61,7 +61,6 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `resolve_ref` `(db, user, value)` | function | The reference as this user may see it; None for an unknown kind, a missing record, or one the user may not see. |
 | `RecordPanel` | class | A panel an app adds to other apps' record pages, matched on reference kind (ADR 0011). |
 | `CloudEvent` | class | A CloudEvents 1.0 event, as subscribers receive it. |
-| `EventFeed` | class | Another system's outbox, read into the bus: a named query returning CloudEvent columns (id, type, source, subject, time, data) for rows with `id > :after`, in id order, at most `:limit`. The host polls it and keeps its cursor in lattice.event_feed. |
 
 ## Charts
 

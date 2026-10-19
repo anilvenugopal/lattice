@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import csv
+import inspect
 import io
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -140,6 +141,8 @@ async def run_action(key: str, action_key: str, request: Request,
     ctx = ActionContext(db=db, user=user, ids=[r["id"] for r in eligible], rows=eligible,
                         values=values)
     result = action.handler(ctx)
+    if inspect.isawaitable(result):          # an async handler, e.g. awaiting a library's API
+        result = await result
     if not isinstance(result, ActionResult):
         result = ActionResult(message=result or f"{action.label}: {ctx.count} updated.")
     if skipped:

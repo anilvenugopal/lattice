@@ -44,7 +44,7 @@ from lattice.kernel.auth.permissions import Permission
 from lattice.kernel.config import settings
 from lattice.kernel.database import Db, NotFound, get_db, transaction
 from lattice.kernel.dev_seed import DEV_USERS
-from lattice.kernel.events import CloudEvent, EventFeed
+from lattice.kernel.events import CloudEvent
 from lattice.kernel.nav import NavNode
 from lattice.kernel.services import audit, users
 from lattice.kernel.sql import Query, sql_queries
@@ -60,7 +60,7 @@ __all__ = [
     "RecordPage", "Panel", "Link", "render_record_page",
     # Working across apps (ADR 0011)
     "Ref", "ReferenceKind", "Resolved", "urn", "parse", "resolve_ref", "RecordPanel",
-    "CloudEvent", "EventFeed",
+    "CloudEvent",
     # Charts
     "ChartSpec", "Count", "Sum", "Avg", "Min", "Max", "Time", "Threshold", "build_chart",
     # Forms from JSON Schema

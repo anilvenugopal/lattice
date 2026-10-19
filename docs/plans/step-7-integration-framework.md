@@ -82,3 +82,4 @@ apps that never import each other:
 | Feeds in tests | — | The host doesn't poll feeds when `LATTICE_APP_ENV=test`; tests call `read_feed` themselves |
 | Import rules | — | New import contract: apps never import each other |
 | Comments | Read, write, delete your own | Also `comments.moderate` (no default role) to delete anyone's, and a Comments list in the rail |
+| Event feeds | Built in this step | Removed on 19 October 2026 ([ADR 0012](../adr/0012-taskline-ui-and-contract.md)): a cursor over "after the last id" can miss rows that become visible late, and Taskline publishes no feed. Other processes' state is read from their views |

@@ -77,3 +77,22 @@ def test_views_need_access_to_the_grid(as_user):
     c = as_user("viewer")
     assert c.get("/_grid/users/views").status_code == 403
 
+
+
+def test_an_async_action_handler_is_awaited(as_user, users):
+    from lattice.components.grid.spec import Action
+
+    calls = []
+
+    async def ping(ctx):
+        calls.append(list(ctx.ids))
+        return f"Pinged {ctx.count}."
+
+    spec = REGISTRY["users"]
+    spec.actions.append(Action("ping", "Ping", handler=ping))
+    try:
+        res = post_json(as_user("admin"), "/_grid/users/action/ping",
+                        {"ids": [users["viewer"].id]})
+        assert res.json()["message"] == "Pinged 1." and calls == [[users["viewer"].id]]
+    finally:
+        spec.actions.pop()

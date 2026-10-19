@@ -28,7 +28,7 @@ standard exists, the contract follows it
 |---|---|---|
 | **References** | A pointer to any record, which any page can show as a link: `urn:lattice:demo.work_item:42` | URN (RFC 8141) |
 | **Record panels** | Sections that one app adds to another app's record pages, such as a Jobs panel on a document | A small Lattice registry; no standard fits |
-| **Events** | Something happened: `taskline.run.failed` can open an incident. The in-process bus within a host, an outbox from other processes, HTTP from remote systems | CloudEvents 1.0 |
+| **Events** | Something happened: `comments.added` tells the record's owner. An in-process bus within a host; HTTP from remote systems later | CloudEvents 1.0 |
 | **Published views** | Reading another system's data in a database the host can read, such as Taskline's runs | Read-only SQL views, as that system's contract |
 | **Calls between processes** | One process asking another to act | HTTP and JSON, described with OpenAPI 3.1 |
 | **Permissions** | Declared by apps, grouped into roles by administrators, optionally scoped to one database binding | — |
@@ -38,16 +38,16 @@ Schema, a stepper, tree and graph for flows, a record page component and saved
 grid views.
 
 **Ecosystem apps have their own repositories.** Taskline (the job engine, which
-never depends on Lattice), the Taskline UI (`lattice-taskline`, which also runs
-as an Ops console) and Incidents each live apart from Lattice and depend on it
-by git tag. This repository keeps the core and the showcase.
+never depends on Lattice), Taskline UI (`taskline-ui`, a Lattice app that reads
+Taskline's views and calls its commands) and Incidents each live apart from
+Lattice. Taskline UI and Incidents depend on Lattice by git tag. This repository keeps the core and the showcase.
 
 ## Where it stands
 
 | Area | Today | Target |
 |---|---|---|
 | Apps | `AppManifest` and `create_app` with namespace checks | Also settings, bindings, permissions, references, panels and events in the manifest |
-| Database | Postgres 17; one database, a schema and SQL migrations per app; plain SQL, no ORM | Unchanged; separate databases per app only when one needs it |
+| Database | Postgres 18; one database, a schema and SQL migrations per app; plain SQL, no ORM | Unchanged; separate databases per app only when one needs it |
 | Access | Permissions declared by apps, grouped into roles administrators edit | + scopes per database binding |
 | Grid | A named SQL query, offset paging, a time limit | Data sources, keyset paging, async sources |
 | Between apps | Nothing needed yet | URN references, record panels, CloudEvents, published views |
@@ -73,13 +73,13 @@ before the next starts.
    (stepper, tree and graph).
 6. **The showcase.** Done: one app, one page per capability on sample data,
    replaces the demo.
-7. **Integration framework.** Done: URN references, record panels, the
-   CloudEvents bus and event feeds.
+7. **Integration framework.** Done: URN references, record panels and the
+   CloudEvents bus.
 8. **The showcase uses the framework.** Done: the Comments app comments on any
    record; the showcase reacts to new comments.
-9. **Taskline in the ecosystem:** Taskline in its own repository with its
-   public contract; in Lattice, an async engine, grid data sources and database
-   bindings; then the `lattice-taskline` app and Ops console.
+9. **Taskline UI:** Taskline builds its public contract (views and async
+   commands, release 0.2.0); Lattice adds async grid actions and moves to
+   Postgres 18; then Taskline UI in its own repository.
 10. **Incidents** in its own repository.
 
 ## Database decisions (step 2)
@@ -105,12 +105,13 @@ Taken while planning step 2, on 18 October 2026:
 | 0003 | Apps plug in through a manifest and kernel contracts | Accepted |
 | 0004 | Charts with Chart.js and its plugins | Accepted |
 | 0005 | Graphs with Svelte Flow compiled to a web component | Accepted |
-| 0006 | The taskline UI is a Lattice app, bundled or as an Ops console | Accepted |
+| 0006 | The taskline UI is a Lattice app, bundled or as an Ops console | Accepted; partly superseded by 0012 |
 | 0007 | Forms rendered from JSON Schema, JSON in and JSON out | Accepted |
 | 0008 | Grid rows come from data sources with keyset paging | Proposed |
 | 0009 | Permissions declared by apps, grouped into roles | Accepted |
 | 0010 | Theming and overrides: the host owns the brand, apps style only their own pages | Proposed |
 | 0011 | Integration standards: URN references, CloudEvents, published views, OpenAPI between processes | Accepted |
+| 0012 | Taskline UI on Taskline's published contract: views, async commands, no events | Accepted |
 
 A record is never rewritten once accepted. A later decision that changes it is
 a new record naming the one it replaces.

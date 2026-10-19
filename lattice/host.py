@@ -78,7 +78,7 @@ def _check(app: AppManifest) -> None:
             fail(f"form key {spec.key!r} must start with {app.key + '.'!r}")
     for name, items in (("reference kind", [k.key for k in app.references]),
                         ("record panel", [p.key for p in app.panels]),
-                        ("event type", app.publishes), ("event feed", [f.key for f in app.feeds])):
+                        ("event type", app.publishes)):
         for key in items:
             if not key.startswith(app.key + "."):
                 fail(f"{name} {key!r} must start with {app.key + '.'!r}")
@@ -155,8 +155,6 @@ def _register(app: AppManifest, platform: bool) -> None:
         events.PUBLISHED[event_type] = app.key
     for event_type, handler in app.subscribes.items():
         events.SUBSCRIBERS.setdefault(event_type, []).append((app.key, handler))
-    for feed in app.feeds:
-        events.FEEDS[feed.key] = feed
     for tile in app.tiles:
         tiles.register_tile(tile)
     for provider in app.search:
@@ -276,8 +274,6 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
     @asynccontextmanager
     async def lifespan(_: FastAPI):
         tasks = [asyncio.create_task(a.background()) for a, _ in ordered if a.background]
-        if events.FEEDS and settings.app_env != "test":     # tests read feeds themselves
-            tasks.append(asyncio.create_task(events.run_feeds()))
         yield
         for task in tasks:
             task.cancel()

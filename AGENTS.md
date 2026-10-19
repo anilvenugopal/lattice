@@ -14,7 +14,7 @@ This file is the single source of truth for coding agents. `CLAUDE.md` points he
 
 ## Stack
 
-Python 3.14, FastAPI + Jinja2 + HTMX + Alpine.js, Postgres 17, a uv workspace.
+Python 3.14, FastAPI + Jinja2 + HTMX + Alpine.js, Postgres 18, a uv workspace.
 **Plain SQL, no ORM:** every statement is a named query in a `sql/*.sql` file,
 run through SQLAlchemy Core with the psycopg 3 driver. Server-rendered.
 **No SPA, no npm build, no CSS framework.** Vendored JS lives in
@@ -53,7 +53,7 @@ are `LATTICE_*` environment variables (`.env.example`).
 | `apps/showcase/` | `lattice-showcase`: every component on sample data (Items, Live updates, Reading pane, Charts, Specs, Free-form, Flows), its `sql/` (schema `showcase` and named queries), templates, styles, seed and tests |
 | `hosts/showcase/` | `lattice-showcase-host`: runs Lattice with the showcase app |
 | `tests/sql/`, `apps/*/tests/sql/` | Named queries the tests use to set up and check rows |
-| `compose.yaml` | Postgres 17 for development and tests |
+| `compose.yaml` | Postgres 18 for development and tests (Taskline needs 18) |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | Target design and decisions. Read before changing anything they cover |
 | `lattice/help/` | The user guide and developer guide, served in the app at `/help`. `developer/building-apps/` covers the grid, pages, styling and access; `developer/running/` covers sign-in, users and branding. `developer/reference/` is generated: run `uv run lattice docs build` after changing what it documents |
 
@@ -131,8 +131,8 @@ the layers below it. Apps import only `lattice.api`.
 - **Across apps** (ADR 0011): refer to another app's record by URN
   (`urn:lattice:{kind}:{id}`, drawn with `{{ ref(urn) }}`), never by foreign key;
   declare `references=` (kinds and resolvers), `panels=` (RecordPanels on other
-  apps' record pages), `publishes=` and `subscribes=` (CloudEvents, delivered after
-  commit) and `feeds=` (outboxes). Guide:
+  apps' record pages), and `publishes=` and `subscribes=` (CloudEvents, delivered
+  after commit). Guide:
   `lattice/help/developer/building-apps/working-across-apps.md`.
 - Background work: `background=` (an async function started with the host).
   Example data: `seed=` (run by `lattice seed`).

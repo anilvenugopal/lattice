@@ -1,4 +1,4 @@
-"""Working across apps (ADR 0011): URN references, record panels, CloudEvents and feeds."""
+"""Working across apps (ADR 0011): URN references, record panels and CloudEvents."""
 
 from pathlib import Path
 
@@ -9,7 +9,6 @@ from lattice.api import (
     AppManifest,
     CloudEvent,
     Db,
-    EventFeed,
     NavNode,
     RecordPage,
     RecordPanel,
@@ -23,7 +22,6 @@ from lattice.api import (
 from lattice.components.references import BadReference, render_ref
 from lattice.host import AppError, create_app
 from lattice.kernel import events
-from lattice.kernel.services import audit
 from lattice.kernel.sql import sql_queries
 from lattice.platform.admin import USERS
 from lattice.testing import current, post_json
@@ -65,7 +63,6 @@ PAGE = RecordPage(grid=USERS, nav_key="people", title="{display_name}",
                   reference_kind="people.person")
 NOTES = RecordPanel("notes.panel", "Notes", "people/note_panel.html", kinds=["people.person"],
                     load=lambda request, db, subject: {"urn": subject.urn})
-FEED = EventFeed("notes.outbox", CHECK.outbox_feed, batch=2)
 
 
 @pytest.fixture
@@ -76,7 +73,7 @@ def host_apps():
                     references=[ReferenceKind("people.person", "Person", resolve_user)],
                     publishes=["people.shouted"], templates=Path(__file__).parent / "templates",
                     nav=[NavNode("people", "People", "/people", hidden=True)]),
-        AppManifest(key="notes", label="Notes", panels=[NOTES], feeds=[FEED],
+        AppManifest(key="notes", label="Notes", panels=[NOTES],
                     subscribes={"people.shouted": record}),
     ]
 
@@ -123,18 +120,6 @@ def test_a_failing_subscriber_does_not_stop_the_others(client, db):
 def test_publishing_an_undeclared_type_fails(client, db):
     with pytest.raises(ValueError, match="not declared"):
         db.publish("people.whispered")
-
-
-def test_feeds_deliver_in_order_and_keep_their_cursor(client, db):
-    for i in range(3):
-        audit.record(db, None, "feedtest.shouted", "x", "", f"urn:lattice:x.y:{i}")
-    events.SUBSCRIBERS["feedtest.shouted"] = [("notes", record)]
-    assert events.read_feed(FEED) == 2                    # batch of 2
-    assert events.read_feed(FEED) == 1
-    assert events.read_feed(FEED) == 0
-    assert [e.subject[-1] for e in RECEIVED] == ["0", "1", "2"]
-    assert RECEIVED[0].source == "/test/outbox" and RECEIVED[0].type == "feedtest.shouted"
-    assert db.value(CHECK.feed_cursor, key=FEED.key) == int(RECEIVED[-1].id)
 
 
 @pytest.mark.parametrize("app, message", [

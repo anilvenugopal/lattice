@@ -69,17 +69,3 @@ SELECT code, label, description FROM lattice.role WHERE code = :code;
 -- name: audit_detail
 -- The detail of the latest audit event with this action.
 SELECT detail FROM lattice.audit_event WHERE action = :action ORDER BY id DESC LIMIT 1;
-
--- name: outbox_feed
--- The audit log as a stand-in outbox for the event feed tests: its feedtest.* events as
--- CloudEvent columns, after a cursor.
-SELECT id, action AS type, '/test/outbox' AS source, target_id AS subject, at AS time,
-       CAST('{}' AS jsonb) AS data
-FROM lattice.audit_event
-WHERE id > :after AND action LIKE 'feedtest.%'
-ORDER BY id
-LIMIT :limit;
-
--- name: feed_cursor
--- How far a feed has been read.
-SELECT last_id FROM lattice.event_feed WHERE key = :key;

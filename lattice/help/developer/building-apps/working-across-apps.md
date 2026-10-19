@@ -2,11 +2,11 @@
 title: Working across apps
 summary: Apps cooperate without importing each other. References to records as URNs, panels on other apps' record pages, and CloudEvents between them.
 order: 65
-keywords: reference urn ref resolver referencekind record panel recordpanel event cloudevents publish subscribe feed outbox integration
+keywords: reference urn ref resolver referencekind record panel recordpanel event cloudevents publish subscribe integration
 ---
 
 Apps never import each other: `make lint` fails if they do. They cooperate
-through four contracts, each following a standard where one exists
+through three contracts, each following a standard where one exists
 ([ADR 0011](https://github.com/anilvenugopal/lattice/blob/main/docs/adr/0011-integration-standards.md)):
 
 | Contract | What it gives | Standard |
@@ -14,7 +14,6 @@ through four contracts, each following a standard where one exists
 | **References** | A pointer to any record that any app can show as a link | URN |
 | **Record panels** | A section one app adds to other apps' record pages | Lattice registry |
 | **Events** | One app announces that something happened; others react | CloudEvents 1.0 |
-| **Event feeds** | Events from another system's outbox, put on the same bus | CloudEvents 1.0 |
 
 The showcase and Comments use all of them: comment on any item, and its owner
 gets a message in the showcase's Reading pane.
@@ -119,28 +118,20 @@ APP = AppManifest(key="showcase", …, subscribes={"comments.added": notify_owne
   `id`, `subject` (the record's URN), `time` and a small `data` dict.
   `event.to_dict()` is its standard JSON form.
 - **No retries.** Delivery happens in the publishing process, right after the
-  commit. An event that must not be lost goes through an outbox and a feed.
+  commit. A reaction that must not be missed reads state instead (below).
 
-## Event feeds
+## Another process's state
 
-A feed reads another system's outbox, such as Taskline's run events, and puts
-each event on the bus for subscribers:
-
-```python
-FEED = EventFeed("taskline.runs", SQL.taskline.run_events)
-APP = AppManifest(key="taskline", …, feeds=[FEED])
-```
-
-The query returns CloudEvent columns (`id`, `type`, `source`, `subject`,
-`time`, `data`) for rows with `id > :after`, in id order, at most `:limit`. The
-host polls every `every_seconds` (default 5) and keeps each feed's cursor in
-`lattice.event_feed`. The cursor moves after delivery, so an event is
-delivered at least once. One process reads a feed at a time.
+Lattice reads no other system's event stream. To react to something another
+process does, such as a Taskline run failing, read that system's published
+views on a timer, for a time window, and remember what you have handled
+([ADR 0012](https://github.com/anilvenugopal/lattice/blob/main/docs/adr/0012-taskline-ui-and-contract.md)).
+A cursor over "everything after the last id" can miss rows that become
+visible out of order; asking "what is the state now" cannot.
 
 ## What is checked when the host starts
 
-- Reference kinds, panel keys, event types and feed keys start with the app's
-  key.
+- Reference kinds, panel keys and event types start with the app's key.
 - Publishing a type no app declares fails.
 - A subscription or panel naming another app in the host must name a type or
   kind that app declares. Naming an app the host doesn't run is allowed: it

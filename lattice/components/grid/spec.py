@@ -11,7 +11,7 @@ Guide: lattice/help/developer/building-apps/grids.md.
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
@@ -108,7 +108,8 @@ class ActionResult:
     redirect: str = ""              # navigate to this URL instead of refreshing
 
 
-ActionHandler = Callable[[ActionContext], ActionResult | str | None]
+# A handler may be `async def`: the endpoint awaits it (e.g. a call to Taskline's commands).
+ActionHandler = Callable[[ActionContext], ActionResult | str | None | Awaitable[ActionResult | str | None]]
 
 
 @dataclass

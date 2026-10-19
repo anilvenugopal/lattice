@@ -1,6 +1,6 @@
 # 0006. The taskline UI is a Lattice app, bundled or as an Ops console
 
-Status: Accepted
+Status: Accepted; partly superseded by [0012](0012-taskline-ui-and-contract.md) (name, reads, events, Ops console)
 
 ## Context
 

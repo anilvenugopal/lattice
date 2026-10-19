@@ -1,6 +1,7 @@
 # 0011. Integration standards: URN references, CloudEvents, published views and OpenAPI
 
-Status: Accepted (18 October 2026)
+Status: Accepted (18 October 2026). The outbox delivery row is superseded by
+[0012](0012-taskline-ui-and-contract.md): other processes' state is read from their views, not streamed.
 
 ## Context
 

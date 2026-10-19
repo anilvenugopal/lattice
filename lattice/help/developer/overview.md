@@ -143,7 +143,7 @@ the grid: declared in Python, placed with a macro.
 
 Python 3.14, FastAPI, Jinja2 templates, HTMX and Alpine.js (vendored, no npm),
 Chart.js for charts, Svelte Flow for the graph (compiled once, committed),
-and Postgres 17. Database access is plain SQL in named `.sql` files, run
+and Postgres 18. Database access is plain SQL in named `.sql` files, run
 through SQLAlchemy Core with the psycopg 3 driver; there is no ORM. The
 workspace is managed with uv.
 

@@ -1,8 +1,10 @@
 # Postgres for development and tests. Start it with `make db-up`
-# (podman compose or docker compose); data stays in the lattice-pg volume.
+# (podman compose or docker compose); data stays in the lattice-pg18 volume.
+# Postgres 18 because Taskline's schema uses uuidv7() (ADR 0012). The 18 image keeps its
+# data under /var/lib/postgresql/18, so the volume mounts /var/lib/postgresql.
 services:
   postgres:
-    image: docker.io/library/postgres:17
+    image: docker.io/library/postgres:18
     environment:
       POSTGRES_USER: lattice
       POSTGRES_PASSWORD: lattice
@@ -10,11 +12,11 @@ services:
     ports:
       - "127.0.0.1:5436:5432"
     volumes:
-      - lattice-pg:/var/lib/postgresql/data
+      - lattice-pg18:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U lattice"]
       interval: 2s
       retries: 30
 
 volumes:
-  lattice-pg:
+  lattice-pg18:
