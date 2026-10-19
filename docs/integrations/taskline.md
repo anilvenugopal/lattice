@@ -19,3 +19,8 @@ In short:
 | Read | Lists of runs, tasks, references, events, queues, workers | The `taskline_api` views, with Lattice grids |
 | Act | Cancel, retry, requeue, run a job | `taskline.api` async commands, from async grid actions, with an `actor` |
 | React | Nothing yet. An app that must react to finished runs reads `taskline_api.run` on a timer | No events |
+
+**Versions.** One number, the package's. Taskline UI pins `taskline>=0.2,<0.3` and,
+at start, checks `taskline_api.instance.taskline_version` (the version that last
+migrated the database) against the same range, refusing to start with a clear
+message otherwise. `instance` also reports `name` and `schema_version`.
