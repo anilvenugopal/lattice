@@ -219,12 +219,13 @@ function ltMap(config) {
       this.note = '';
       for (const [i, layer] of this.data.layers.entries()) {
         const id = `lt-d-${layer.id}`;
-        const color = layer.kind === 'areas' ? toneColor(layer.tone) : colors[i % colors.length];
+        // Shading is the theme colour (ADR 0015); points by a column use its tones, else the palette.
+        const color = layer.kind === 'areas' ? toneColor(layer.tone) : token('--chart-base');
         let features = [];
         if (layer.kind === 'points') {
           const tones = layer.tones || {};
           const keys = [...new Set(layer.rows.map(r => r[2]))];
-          const pick = k => (tones[k] ? toneColor(tones[k]) : colors[keys.indexOf(k) % colors.length]);
+          const pick = k => (tones[k] ? toneColor(tones[k]) : k === '' ? color : colors[keys.indexOf(k) % colors.length]);
           features = layer.rows.map(([lon, lat, c, label]) => ({
             type: 'Feature', geometry: { type: 'Point', coordinates: [lon, lat] },
             properties: { c, color: pick(c), label: layer.labels[c] ? `${label} · ${layer.labels[c]}` : label } }));

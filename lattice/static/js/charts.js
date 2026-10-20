@@ -52,9 +52,29 @@ function alpha(color, a) {
   const n = parseInt(m[1], 16);
   return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 }
+// Mix two #rrggbb colours: t=0 is a, t=1 is b. Other colour forms are returned as they are.
+function mix(a, b, t) {
+  const pa = /^#([0-9a-f]{6})$/i.exec(a), pb = /^#([0-9a-f]{6})$/i.exec(b);
+  if (!pa || !pb) return a;
+  const x = parseInt(pa[1], 16), y = parseInt(pb[1], 16);
+  const ch = s => Math.round(((x >> s) & 255) * (1 - t) + ((y >> s) & 255) * t);
+  return '#' + [16, 8, 0].map(s => ch(s).toString(16).padStart(2, '0')).join('');
+}
+// Text that reads on a background: the panel colour on dark fills, the text colour on light.
+function ink(t, bg) {
+  const m = /^#([0-9a-f]{6})$/i.exec(bg);
+  if (!m) return t.panel;
+  const n = parseInt(m[1], 16);
+  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.6 ? token('--text') : token('--surface-panel');
+}
+
 function theme() {
   return {
     series: [1, 2, 3, 4, 5, 6, 7, 8].map(i => token(`--chart-${i}`)),
+    base: token('--chart-base'),
+    calm: token('--chart-calm'),
+    faint: token('--chart-muted'),
     tone: t => token(`--chart-${t}`),
     text: token('--text-2'),
     muted: token('--text-3'),
@@ -72,12 +92,47 @@ function formatter(format, compact = false) {
   return v => num.format(v);
 }
 
-// ── Chart.js configuration per kind ────────────────────────────────────────
-function seriesColor(t, s, i) { return s.tone ? t.tone(s.tone) : t.series[i % t.series.length]; }
-function categoryColor(t, d, key, i) {
-  if (key === '__other__') return t.tone('neutral');
-  return d.xTones[key] ? t.tone(d.xTones[key]) : t.series[i % t.series.length];
+// ── Colour modes (ADR 0015) ────────────────────────────────────────────────
+// brand: shades of the theme colour, darkest for the largest; neutral: the same in greys;
+// tones: Column.tones where a value has one; categorical: the eight distinct colours.
+// A highlight rule draws its matches in a tone and everything else muted.
+function painter(d, t) {
+  const mode = d.colors || 'brand';
+  const base = mode === 'neutral' ? t.calm : t.base;
+  const ramp = n => Array.from({ length: n }, (_, i) => (n === 1 ? base : mix(base, t.panel, 0.62 * i / (n - 1))));
+  const totals = new Map();
+  d.points.forEach(([x, , v]) => totals.set(x, (totals.get(x) || 0) + (Number(v) || 0)));
+  const ranked = d.categories.filter(x => x !== '__other__')
+    .sort((a, b) => (totals.get(b) || 0) - (totals.get(a) || 0));
+  const byCategory = ramp(Math.max(1, ranked.length));
+  const bySeries = ramp(Math.max(1, d.series.length));
+  const rules = d.highlight || [];
+  const matches = (key, value) => rules.find(r => r.values.includes(String(key))
+    || (r.above !== null && value > r.above) || (r.below !== null && value < r.below));
+  return {
+    base,
+    series(s, i) {
+      if (mode === 'categorical') return t.series[i % t.series.length];
+      if (mode === 'tones' && s.tone) return t.tone(s.tone);
+      return bySeries[i % bySeries.length];
+    },
+    category(x, i) {
+      if (x === '__other__') return t.faint;
+      if (mode === 'categorical') return t.series[i % t.series.length];
+      if (mode === 'tones' && d.xTones[x]) return t.tone(d.xTones[x]);
+      return byCategory[Math.max(0, ranked.indexOf(x))];
+    },
+    // With highlight rules, a match takes its tone and the rest are muted.
+    point(key, value, color) {
+      if (!rules.length) return color;
+      const r = matches(key, value);
+      return r ? t.tone(r.tone) : t.faint;
+    },
+    perCategory: rules.length > 0 || (mode === 'tones' && Object.keys(d.xTones).length > 0),
+  };
 }
+function seriesColor(t, s, i) { return t.p.series(s, i); }
+function categoryColor(t, d, key, i) { return t.p.category(key, i); }
 function lookup(d) {
   const m = new Map();
   d.points.forEach(([x, s, v]) => m.set(x + '\u0000' + s, v));
@@ -97,7 +152,8 @@ function cartesian(d, t, fmt) {
     const perCategory = single && !time && d.kind === 'bar';
     return {
       label: s.label, data,
-      backgroundColor: perCategory ? d.categories.map(x => (x === '__other__' || d.xTones[x] ? categoryColor(t, d, x, 0) : color))
+      backgroundColor: perCategory && t.p.perCategory
+        ? d.categories.map((x, j) => t.p.point(x, get(x, s.key) ?? 0, categoryColor(t, d, x, j)))
         : (d.kind === 'bar' ? color : alpha(color, area ? 0.25 : 1)),
       borderColor: color, borderWidth: d.kind === 'bar' ? 0 : 2,
       fill: area ? (d.stacked ? (i ? '-1' : 'origin') : 'origin') : false,
@@ -127,7 +183,7 @@ function cartesian(d, t, fmt) {
         legend: { display: !single },
         annotation: { annotations },
         zoom: time ? {
-          zoom: { wheel: { enabled: true, modifierKey: 'ctrl' }, drag: { enabled: true, backgroundColor: alpha(t.series[0], 0.12) }, mode: 'x' },
+          zoom: { wheel: { enabled: true, modifierKey: 'ctrl' }, drag: { enabled: true, backgroundColor: alpha(t.p.base, 0.12) }, mode: 'x' },
           pan: { enabled: true, mode: 'x', modifierKey: 'shift' },
         } : undefined,
       },
@@ -143,7 +199,7 @@ function pie(d, t) {
       labels: d.categories.map(x => d.xLabels[x] ?? x),
       datasets: [{
         label: d.measure, data: d.categories.map(x => get(x, '') ?? 0),
-        backgroundColor: d.categories.map((x, i) => categoryColor(t, d, x, i)),
+        backgroundColor: d.categories.map((x, i) => t.p.point(x, get(x, '') ?? 0, categoryColor(t, d, x, i))),
         borderColor: t.panel, borderWidth: 2,
       }],
     },
@@ -175,7 +231,7 @@ function calendar(d, t, fmt, month) {
     const iso = `${month}-${String(day).padStart(2, '0')}`;
     cells.push({ x: DAYS[i % 7], y: Math.floor(i / 7), v: values.get(iso) || 0, date: iso, day });
   }
-  const base = t.series[0];
+  const base = t.p.base;
   const shade = v => (v ? alpha(base, 0.15 + 0.85 * v / max) : t.grid);
   return {
     type: 'matrix',
@@ -233,7 +289,7 @@ function histogram(d, t) {
     type: 'bar',
     data: {
       labels: d.points.map(([lo, hi]) => `${short(lo)}–${short(hi)}`),
-      datasets: [{ label: d.measure, data: d.points.map(p => p[2]), backgroundColor: t.series[0],
+      datasets: [{ label: d.measure, data: d.points.map(p => p[2]), backgroundColor: t.p.base,
                    barPercentage: 1, categoryPercentage: 0.96, borderRadius: 2 }],
     },
     options: {
@@ -260,7 +316,7 @@ function exceedance(d, t) {
   return {
     type: 'line',
     data: { datasets: [{ label: 'Chance of exceeding', data: d.points.map(([v, , p]) => ({ x: v, y: p })),
-                         borderColor: t.series[0], backgroundColor: alpha(t.series[0], 0.12), fill: 'origin',
+                         borderColor: t.p.base, backgroundColor: alpha(t.p.base, 0.12), fill: 'origin',
                          pointRadius: 0, borderWidth: 2, tension: 0.2 }] },
     options: {
       scales: {
@@ -282,6 +338,14 @@ function treemap(d, t) {
   const tree = d.points.map(([x, s, v]) => ({ x: x === '__other__' ? 'Other' : (d.xLabels[x] ?? x), s: seriesLabel(s), v, xk: x, sk: s }));
   const grouped = d.series.length > 1;
   const colorOf = new Map(d.series.map((s, i) => [s.label, seriesColor(t, s, i)]));
+  const order = new Map(d.categories.map((x, i) => [x, i]));
+  // A group box carries its group in `g`; a leaf only through its source row.
+  const boxColor = raw => {
+    const src = treemapRow(raw);
+    if (grouped && raw.l === 0) return alpha(colorOf.get(raw.g) || t.p.base, 0.25);
+    const color = grouped ? (colorOf.get(src.s) || t.p.base) : categoryColor(t, d, src.xk, order.get(src.xk) || 0);
+    return t.p.point(src.xk, raw.v, color);
+  };
   return {
     type: 'treemap',
     data: {
@@ -290,12 +354,9 @@ function treemap(d, t) {
         backgroundColor: c => {
           if (c.type !== 'data') return 'transparent';
           // A group box carries its group in `g`; a leaf only through its source rows.
-          const raw = c.raw;
-          const top = raw.l === 0 ? raw.g : ((raw._data.children || [])[0] || raw._data).s;
-          const color = grouped ? (colorOf.get(top) || t.series[0]) : t.series[c.dataIndex % t.series.length];
-          return alpha(color, grouped && c.raw.l === 0 ? 0.25 : 0.9);
+          return boxColor(c.raw);
         },
-        labels: { display: true, overflow: 'hidden', color: t.panel, font: { size: 11 },
+        labels: { display: true, overflow: 'hidden', color: c => ink(t, boxColor(c.raw)), font: { size: 11 },
                   formatter: c => [c.raw.g, short(c.raw.v)] },
         captions: { display: grouped, color: t.text, font: { weight: '600' } },
       }],
@@ -371,7 +432,7 @@ async function choropleth(d, t) {
   d.points.forEach(([x, , v]) => values.set(String(x).toLowerCase(), v));
   const pick = f => values.get(String(f.properties.name).toLowerCase()) ?? values.get(String(Number(f.id)))
     ?? values.get(String(f.id));
-  const base = t.series[0];
+  const base = t.p.base;
   return {
     type: 'choropleth',
     data: {
@@ -394,6 +455,7 @@ async function choropleth(d, t) {
 
 async function configFor(d, month) {
   const t = theme();
+  t.p = painter(d, t);
   const fmt = formatter(d.format);
   let cfg;
   if (['bar', 'line', 'area'].includes(d.kind)) cfg = cartesian(d, t, fmt);

@@ -115,3 +115,15 @@ def test_a_click_narrows_by_the_charts_columns(as_user, events):
     narrowed = c.get(f"/_chart/stats.by_action/data?x_at={day}").json()
     assert sum(p[2] for p in narrowed["points"]) == sum(p[2] for p in total["points"])   # all today
     assert c.get("/_chart/stats.by_action/data?x_at=2001-01-01").json()["points"] == []
+
+
+def test_colour_mode_and_highlight_reach_the_browser(as_user, events):
+    from lattice.api import Highlight
+    chart_router.register(ChartSpec("stats.hot", "Hot", AUDIT, "bar", x="action",
+                                    highlight=[Highlight(values=["doc.signed"], above=2)]))
+    data = as_user("admin").get("/_chart/stats.hot/data").json()
+    assert data["colors"] == "brand"                      # the host default
+    assert data["highlight"] == [{"values": ["doc.signed"], "above": 2, "below": None,
+                                  "tone": "danger"}]
+    chart_router.register(ChartSpec("stats.sev", "Sev", AUDIT, "bar", x="action", colors="tones"))
+    assert as_user("admin").get("/_chart/stats.sev/data").json()["colors"] == "tones"

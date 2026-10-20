@@ -26,6 +26,7 @@ from lattice.api import (
     FormSpec,
     GridSpec,
     Hexagons,
+    Highlight,
     MapSpec,
     Points,
     Regions,
@@ -112,7 +113,9 @@ CHARTS = [
     ChartSpec("showcase.exposure_by_county", "Top counties", GRID, "bar", x="county",
               y=Sum("tiv", "Insured value"), format="money", horizontal=True, limit=8, height=300),
     ChartSpec("showcase.exposure_quality", "How precisely we know where they are", GRID,
-              "doughnut", x="quality", height=300),
+              "doughnut", x="quality", height=300,
+              # Zip and county centroids: too rough to say whether a location is inside.
+              highlight=[Highlight(values=["zip", "county"], tone="warning")]),
 ]
 RUNS = GridSpec(
     key="showcase.exposure_runs", title="Exposure runs", path="/showcase/exposure-runs",

@@ -24,6 +24,7 @@ from lattice.api import (
     Filter,
     GridSpec,
     Hexagons,
+    Highlight,
     MapSpec,
     Points,
     Sum,
@@ -81,7 +82,7 @@ CHARTS = [
     ChartSpec("showcase.locations_by_state", "Insured value by state", GRID, "bar", x="state",
               y=Sum("tiv", "Insured value"), format="money", height=260),
     ChartSpec("showcase.locations_quality", "Location quality", GRID, "doughnut", x="quality",
-              height=260),
+              height=260, highlight=[Highlight(values=["zip", "county"], tone="warning")]),
 ]
 
 router = APIRouter()

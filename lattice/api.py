@@ -9,6 +9,7 @@ from lattice.components.chart import (
     Avg,
     ChartSpec,
     Count,
+    Highlight,
     Max,
     Min,
     Sum,
@@ -69,7 +70,7 @@ __all__ = [
     # Timelines
     "TimelineSpec", "build_timeline",
     # Charts
-    "ChartSpec", "Count", "Sum", "Avg", "Min", "Max", "Time", "Threshold", "build_chart",
+    "ChartSpec", "Count", "Sum", "Avg", "Min", "Max", "Time", "Threshold", "Highlight", "build_chart",
     # Forms from JSON Schema
     "FormSpec", "SchemaDef", "FormResult", "build_form", "parse_form",
     "DocumentKind", "InvalidDocument", "documents",

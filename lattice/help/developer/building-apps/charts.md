@@ -129,15 +129,40 @@ minimum or maximum, the rest are left out.
 
 ## Colours
 
-Colours come from the theme, so charts follow light and dark mode:
+Charts are calm by default: one hue, with colour kept for what means something
+([ADR 0015](/help/lattice/developer/architecture/decisions)). Choose a mode with
+`colors=`:
 
-- **Series on a status column** take that column's tones: a `series="status"`
-  chart draws "Failed" in the danger colour, as the grid's badge does.
-- **Bars and slices on a status column** do the same.
-- **Anything else** takes the `--chart-1` to `--chart-8` tokens in order.
+| `colors=` | Draws | Use when |
+|---|---|---|
+| `"brand"` (default) | One series in the theme's brand colour; several series, slices or boxes in shades of it, darkest for the largest | Almost always |
+| `"neutral"` | The same in greys | Calm dashboards, print |
+| `"tones"` | Each value in its `Column.tones` colour, as the grid's badges | Colour has a meaning: severity, status |
+| `"categorical"` | Eight distinct colours | Series must be told apart: one line per event |
 
-A host theme may not change these tokens; they belong to Lattice
-([Styling](styling.md)).
+Charts that name no mode follow the host's `LATTICE_CHART_COLORS` (`brand` or
+`neutral`).
+
+**Highlight instead of decorating.** A highlight draws the matching bars, slices
+or boxes in a tone and every other one in muted grey:
+
+```python
+from lattice.api import Highlight
+
+ChartSpec("showcase.claims_estimate", "Estimated loss by severity", GRID, "bar",
+          x="severity", y=Sum("estimate"), highlight=[Highlight(values=["total"], tone="danger")])
+ChartSpec("showcase.locations_quality", "Location quality", GRID, "doughnut", x="quality",
+          highlight=[Highlight(values=["zip", "county"], tone="warning")])
+```
+
+`Highlight(above=1_000_000, tone="warning")` and `below=` match values instead of
+keys. Highlights apply to single-series bars, pies, doughnuts and treemaps.
+
+Colours come from tokens, in light and dark: `--chart-base` (the brand colour,
+so a host theme that changes `--brand` changes every chart), `--chart-calm`,
+`--chart-muted`, the tone colours and `--chart-1` to `--chart-8`. Apps name
+modes and tones, never colours ([Styling](styling.md)). Maps shade in the base
+colour, and timeline bars use it unless a tone column is named.
 
 ## Access
 

@@ -93,6 +93,7 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `Max` | class |  |
 | `Time` | class | A time dimension: the column truncated to `unit` (Postgres date_trunc). |
 | `Threshold` | class | A horizontal line across a bar, line or area chart, e.g. a target or a limit. |
+| `Highlight` | class | Draws matching bars, slices or boxes in a tone and every other one in muted grey. |
 | `build_chart` `(request, chart, linked=True, fixed=None)` | function | Context for one chart on a page. |
 
 ## Forms from JSON Schema

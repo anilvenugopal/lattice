@@ -112,7 +112,7 @@ STAGES_GRID = GridSpec(
              Column("stage", "Stage", kind="badge", labels={"watch": "Watch", "response": "Response",
                                                             "closed": "Closed"},
                     tones={"watch": "warning", "response": "danger", "closed": "success"}),
-             Column("starts_at", "From", kind="datetime"), Column("ends_at", "To", kind="datetime")],
+             Column("starts_at", "From", kind="date"), Column("ends_at", "To", kind="date")],
     selection="none", export=False, views=[View("all", "All")],
 )
 TIMELINE = TimelineSpec(

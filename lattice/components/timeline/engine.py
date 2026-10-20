@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
 from sqlalchemy import and_, func, or_, select
 
@@ -19,8 +19,13 @@ def _utc(value: datetime | None) -> datetime | None:
     return value.astimezone(UTC).replace(tzinfo=None)
 
 
-def iso(value: datetime | None) -> str | None:
-    return _utc(value).isoformat() + "Z" if value is not None else None
+def iso(value: datetime | date | None) -> str | None:
+    """A time as UTC ISO ("…Z"); a calendar day as itself ("2026-02-14"), never shifted."""
+    if value is None:
+        return None
+    if not isinstance(value, datetime):
+        return value.isoformat()
+    return _utc(value).isoformat() + "Z"
 
 
 def data(spec: TimelineSpec, db: Db, user, gq: grid_engine.GridQuery,
@@ -42,10 +47,13 @@ def data(spec: TimelineSpec, db: Db, user, gq: grid_engine.GridQuery,
     if e is not None:
         extent.append(func.bool_or(e.is_(None)).label("open"))
     [ext] = grid_engine.read(db, select(*extent).where(s.is_not(None)), binds)
-    aware = ext["lo"] is not None and ext["lo"].tzinfo is not None
-    lo, hi = _utc(ext["lo"]), _utc(ext["hi"])
+    aware = getattr(ext["lo"], "tzinfo", None) is not None
+    lo, hi = ext["lo"], ext["hi"]
+    if isinstance(lo, datetime):
+        lo, hi = _utc(lo), _utc(hi)
     if ext.get("open"):
-        hi = max(hi, now) if hi else now
+        hi = now if hi is None else max(hi if isinstance(hi, datetime)
+                                        else datetime.combine(hi, datetime.min.time()), now)
 
     conds = [s.is_not(None)]
     if start and end:

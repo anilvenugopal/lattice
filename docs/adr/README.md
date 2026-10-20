@@ -20,6 +20,8 @@ is a new record that names the one it replaces.
 | [0010](0010-theming-and-overrides.md) | Theming and overrides: the host owns the brand, apps style only their own pages | Proposed |
 | [0011](0011-integration-standards.md) | Integration standards: URN references, CloudEvents, published views, OpenAPI between processes | Accepted |
 | [0012](0012-taskline-ui-and-contract.md) | Taskline UI on Taskline's published contract: views, async commands, no events | Accepted |
-| [0013](0013-geoengine-and-maps.md) | Geospatial: a separate geoengine package, PostGIS, and a Lattice map component | Proposed |
+| [0013](0013-geoengine-and-maps.md) | Geospatial: a separate geoengine package, PostGIS, and a Lattice map component | Accepted |
+| [0014](0014-timeline-component.md) | Timelines: a TimelineSpec component drawn in HTML | Accepted |
+| [0015](0015-chart-colours.md) | Chart colours: one hue by default, colour only where it means something | Accepted |
 
 Statuses: Proposed, Accepted, Superseded by NNNN.

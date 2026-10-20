@@ -67,3 +67,13 @@ def test_a_timeline_outside_its_namespace_stops_the_host():
     bad = TimelineSpec("other.events", "E", AUDIT, start="at", lane="action")
     with pytest.raises(AppError, match="timeline key 'other.events'"):
         create_app(apps=[AppManifest(key="stats", label="Stats", timelines=[bad])])
+
+
+def test_days_are_sent_as_days_and_times_as_utc():
+    from datetime import date, datetime, timedelta, timezone
+
+    from lattice.components.timeline.engine import iso
+    assert iso(date(2026, 2, 14)) == "2026-02-14"                      # never moved by a time zone
+    assert iso(datetime(2026, 2, 14, 9)) == "2026-02-14T09:00:00Z"     # naive is UTC
+    eastern = datetime(2026, 2, 14, 4, tzinfo=timezone(timedelta(hours=-5)))
+    assert iso(eastern) == "2026-02-14T09:00:00Z" and iso(None) is None
