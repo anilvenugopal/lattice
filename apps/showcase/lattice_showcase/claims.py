@@ -146,7 +146,8 @@ GRID = GridSpec(
                                        "commercial_property": "Commercial property"}, hidden=True),
         Column("location_ref", "Location", kind="mono", hidden=True),
     ],
-    search=["claim_number", "insured", "policy_number", "city", "county", "zone"],
+    search=["claim_number", "insured", "policy_number", "city", "county", "zone", "surveyor",
+            "handler"],
     filters=[Filter("status", "Status", STATUSES), Filter("severity", "Severity", SEVERITIES),
              Filter("event_code", "Event", lambda db, u: [(r["code"], f"{r['code']} · {r['name']}")
                                                            for r in db.all(EVENTS.grid)]),

@@ -130,6 +130,7 @@ def test_intake_claims_handling_assessment_and_reports(as_user, book, db):
     rows = c.get("/_grid/showcase.claims/rows", params={"view": "all", "x_zone": "Houston",
                                                         "x_surveyor": "Pat Field"}).text
     assert rows.count("<tr data-id") == len(ids)
+    assert c.get("/_grid/showcase.claims/rows?view=all&q=Field").text.count("<tr data-id") == len(ids)
 
 
 def test_claims_pages_render(as_user, book, db):

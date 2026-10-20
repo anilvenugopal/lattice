@@ -13,7 +13,8 @@ field reports. **Open in claims system** on a claim leads back to it.
 
 - **Tabs**: Open, Mine (claims you handle), Waiting for a surveyor, Priority,
   and All.
-- **Search** matches the claim number, insured, policy, city, county and zone.
+- **Search** matches the claim number, insured, policy, city, county, zone,
+  surveyor and handler.
 - **Draw** on the map to narrow the list to an area; the charts follow.
 - Select claims, then **Assign surveyor**, **Move to zone**, **Take** (become
   their desk handler), **Priority** or **Inspected**.
