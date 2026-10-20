@@ -164,8 +164,14 @@ sort and paging on top:
 SELECT g.* FROM ( <your query> ) AS g
 WHERE <view> AND <filters> AND <search>
 ORDER BY <sort>, g.id
-LIMIT <page size> OFFSET <start>
+LIMIT <page size>
 ```
+
+Next and Previous add a keyset condition instead of an offset: the rows after
+the last one shown, `(<sort>, g.id) < (<its sort value>, <its id>)`. So page 2,000
+costs what page 2 does, provided an index serves the sort; an index on
+`(<sort column>, id)` is ideal. The cursor travels in the address as `after=` or
+`before=`, next to `page=`, which only labels the page.
 
 So the query can be as complex as SQL allows, and every column it returns can
 be shown, searched, filtered and sorted. Postgres merges the wrapping away

@@ -132,7 +132,12 @@ function dataGrid(config) {
 
     reload(opts = {}) {
       if (opts.reset) this.clearSelection();
-      if ('page' in opts) this.$refs.page.value = opts.page;
+      if ('page' in opts) {
+        // Next and Previous carry a cursor (keyset paging); any other change starts afresh.
+        this.$refs.page.value = opts.page;
+        this.$refs.after.value = opts.page > 1 && opts.after ? opts.after : '';
+        this.$refs.before.value = opts.page > 1 && opts.before ? opts.before : '';
+      }
       const qs = this.paramString();
       const scroller = this.$refs.body.querySelector('.dg__scroll');
       const top = scroller ? scroller.scrollTop : 0;
@@ -165,7 +170,7 @@ function dataGrid(config) {
       config.sort = next;
       this.reload({ page: 1 });
     },
-    goPage(n) { this.reload({ page: n }); },
+    goPage(n, cursor = {}) { this.reload({ page: n, ...cursor }); },
     setSize(n) { this.$refs.size.value = n; this.reload({ page: 1 }); },
     setView(v) {
       this.view = v;
@@ -198,10 +203,10 @@ function dataGrid(config) {
     },
 
     // ── Saved views ────────────────────────────────────────────────────────
-    // A saved view is the grid's state as a query string, without the page.
+    // A saved view is the grid's state as a query string, without the page or its cursor.
     stateString() {
       const p = new URLSearchParams(this.paramString());
-      p.delete('page');
+      ['page', 'after', 'before'].forEach(k => p.delete(k));
       return p.toString();
     },
     canon(qs) {

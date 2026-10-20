@@ -1,6 +1,7 @@
 # 0008. Grid rows come from data sources with keyset paging
 
-Status: Proposed
+Status: Accepted in part (20 October 2026): keyset paging for SQL grids, built. Data
+sources (async and merged) remain proposed until an app needs one.
 
 ## Context
 
@@ -33,3 +34,22 @@ from systems outside Lattice.
 
 - **A separate list component for non-SQL data.** It would duplicate the grid.
 - **Offset paging for merged sources.** Offsets cannot be combined across databases.
+
+## Keyset paging, as built (20 October 2026)
+
+Taskline UI lists runs from views of a million rows, where offset paging cost about 80
+microseconds per skipped row (442 ms at page 100, Taskline's measurement). The grid now
+pages by keyset; data sources wait for a second, non-SQL source.
+
+- **Next and Previous carry a cursor**: the boundary row's sort value and id, as an
+  opaque token in the address (`after=` or `before=`). `page=` only labels the page;
+  a page number without a cursor (an old link) is read by offset.
+- **Index-friendly conditions**: a row comparison, `(sort, id) > (value, id)`, which an
+  index on `(sort, id)` serves in order; nulls (last ascending, first descending, as
+  Postgres orders them) are a second condition read only if the first runs out.
+- **The count stays**: "Page N of M" and "1–50 of 240" are unchanged.
+- **Measured** on a million rows sorted by time (each including the 21 ms count): page
+  2, 23 ms; page 19,999, 24 ms by keyset against 77 ms by offset. On views that join
+  (Taskline's), offset grows far faster and keyset stays flat.
+- `tests/test_grid_keyset.py` walks every page forward and back for ten sort orders with
+  ties and nulls, and checks the rows match offset paging exactly.

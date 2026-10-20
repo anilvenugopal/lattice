@@ -23,6 +23,8 @@
     <input type="hidden" name="view" :value="view" value="{{ gq.view }}">
     <input type="hidden" name="sort" x-ref="sort" value="{{ gq.sort }}">
     <input type="hidden" name="page" x-ref="page" value="{{ gq.page }}">
+    <input type="hidden" name="after" x-ref="after" value="{{ gq.after }}">
+    <input type="hidden" name="before" x-ref="before" value="{{ gq.before }}">
     <input type="hidden" name="size" x-ref="size" value="{{ gq.size }}">
     {% if spec.spatial %}<input type="hidden" name="shape" x-ref="shape" value="{{ gq.shape }}">
     <input type="hidden" name="near" x-ref="near" value="{{ gq.near }}">

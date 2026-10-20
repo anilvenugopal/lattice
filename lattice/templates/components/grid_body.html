@@ -66,6 +66,6 @@
     </select>
   </label>
   <span class="dg__pages">Page {{ page.page }} of {{ page.pages }}</span>
-  <button type="button" class="icon-btn icon-btn--sm" aria-label="Previous page" {% if page.page <= 1 %}disabled{% endif %} @click="goPage({{ page.page - 1 }})">{{ icon('chevron-left') }}</button>
-  <button type="button" class="icon-btn icon-btn--sm" aria-label="Next page" {% if page.page >= page.pages %}disabled{% endif %} @click="goPage({{ page.page + 1 }})">{{ icon('chevron-right') }}</button>
+  <button type="button" class="icon-btn icon-btn--sm" aria-label="Previous page" {% if page.page <= 1 %}disabled{% endif %} @click="goPage({{ page.page - 1 }}, { before: {{ page.previous | js }} })">{{ icon('chevron-left') }}</button>
+  <button type="button" class="icon-btn icon-btn--sm" aria-label="Next page" {% if page.page >= page.pages %}disabled{% endif %} @click="goPage({{ page.page + 1 }}, { after: {{ page.next | js }} })">{{ icon('chevron-right') }}</button>
 </div>
