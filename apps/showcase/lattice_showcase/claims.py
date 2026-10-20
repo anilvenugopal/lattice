@@ -11,8 +11,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Literal
 
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.concurrency import run_in_threadpool
 
@@ -22,6 +22,7 @@ from lattice.api import (
     ActionContext,
     ActionResult,
     Areas,
+    BadPath,
     ChartSpec,
     Column,
     Count,
@@ -51,10 +52,12 @@ from lattice.api import (
     build_grid,
     build_map,
     build_timeline,
+    check_folder,
     csrf_protect,
     current_user,
     documents,
     flash,
+    folder_label,
     get_db,
     notifications,
     parse_form,
@@ -64,6 +67,7 @@ from lattice.api import (
     require,
     settings,
     sql_queries,
+    toast,
     transaction,
     urn,
 )
@@ -363,6 +367,12 @@ def _reports(request: Request, db: Db, row: dict) -> dict:
             "can_edit": request.state.user.can(MANAGE)}
 
 
+def _folder(request: Request, db: Db, row: dict) -> dict:
+    folder = db.one(SQL.by_id, id=row["id"])["file_folder"]
+    return {"claim_id": row["id"], "folder": folder, "text": folder_label(folder) if folder else "",
+            "can_edit": request.state.user.can(MANAGE)}
+
+
 def _where(request: Request, db: Db, row: dict) -> dict:
     return {"map": build_map(request, MAP, linked=False,
                              fixed={"id": row["id"], "event_id": row["event_id"]})}
@@ -409,7 +419,9 @@ DETAIL = RecordPage(
             Panel("coverages", "Coverages and payments", "showcase/claim_coverages.html",
                   load=_coverages, place="side"),
             Panel("where", "Where", "showcase/event_map.html", load=_where, place="side",
-                  flush=True)],
+                  flush=True),
+            Panel("folder", "Claim file", "showcase/claim_folder.html", load=_folder,
+                  place="side")],
 )
 
 
@@ -475,6 +487,18 @@ async def save_report(claim_id: int, request: Request, db: Db = Depends(get_db),
 def reports_page(request: Request, db: Db = Depends(get_db)):
     return render_grid_page(request, db, REPORTS, "claims.reports",
                             subtitle="Free-form reports from the field: no two are alike.")
+
+
+@router.post("/claims/{claim_id}/folder", dependencies=[Depends(require(MANAGE))])
+def set_folder(claim_id: int, request: Request, folder: str = Form(""), db: Db = Depends(get_db)):
+    """Where the claim's documents live on a shared drive (the folder picker, ADR 0017)."""
+    db.one(SQL.by_id, id=claim_id)
+    try:
+        value = check_folder(folder) if folder else ""
+    except BadPath as exc:
+        return Response(status_code=400, headers=toast(str(exc), "danger"))
+    db.run(SQL.set_folder, id=claim_id, folder=value)
+    return Response(headers=toast(f"Claim file: {folder_label(value)}." if value else "Claim file cleared."))
 
 
 @router.get("/claims-system/{claim_number}")
