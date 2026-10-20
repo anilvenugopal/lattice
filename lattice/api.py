@@ -46,6 +46,7 @@ from lattice.kernel.config import settings
 from lattice.kernel.database import Db, NotFound, get_db, transaction
 from lattice.kernel.dev_seed import DEV_USERS
 from lattice.kernel.events import CloudEvent
+from lattice.kernel.migrate import Library
 from lattice.kernel.nav import NavNode
 from lattice.kernel.services import audit, users
 from lattice.kernel.sql import Query, sql_queries
@@ -53,7 +54,7 @@ from lattice.kernel.web import flash, render, render_page, toast
 
 __all__ = [
     # Apps and navigation
-    "AppManifest", "NavNode", "HomeTile", "SearchProvider", "SearchResult",
+    "AppManifest", "Library", "NavNode", "HomeTile", "SearchProvider", "SearchResult",
     # Grid
     "Action", "ActionContext", "ActionResult", "Column", "Field", "Filter", "GridSpec",
     "Palette", "View", "build_grid", "render_grid_page",

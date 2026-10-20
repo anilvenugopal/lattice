@@ -34,7 +34,7 @@ from lattice.kernel.auth import csrf as csrf_cookie  # noqa: E402
 from lattice.kernel.auth import permissions  # noqa: E402
 from lattice.kernel.auth.sessions import CurrentUser  # noqa: E402
 from lattice.kernel.database import Db, transaction  # noqa: E402
-from lattice.kernel.migrate import migrate, sources_for  # noqa: E402
+from lattice.kernel.migrate import libraries_for, migrate_all, sources_for  # noqa: E402
 from lattice.kernel.services import users as users_service  # noqa: E402
 
 PASSWORD = "Passw0rd-Long!"
@@ -60,6 +60,7 @@ def _template(server, templates, apps) -> str:
     """A database migrated once per test run for these apps; tests copy it."""
     sources = sources_for(apps)
     key = (tuple((schema, str(folder)) for schema, folder in sources),
+           tuple(library.name for library in libraries_for(apps)),
            tuple(sorted((p.key, p.default_roles) for a in apps for p in a.permissions)))
     if key not in templates:
         create_app(apps=apps)              # fills the permission catalogue to sync
@@ -69,7 +70,7 @@ def _template(server, templates, apps) -> str:
             conn.exec_driver_sql(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)')
             conn.exec_driver_sql(f'CREATE DATABASE "{name}"')
         database.configure(_url(name))
-        migrate(sources)
+        migrate_all(apps)
         with transaction() as db:          # grants as `lattice migrate` makes them
             permissions.sync(db)
         database.engine().dispose()      # a template must have no open connections

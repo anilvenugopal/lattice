@@ -19,6 +19,7 @@ from lattice.api import AppManifest, GridSpec, render_page
 | Name | Kind | Description |
 |---|---|---|
 | [`AppManifest`](app-manifest.md#appmanifest) | class | What an app adds to a host. Listed once per app package. |
+| `Library` | class | A library that migrates its own schemas, e.g. `Library("taskline", ["jobs", "taskline_api"], lambda engine: taskline.migrate(engine, …))`. |
 | [`NavNode`](app-manifest.md#navnode) | class | A page in the navigation. Top-level nodes are rail icons; their children are the sidebar. |
 | [`HomeTile`](app-manifest.md#hometile) | class | A count on the home page: the rows of a grid view, linking to that view. |
 | [`SearchProvider`](app-manifest.md#searchprovider) | class | A Ctrl+J source: answers a query and renders a preview of one result. |

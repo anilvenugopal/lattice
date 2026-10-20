@@ -63,17 +63,39 @@ CREATE INDEX ticket_status ON helpdesk.ticket (status);
 `lattice migrate` (`make migrate`) applies, in order:
 
 1. Lattice's files;
-2. each app's files, in the host's app order.
+2. each **library** that migrates itself (`AppManifest.libraries`);
+3. each app's files, in the host's app order, with the folders of the libraries
+   it lists in `library_schemas` (geoengine) just before them.
 
 Each schema has a `_schema_version` table recording which files have run, so
-each file runs once. All pending files run in one transaction: if one fails,
-nothing changes.
+each file runs once. Each step runs in one transaction: if a file fails, that
+step changes nothing, and the steps before it stay applied.
+
+### Libraries with their own migrations
+
+A library whose migrations need more than a folder of SQL brings its own
+`migrate(engine)`. Taskline's records its instance name and grants a reader
+role. The app that uses it declares a `Library`: a name, the schemas it owns
+(`make reset` drops them), and the function, which gets Lattice's engine and
+returns what it applied.
+
+```python
+from lattice.api import AppManifest, Library
+import taskline
+
+TASKLINE = Library("taskline", ["jobs", "taskline_api"],
+                   lambda engine: taskline.migrate(engine, instance_name=…, reader_role=…))
+APP = AppManifest(key="taskline_ui", …, libraries=[TASKLINE])
+```
+
+A library several apps declare runs once. If it fails, `lattice migrate` stops
+with its name and error; Lattice's own migrations from that run stay applied.
 
 | Command | Does |
 |---|---|
 | `make migration schema=helpdesk m="add ticket priority"` | Creates the next numbered file, `0002_add_ticket_priority.sql`, for you to fill in |
 | `make migrate` | Applies every pending file |
-| `make reset` | Drops Lattice's and the apps' schemas, then migrates and seeds again. Development only |
+| `make reset` | Drops Lattice's, the libraries' and the apps' schemas, then migrates and seeds again. Development only |
 
 Rules:
 

@@ -77,3 +77,7 @@ SELECT id, -95.0 + id * 0.01 AS lon, 29.5 AS lat, action, target_type,
        CAST(1 AS integer) AS weight
 FROM lattice.audit_event
 WHERE action LIKE 'maptest.%';
+
+-- name: schema_exists
+-- Whether a schema exists.
+SELECT count(*) FROM information_schema.schemata WHERE schema_name = :name;

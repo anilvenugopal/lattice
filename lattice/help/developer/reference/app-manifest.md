@@ -40,6 +40,7 @@ What an app adds to a host. Listed once per app package.
 | `icons` | `dict[str, str]` | `{}` | Icons the app adds, used as icon("{key}:name"). Values are SVG path markup. |
 | `permissions` | `list[Permission]` | `[]` | What the app's users may do: checked with require(), permission=, can(). |
 | `library_schemas` | `list[tuple[str, Path]]` | `[]` | Schemas of libraries the app uses, as (schema, migrations folder), e.g. geoengine.SCHEMA. `lattice migrate` applies them before the app's own, once even if several apps list them. |
+| `libraries` | `list[Library]` | `[]` | Libraries that migrate themselves (a callable, not a folder), e.g. Taskline. |
 | `sql` | `Path \| None` | `None` | Folder of the app's SQL: named queries in *.sql, migrations in schema/*.sql. The migrations create and fill the Postgres schema named after the app's key. |
 | `help` | `Path \| None` | `None` | Folder of Markdown help topics with index.md and an optional help.toml page map. |
 | `slots` | `dict[str, str]` | `{}` | Slot name -> template in the app's own folder ("{key}/…"). |
