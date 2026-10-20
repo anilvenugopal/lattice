@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import re
+import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -131,7 +132,7 @@ class GridPage:
 _PY_TYPES: dict[str, type] = {
     "int2": int, "int4": int, "int8": int, "bool": bool,
     "float4": float, "float8": float, "numeric": float,
-    "timestamp": datetime, "timestamptz": datetime, "date": date,
+    "timestamp": datetime, "timestamptz": datetime, "date": date, "uuid": uuid.UUID,
 }
 
 
@@ -166,6 +167,8 @@ def coerce(py: type | None, value):
         return str(value).lower() in ("1", "true", "yes", "on")
     if py in (datetime, date):
         return py.fromisoformat(str(value))
+    if py is uuid.UUID:
+        return uuid.UUID(str(value))
     return py(value)
 
 

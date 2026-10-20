@@ -81,3 +81,11 @@ WHERE action LIKE 'maptest.%';
 -- name: schema_exists
 -- Whether a schema exists.
 SELECT count(*) FROM information_schema.schemata WHERE schema_name = :name;
+
+-- name: uuid_things
+-- Rows keyed by a uuid, as Taskline's views are, for tests/test_grid_uuid.py.
+SELECT * FROM (VALUES
+  (CAST('0199aaaa-0000-7000-8000-000000000001' AS uuid), 'one',   'a', now() - interval '3 days'),
+  (CAST('0199aaaa-0000-7000-8000-000000000002' AS uuid), 'two',   'b', now() - interval '2 days'),
+  (CAST('0199aaaa-0000-7000-8000-000000000003' AS uuid), 'three', 'a', now() - interval '1 day')
+) AS t (id, name, kind, made_at);
