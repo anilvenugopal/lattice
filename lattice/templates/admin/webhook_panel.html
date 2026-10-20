@@ -1,0 +1,7 @@
+{# Administration › Webhooks: one webhook, with what a receiver needs to check its posts. #}
+{% from "components/macros.html" import prop_list %}
+{{ prop_list([("Address", row.url), ("Events", row.events_text), ("Added", time_tag(row.created_at))]) }}
+<p class="u-small">Each post carries <code>X-Lattice-Timestamp</code> and
+  <code>X-Lattice-Signature: sha256=…</code>, the HMAC-SHA256 of
+  <code>"{timestamp}.{body}"</code> with this secret. Check it before trusting a post.</p>
+<pre class="code-block">{{ row.secret }}</pre>

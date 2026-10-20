@@ -89,6 +89,26 @@ out, with any error from the mail server.
 
 Reading it needs the **Read sent email** permission.
 
+## Webhooks
+
+**Webhooks** sends this site's events to other places as they happen: a Slack
+or Teams channel, or another system. Each webhook has an address, the events it
+takes (one kind, or every event) and a format:
+
+- **CloudEvents JSON**, the standard event format, for other systems;
+- **Chat message**, a short line Slack incoming webhooks and Teams workflows
+  post into a channel.
+
+Select **Add webhook**, then **Send test** to check it: the post appears under
+**Deliveries** within 30 seconds with the receiver's answer. A post that fails
+is tried five times, waiting longer each time; **Retry** queues it again.
+
+Every post is **signed**. Open a webhook to see its secret: the receiver checks
+the `X-Lattice-Signature` header against it, and ignores posts that do not
+match. Addresses must start with `https://`.
+
+Managing them needs the **Manage webhooks** permission.
+
 ## System
 
 **System** shows how this site is set up:

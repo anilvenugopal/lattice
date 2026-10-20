@@ -1,0 +1,6 @@
+{# Administration › Webhooks: one post, exactly as it was sent, and how the receiver answered. #}
+{% from "components/macros.html" import prop_list %}
+{{ prop_list([("Webhook", row.webhook), ("Subject", row.subject or "—"), ("Answer", row.response_status or "—"),
+              ("Queued", time_tag(row.created_at)), ("Delivered", time_tag(row.delivered_at)),
+              ("Last error", row.last_error or "—")]) }}
+<pre class="code-block">{{ row.body }}</pre>

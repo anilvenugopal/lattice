@@ -82,8 +82,9 @@ def publish(db: Db, type: str, subject: str = "", data: dict | None = None) -> C
 
 def deliver(event: CloudEvent) -> None:
     """Hand one event to each subscriber, each in its own transaction, then to
-    notifications: the subject's followers are told, and what the event closes is cleared."""
-    from lattice.kernel.services import notifications
+    notifications (the subject's followers are told, what the event closes is cleared) and
+    to the webhooks that take its type (queued, posted in the background)."""
+    from lattice.kernel.services import notifications, webhooks
 
     for app, handler in SUBSCRIBERS.get(event.type, []):
         try:
@@ -96,3 +97,8 @@ def deliver(event: CloudEvent) -> None:
             notifications.on_event(db, event)
     except Exception:
         log.exception("Notifications failed on event %s (%s)", event.id, event.type)
+    try:
+        with transaction() as db:
+            webhooks.queue(db, event)
+    except Exception:
+        log.exception("Queueing webhooks failed on event %s (%s)", event.id, event.type)

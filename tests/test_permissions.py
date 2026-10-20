@@ -52,7 +52,8 @@ def test_lattice_declares_its_permissions():
     create_app(apps=[])
     assert sorted(permissions.CATALOGUE) == [
         "lattice.audit.view", "lattice.email.view", "lattice.roles.manage", "lattice.sessions.manage",
-        "lattice.system.view", "lattice.users.manage", "lattice.views.share"]
+        "lattice.system.view", "lattice.users.manage", "lattice.views.share",
+        "lattice.webhooks.manage"]
 
 
 def test_defaults_are_granted_once_and_never_again(db):

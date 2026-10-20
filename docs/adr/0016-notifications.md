@@ -1,7 +1,7 @@
 # 0016. Notifications: an inbox in Lattice's core, fed by apps and by following records
 
-Status: Accepted (20 October 2026). Phases 1 (in-app) and 2 (email and each person's
-choices) built; phase 3 (webhooks) follows. Changes the plan in ARCHITECTURE.md section 9,
+Status: Accepted (20 October 2026). Phases 1 (in-app), 2 (email and each person's
+choices) and 3 (webhooks) built. Changes the plan in ARCHITECTURE.md section 9,
 which had Notifications as a separate service app.
 
 ## Context
@@ -75,3 +75,17 @@ failures into something a person must act on.
 - **No mail server** (`LATTICE_SMTP_HOST` empty): emails are kept as logged, readable with
   the new permission `lattice.email.view` in Administration › Email, which also sends a
   test email.
+
+## Phase 3, as built (20 October 2026)
+
+- **Webhooks take events**, not people's notifications: an administrator registers an
+  address, the event types it takes (or every event) and a format, in Administration ›
+  Webhooks (permission `lattice.webhooks.manage`).
+- **Formats**: CloudEvents JSON for other systems; a `{"text": …}` chat message for Slack
+  and Teams, from the notification kind tied to the event.
+- **Signed**: `X-Lattice-Signature: sha256=…`, the HMAC-SHA256 of `"{timestamp}.{body}"`
+  with the webhook's secret, and `X-Lattice-Timestamp`.
+- **Queued and retried** like email: `lattice.webhook_delivery` holds the exact body; the
+  background loop posts every 30 seconds, five tries with growing waits, ten-second
+  timeouts, no redirects followed. Addresses must be https (http to localhost in
+  development).
