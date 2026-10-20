@@ -35,11 +35,14 @@ class NavNode:
 # Filled by lattice.host.create_app from the app manifests, in rail order.
 NODES: list[NavNode] = []
 BY_KEY: dict[str, NavNode] = {}
+# Each app's accent tone (AppManifest.accent, ADR 0010): its rail entry and page headers.
+ACCENTS: dict[str, str] = {}
 
 
 def reset() -> None:
     NODES.clear()
     BY_KEY.clear()
+    ACCENTS.clear()
 
 
 def add(nodes: list[NavNode], app_key: str) -> None:
@@ -103,6 +106,8 @@ def nav_context(user, active_key: str) -> dict:
         "breadcrumb": [_entry(user, chain[0]), *chain[1:]],
         "title": chain[-1].label,
         "app": chain[-1].app,                       # <main data-app="…"> (ADR 0010)
+        "accent": ACCENTS.get(chain[-1].app, ""),
+        "accents": ACCENTS,
     }
 
 

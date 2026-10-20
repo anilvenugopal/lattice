@@ -1,4 +1,5 @@
 from lattice.kernel.nav.manifest import (
+    ACCENTS,
     BY_KEY,
     NODES,
     NavNode,
@@ -9,5 +10,5 @@ from lattice.kernel.nav.manifest import (
     search_nodes,
 )
 
-__all__ = ["BY_KEY", "NODES", "NavNode", "add", "can_open", "nav_context", "reset",
+__all__ = ["ACCENTS", "BY_KEY", "NODES", "NavNode", "add", "can_open", "nav_context", "reset",
            "search_nodes"]

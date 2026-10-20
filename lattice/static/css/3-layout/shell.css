@@ -12,7 +12,7 @@
   color: var(--text-on-rail); border-radius: var(--r-lg); transition: background var(--dur), color var(--dur);
 }
 .rail__btn:hover { color: var(--text-on-rail-strong); background: var(--surface-rail-hover); text-decoration: none; }
-.rail__btn.is-active { color: var(--text-on-rail-strong); background: var(--surface-rail-active); box-shadow: inset 3px 0 0 var(--accent); }
+.rail__btn.is-active { color: var(--text-on-rail-strong); background: var(--surface-rail-active); box-shadow: inset 3px 0 0 var(--app-accent, var(--accent)); }
 .rail__spacer { flex: 1; }
 
 .topbar {
@@ -45,3 +45,8 @@
 .bell__count { position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px;
   font-size: var(--fs-2xs); font-weight: var(--fw-semibold); line-height: 16px; text-align: center;
   color: var(--text-on-accent); background: var(--accent); border-radius: var(--r-pill); }
+
+/* An app's accent on its rail entry (ADR 0010; the tones are in 4-components/content.css). */
+.rail__btn[class*="accent-"] { position: relative; }
+.rail__btn[class*="accent-"]::after { content: ""; position: absolute; top: 7px; right: 7px; width: 6px; height: 6px;
+  border-radius: var(--r-pill); background: var(--app-accent); }

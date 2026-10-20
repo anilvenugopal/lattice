@@ -1,0 +1,14 @@
+{#- The daily summary of unread notifications (ADR 0016). A host overrides it with
+    templates/email/digest.txt. -#}
+{% autoescape false -%}
+You have {{ items | length }} unread notification(s):
+
+{% for item in items[:25] -%}
+- {{ item.title }}{% if item.count > 1 %} ({{ item.count }} times){% endif %}
+{% endfor -%}
+{% if items | length > 25 %}…and {{ items | length - 25 }} more.
+{% endif %}
+Read them: {{ base }}/account/notifications
+
+Choose how you are told: {{ base }}/account/notifications/settings
+{%- endautoescape %}

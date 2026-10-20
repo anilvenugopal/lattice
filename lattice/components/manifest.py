@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 from fastapi import APIRouter
 
@@ -62,6 +63,9 @@ class AppManifest:
     # [data-app="{key}"] (ADR 0010).
     static: Path | None = None
     stylesheets: list[str] = field(default_factory=list)  # file names inside `static`
+    # The app's accent (ADR 0010): a tone, never a colour, marking its rail entry and page
+    # headers so it stays recognisable inside the host's one theme.
+    accent: Literal["", "info", "success", "warning", "danger", "accent", "neutral"] = ""
     # Icons the app adds, used as icon("{key}:name"). Values are SVG path markup.
     icons: dict[str, str] = field(default_factory=dict)
     # What the app's users may do: checked with require(), permission=, can().

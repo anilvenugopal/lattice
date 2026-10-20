@@ -72,9 +72,26 @@ def notify(db: Db, user_ids: Iterable[int], kind: str, title: str, body: str = "
     folded = db.all(SQL.notifications.collapse, user_ids=ids, **values)
     fresh = [u for u in ids if u not in {r["user_id"] for r in folded}]
     added = db.all(SQL.notifications.add, user_ids=fresh, **values) if fresh else []
-    db.run(SQL.notifications.queue_emails, ids=[r["id"] for r in [*folded, *added]],
-           base=settings.public_url.rstrip("/"), label=KINDS[kind].label,
-           default_channel=KINDS[kind].email)
+    recipients = db.all(SQL.notifications.email_recipients, ids=[r["id"] for r in [*folded, *added]],
+                        default_channel=KINDS[kind].email)
+    for r in recipients:
+        queue_email(db, r["user_id"], r["email"], r["title"], "notification", [r["id"]],
+                    title=r["title"], notification_id=r["id"], kind_label=KINDS[kind].label)
+
+
+def render_email(template: str, **values) -> str:
+    """Plain-text email body from templates/email/{template}.txt; a host overrides the file
+    in its own templates/email/ folder (ADR 0010)."""
+    from lattice.kernel.web import env
+    return env.get_template(f"email/{template}.txt").render(
+        base=settings.public_url.rstrip("/"), app_name=settings.app_name, **values).strip() + "\n"
+
+
+def queue_email(db: Db, user_id: int, to: str, subject: str, kind: str, ids: list[int],
+                **values) -> None:
+    """Queue one email, its body rendered from the template named by `kind`."""
+    db.run(SQL.notifications.queue_email, user_id=user_id, to_address=to, subject=subject[:255],
+           body=render_email(kind, **values), kind=kind, ids=ids)
 
 
 def resolve(db: Db, subject: str, kinds: Iterable[str]) -> None:
@@ -120,20 +137,12 @@ def queue_digests(db: Db, now: datetime | None = None) -> int:
         return 0
     rows = db.all(SQL.notifications.digest_due,
                   digest_kinds=[k for k, kind in KINDS.items() if kind.email == "digest"])
-    base = settings.public_url.rstrip("/")
     people: dict[int, list[dict]] = {}
     for r in rows:
         people.setdefault(r["user_id"], []).append(r)
     for user_id, items in people.items():
-        lines = [f"- {r['title']}" + (f" ({r['count']} times)" if r["count"] > 1 else "")
-                 for r in items[:25]]
-        more = [f"…and {len(items) - 25} more."] if len(items) > 25 else []
-        body = "\n".join([f"You have {len(items)} unread notification(s):", "", *lines, *more, "",
-                          f"Read them: {base}/account/notifications", "",
-                          f"Choose how you are told: {base}/account/notifications/settings"])
-        db.run(SQL.notifications.queue_digest, user_id=user_id, to_address=items[0]["email"],
-               subject=f"{len(items)} unread notification(s)", body=body,
-               ids=[r["id"] for r in items])
+        queue_email(db, user_id, items[0]["email"], f"{len(items)} unread notification(s)",
+                    "digest", [r["id"] for r in items], items=items)
     return len(people)
 
 

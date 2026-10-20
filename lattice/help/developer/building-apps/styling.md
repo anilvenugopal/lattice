@@ -117,6 +117,20 @@ stylesheet breaks any of these rules:
 An app cannot restyle the shell, another app or Lattice's components. If a
 component needs to look different everywhere, change it in Lattice.
 
+## An app's accent
+
+An app marks its own entry in the rail, and the titles of its pages, with an
+accent, so people know where they are inside the host's one theme. Name a tone,
+never a colour:
+
+```python
+APP = AppManifest(key="showcase", …, accent="warning")
+```
+
+The tones are `info`, `success`, `warning`, `danger`, `accent` and `neutral`;
+each maps to the theme's colour for that tone, so a host's theme carries
+through. Inside your own stylesheet, `var(--app-accent)` is that colour.
+
 ## Templates
 
 Templates carry no inline colours or styles, except computed widths such as a

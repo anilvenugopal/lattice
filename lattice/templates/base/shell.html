@@ -19,7 +19,7 @@
 
   <nav class="rail" aria-label="Main">
     {% macro rail_btn(node) -%}
-      <a class="rail__btn{% if node.key == nav.section.key %} is-active{% endif %}" href="{{ node.route }}"
+      <a class="rail__btn{% if node.key == nav.section.key %} is-active{% endif %}{% if nav.accents.get(node.app) %} accent-{{ nav.accents[node.app] }}{% endif %}" href="{{ node.route }}"
          data-tip="{{ node.label }}" data-tip-pos="right" aria-label="{{ node.label }}">{{ icon(node.icon, 20) }}</a>
     {%- endmacro %}
     {% for node in nav.rail %}{{ rail_btn(node) }}{% endfor %}
@@ -100,7 +100,7 @@
         </nav>
       </aside>
       {% endif %}
-      <main class="main" id="main"{% if nav.app %} data-app="{{ nav.app }}"{% endif %}>
+      <main class="main{% if nav.accent %} accent-{{ nav.accent }}{% endif %}" id="main"{% if nav.app %} data-app="{{ nav.app }}"{% endif %}>
         {% block main %}{% endblock %}
       </main>
     </div>

@@ -1,0 +1,6 @@
+{#- Administration › Email › Send me a test email. A host overrides it with templates/email/test.txt. -#}
+{% autoescape false -%}
+This is a test of {{ app_name }}'s email.
+
+{{ base }}
+{%- endautoescape %}

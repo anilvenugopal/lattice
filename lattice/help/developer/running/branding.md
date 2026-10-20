@@ -36,8 +36,9 @@ helpdesk_host/
 | Setting | Is |
 |---|---|
 | `LATTICE_APP_NAME` | The name in the top bar, page titles and the sign-in page |
-| `LATTICE_BRAND_LOGO_LIGHT` | The logo for light mode; also the favicon |
+| `LATTICE_BRAND_LOGO_LIGHT` | The logo for light mode; also the favicon, unless one is set |
 | `LATTICE_BRAND_LOGO_DARK` | The logo for dark mode; also the favicon in dark mode |
+| `LATTICE_BRAND_FAVICON` | The browser tab icon, when it should differ from the logos (`.ico`, `.svg` or `.png`) |
 | `LATTICE_BRAND_SHOW_NAME` | `false` when the logo images already contain the name |
 
 Files in the host's `static/` folder are served at `/static/host/`, so:
@@ -87,8 +88,21 @@ It loads after Lattice's CSS. `create_app` refuses to start unless:
 [Reference › Design tokens](../reference/tokens.md) marks them all, with their
 default values.
 
-`theme.css` cannot declare `@font-face`, so name a font your users have
-installed and keep the system fonts as fallbacks.
+**Your own font files.** `theme.css` may load fonts with `@font-face`, from the
+host folder only (a path relative to `theme.css`, or `/static/host/…`), with
+font descriptors and nothing else:
+
+```css
+@font-face { font-family: "Brand Sans"; src: url("fonts/brand-sans.woff2") format("woff2");
+             font-weight: 400 700; font-display: swap; }
+@layer settings {
+  :root { --font-ui: "Brand Sans", system-ui, sans-serif; }
+  [data-mode="dark"] { --font-ui: "Brand Sans", system-ui, sans-serif; }
+}
+```
+
+Fonts from other sites (a font CDN) are refused: the site keeps working with no
+outside requests. Keep the system fonts as fallbacks.
 
 ## Replacing whole pages
 
@@ -100,9 +114,15 @@ in its `templates/` folder:
 | `auth/login.html` | The sign-in page |
 | `base/error.html` | The error page (403, 404, 500) |
 | `pages/home.html` | The home page |
+| `email/notification.txt` | The email for one notification ([Notifications](../building-apps/notifications.md)) |
+| `email/digest.txt` | The daily summary email |
+| `email/test.txt` | The test email from Administration › Email |
 
 Start from Lattice's own template in `lattice/templates/` and keep its blocks
-and variables. Any other template in the host folder must be under `host/`;
+and variables. The email templates are plain text: they receive `base` (the
+site's address), `app_name` and their own values (`title`, `notification_id`,
+`kind_label`; `items` for the summary), and should keep to titles and links, never
+record content. Any other template in the host folder must be under `host/`;
 `create_app` refuses to start otherwise.
 
 ## Slots

@@ -52,10 +52,32 @@ def app_stylesheet_errors(text: str, app_key: str) -> list[str]:
     return errors
 
 
+FONT_FACE = re.compile(r"@font-face\s*\{([^{}]*)\}")
+FONT_FACE_PROPERTIES = {"font-family", "src", "font-weight", "font-style", "font-display",
+                        "font-stretch", "unicode-range"}
+
+
+def _font_face_errors(body: str) -> list[str]:
+    """A host may load its own font files, from the host folder only."""
+    errors = []
+    declared = set(re.findall(r"([\w-]+)\s*:", re.sub(r"url\([^)]*\)", "url()", body)))
+    if extra := sorted(declared - FONT_FACE_PROPERTIES):
+        errors.append(f"@font-face sets {extra}; only font descriptors are allowed")
+    for url in re.findall(r"url\(\s*['\"]?([^'\")]+)", body):
+        if "://" in url or url.startswith("//") or (url.startswith("/") and not url.startswith("/static/host/")):
+            errors.append(f"@font-face loads {url!r}; fonts must come from the host folder "
+                          "(a relative path, or /static/host/…)")
+    return errors
+
+
 def host_theme_errors(text: str) -> list[str]:
-    """A host theme sets only allowed brand tokens, in both :root and [data-mode="dark"]."""
+    """A host theme sets only allowed brand tokens, in both :root and [data-mode="dark"], and
+    may load font files from the host folder with @font-face."""
     errors = []
     clean = strip_comments(text)
+    for body in FONT_FACE.findall(clean):
+        errors += _font_face_errors(body)
+    text = clean = FONT_FACE.sub("", clean)
     if not re.search(r"@layer\s+settings\b", clean):
         errors.append("must declare @layer settings")
     if COLOR_LITERAL.search(re.sub(r"--[\w-]+\s*:[^;]*;", "", clean)):
