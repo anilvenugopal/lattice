@@ -1,0 +1,107 @@
+To effectively showcase a reusable open-source geospatial analytics engine while keeping the commercial insurance business logic cleanly separated, you need a compelling, end-to-end scenario.
+
+Let's design a mock demo centered around **Multi-Peril Portfolio Risk Management and Catastrophe Triage for a Mid-Sized Commercial Property Book** operating in high-risk zones.
+
+---
+
+### The Architecture: Decoupling Business Layer vs. Geospatial Core
+
+To prove your platform is a modular, reusable geospatial core (the open-source product) rather than a hardcoded insurance app, separate the architecture into two distinct layers:
+
+1. **The Geospatial Analytics Layer (The Open-Source Core - `geo-risk-engine`)**
+* **Role:** A pure geospatial engine. It knows nothing about insurance policies, premiums, or deductibles. It only understands geometries (points, polygons, H3 indexes), rasters, spatial joins, buffering, and hazard exposure calculation.
+* **Inputs:** Raw location data (addresses/coordinates) + hazard layers (flood zones, wildfire perimeters).
+* **Outputs:** Spatial enrichment metrics (distance to coast, elevation, hazard intersection flags, H3 aggregation metrics).
+
+
+2. **The Insurance Business Layer (The Showcase Harness - `pnl-risk-app`)**
+* **Role:** A domain-specific wrapper that consumes the geospatial engine's output and applies P&C logic.
+* **Inputs:** Policy metadata (Total Insured Value - TIV, deductible, policy limits, coverage type).
+* **Outputs:** Actuarial dashboards, portfolio PML (Probable Maximum Loss), capital allocation, and loss-adjustment triage lists.
+
+
+
+---
+
+### The Mock Demo Scenario: "Project Apex – Wildfire & Flood Convergence"
+
+#### 1. The Scenario Setup
+
+You simulate a portfolio of **50,000 commercial and high-value residential properties** distributed across a high-risk region (e.g., combining California wildfire-urban interfaces and coastal flood zones).
+
+* **The Business Problem:** The executive team needs to re-underwrite the portfolio ahead of the upcoming wind and wildfire season because reinsurers are tightening capacity and raising attachment points.
+
+#### 2. Step-by-Step Demo Walkthrough
+
+##### Step 1: Data Ingestion & Quality Remediation (Tackling Data Quality)
+
+* **What the UI Shows:** A data ingestion dashboard showing a batch upload of 50,000 raw policy records.
+* **Under the Hood (Geospatial Core):** The platform flags data quality issues automatically:
+* *Orphan/Invalid Points:* 300 properties with invalid coordinates or zip-code centroids instead of rooftop matches.
+* *Spatial Quality Scoring:* Each record is automatically tagged with a confidence tier (`Rooftop`, `Parcel`, `Zip-Centroid`).
+
+
+* **The Action:** The user clicks a "Clean & Enrich" button. The geospatial core standardizes the addresses, executes a fallback parcel-matching pipeline, and outputs a clean GeoParquet file.
+
+##### Step 2: Spatial Enrichment & Multi-Hazard Overlay (Tackling Interoperability)
+
+* **What the UI Shows:** Properties rendered instantly on a high-performance **MapLibre GL / Deck.gl** map using **H3 hexagonal binning**, coloring hexes by Total Insured Value (TIV).
+* **Under the Hood (Geospatial Core):**
+* The engine performs a spatial join between the cleaned property points and vector/raster hazard layers (e.g., FEMA 100-year flood zones stored as Cloud-Optimized GeoTIFFs, and historical wildfire perimeter polygons).
+* It calculates spatial attributes in bulk: *Distance to nearest brush line (meters)*, *Elevation above sea level*, and *H3 index resolution 8*.
+
+
+* **Interoperability Highlight:** The engine seamlessly ingests a mix of GeoJSON boundaries, PostGIS tables, and cloud raster datasets without missing a beat.
+
+##### Step 3: Portfolio Accumulation & Risk Scoring (Meaningful Analytics)
+
+* **What the UI Shows:** An interactive risk-scoring matrix where underwriters can adjust hazard weights and immediately see portfolio exposure shift.
+* **Under the Hood (Geospatial Core vs. Business Layer):**
+* *Geospatial Core Task:* Computes spatial clustering and spatial risk metrics (e.g., "What is the total value of properties within a 2km buffer of high-risk wildfire zones?").
+* *Business Layer Task:* Multiplies those spatial risk flags by the mock **Total Insured Value (TIV)** and deductibles to calculate a synthetic **Probable Maximum Loss (PML)** and portfolio risk score.
+
+
+* **The Result:** The portfolio is segmented into clear risk tiers (Low, Medium, High, Unacceptable Accumulation).
+
+##### Step 4: Simulated Catastrophe Event & Rapid Triage
+
+* **What the UI Shows:** A toggle for "Simulate Wildfire Event (Sep 2026)". A polygon representing a live wildfire perimeter drops onto the map.
+* **Under the Hood (Geospatial Core):**
+* Executes a high-speed spatial intersection query: `SELECT * FROM portfolio WHERE ST_Intersects(property_geom, wildfire_perimeter)`.
+
+
+* **The Output (The Triage Dashboard):**
+* Instantly generates a priority list of impacted policies, summing up the total exposed TIV in the disaster zone, and outputting a CSV/API payload of policyholders who require immediate proactive outreach.
+
+
+
+---
+
+### Proposed Tech Stack for Your Demo Repo
+
+To build this cleanly so you can open-source the geospatial core separately:
+
+* **Repository Structure:**
+```text
+/geo-risk-engine (The Open-Source Core)
+  ├── core/          # Spatial joins, H3 aggregation, buffer calculations, GeoParquet/PostGIS handlers
+  ├── api/           # FastAPI endpoints for spatial processing
+  └── Dockerfile	  # MUST USE PODMAN
+/insurance-demo-app (The Business Wrapper Showcase)
+  ├── frontend/      # React + MapLibre GL / Deck.gl for the interactive map
+  ├── backend/       # App logic linking policies, TIV, and calling the geo-engine API
+  └── mock_data/     # Generated CSVs of 50k properties + GeoJSON hazard boundaries
+
+```
+
+
+* **Mock Data Generation Script:** Write a small Python script using `geopandas` and `faker` to generate synthetic property coordinates within a target geographic bounding box, assigning randomized TIVs ($200k to $5rd), construction types, and pairing them with public open-source flood/wildfire vector files.
+
+---
+
+### Immediate Action Plan
+
+1. Initialize a monorepo with the structural split (`geo-risk-engine` and `insurance-demo-app`).
+2. Write a Python script to generate a synthetic dataset of 10,000 properties with randomized coordinates and TIVs in a sample metro region.
+3. Implement a basic PostGIS + FastAPI backend in the geospatial core to handle a spatial buffer query and an H3 aggregation endpoint.
+4. Build a minimal Javascript + Deck.gl frontend map viewer to render the H3 hex bins and property points.

@@ -58,6 +58,24 @@ Callers read these in their own SQL and write them only through the Python names
 | h3_7 | character varying |
 | h3_9 | character varying |
 
+### geo.point (view)
+
+Every point of every `points` layer, with its coordinates as columns. Read points through
+this view, not `ST_X(geom)` on `geo.feature`.
+
+| column | type |
+|---|---|
+| layer | character varying |
+| external_id | character varying |
+| feature_id | bigint |
+| lon | double precision |
+| lat | double precision |
+| quality | character varying |
+| h3_5 | character varying |
+| h3_7 | character varying |
+| h3_9 | character varying |
+| props | jsonb |
+
 ## SQL functions
 
 | function | returns |

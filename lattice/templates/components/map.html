@@ -1,0 +1,23 @@
+{#
+  A map over a grid's rows (lattice/components/map). Build the context with build_map() and render:
+    {% from "components/map.html" import map_view %}{{ map_view(m) }}
+  Client behaviour lives in static/js/maps.js (Alpine component `ltMap`).
+#}
+{% macro map_view(m) -%}
+<section class="card map" id="map-{{ m.spec.key }}" x-data='ltMap({{ m.config | tojson }})'
+         data-height="{{ m.spec.height }}">
+  <header class="card__head map__head">
+    <h3 class="card__title">{{ m.spec.title }}</h3>
+    <span class="dg__spacer"></span>
+    <template x-for="l in legend" :key="l.id">
+      <label class="map__toggle"><input type="checkbox" :checked="l.visible" @change="toggle(l.id, $event.target.checked)">
+        <span class="map__swatch" :style="`background:${l.color}`"></span><span x-text="l.title"></span></label>
+    </template>
+  </header>
+  <div class="map__body" :class="{ 'is-loading': loading }">
+    <div class="map__canvas" x-ref="canvas"></div>
+    <p class="map__note" x-show="note" x-cloak x-text="note"></p>
+    <p class="map__note map__note--error" x-show="error" x-cloak x-text="error"></p>
+  </div>
+</section>
+{%- endmacro %}

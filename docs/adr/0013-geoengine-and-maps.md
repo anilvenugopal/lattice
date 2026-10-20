@@ -51,7 +51,8 @@ existing data volume. **H3 is computed in Python** (`h3` 4.5) and stored as an
 ordinary column, so there is no second extension and no custom image.
 
 **The map component** is MapLibre GL JS 6.12 (BSD licence), vendored and loaded on
-first use like Chart.js. `h3-js` draws hexagon outlines in the browser. A
+first use like Chart.js. `h3-js` draws hexagon outlines in the browser. Points are read through geoengine's
+`geo.point` view (added during stage 1), whose coordinates are safe to filter on. A
 `MapSpec` is declared on a grid like a `ChartSpec`:
 
 ```python
@@ -79,8 +80,8 @@ draw state and county outlines only.
 - geoengine has one consumer at first, so its interface may change when a second
   appears; its version and contract test make that visible.
 - The dev database image changes; `make db-up` pulls it, and the data volume stays.
-- One more vendored library (MapLibre, about 800 KB) loads only on pages with a
-  map.
+- One more vendored library (MapLibre 6, ES modules, about 1.1 MB) loads only on
+  pages with a map, and needs WebGL2.
 
 ## Rejected
 

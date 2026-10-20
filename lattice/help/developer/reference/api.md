@@ -62,6 +62,17 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `RecordPanel` | class | A panel an app adds to other apps' record pages, matched on reference kind (ADR 0011). |
 | `CloudEvent` | class | A CloudEvents 1.0 event, as subscribers receive it. |
 
+## Maps
+
+| Name | Kind | Description |
+|---|---|---|
+| `MapSpec` | class |  |
+| `Points` | class | One dot per row, at the row's longitude and latitude. |
+| `Hexagons` | class | A measure per H3 cell, shaded from light to dark. |
+| `Regions` | class | A measure per US state or county, shaded from light to dark. |
+| `Areas` | class | Shapes from a function, not the grid: a fire perimeter, a forecast cone. |
+| `build_map` `(request, spec, linked=True, fixed=None)` | function | Context for one map. `linked` and `fixed` work as for build_chart(). |
+
 ## Charts
 
 | Name | Kind | Description |

@@ -1,4 +1,4 @@
-.PHONY: help db-up db-down setup dev migrate migration seed reset test lint format
+.PHONY: help db-up db-down setup dev migrate migration seed reset maps test lint format
 
 COMPOSE ?= podman-compose
 
@@ -31,6 +31,9 @@ seed:  ## Add development users and each app's example data (skips if users exis
 
 reset:  ## DESTRUCTIVE: drop Lattice's and the apps' schemas, migrate and seed (not in production)
 	uv run lattice reset
+
+maps:  ## Download the self-hosted US basemap (about 400 MB) and its fonts; maps work without it
+	scripts/maps.sh
 
 test:  ## Run the test suite (core and apps)
 	uv run pytest -q

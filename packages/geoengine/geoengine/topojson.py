@@ -20,12 +20,22 @@ def to_geojson(topology: dict, object_name: str) -> dict:
             points.extend(part if not points else part[1:])
         return points
 
+    def polygon(rings: list) -> list:
+        """A polygon's rings, without those quantization collapsed below 4 points; [] if the
+        outer ring collapsed."""
+        decoded = [ring(r) for r in rings]
+        if not decoded or len(decoded[0]) < 4:
+            return []
+        return [r for r in decoded if len(r) >= 4]
+
     def geometry(g: dict) -> dict | None:
         kind = g["type"]
         if kind == "Polygon":
-            return {"type": kind, "coordinates": [ring(r) for r in g["arcs"]]}
+            rings = polygon(g["arcs"])
+            return {"type": kind, "coordinates": rings} if rings else None
         if kind == "MultiPolygon":
-            return {"type": kind, "coordinates": [[ring(r) for r in p] for p in g["arcs"]]}
+            parts = [p for p in (polygon(rings) for rings in g["arcs"]) if p]
+            return {"type": kind, "coordinates": parts} if parts else None
         if kind == "LineString":
             return {"type": kind, "coordinates": ring(g["arcs"])}
         if kind == "Point":

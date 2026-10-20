@@ -24,6 +24,7 @@ What an app adds to a host. Listed once per app package.
 | `routers` | `list[APIRouter]` | `[]` | FastAPI routers, mounted as declared (paths start with /{key}) |
 | `grids` | `list[GridSpec]` | `[]` | registered for actions, export, Ctrl+J and tiles |
 | `charts` | `list[ChartSpec]` | `[]` | served at /_chart/{key}/data |
+| `maps` | `list[MapSpec]` | `[]` | served at /_map/{key}/data |
 | `forms` | `list[FormSpec]` | `[]` | JSON Schema forms: /_form/{key}/render |
 | `schemas` | `list[SchemaDef]` | `[]` | named schemas forms can apply |
 | `documents` | `list[DocumentKind]` | `[]` | kinds in the document store |

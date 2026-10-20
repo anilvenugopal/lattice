@@ -260,3 +260,16 @@ def test_parse_leaves_out_empty_optional_fields():
     assert data["age"] is None                      # Optional: empty is null
     assert "since" not in data or data["since"] is None
     assert data["payment"] == {"method": "invoice"}
+
+
+def test_a_file_widget_keeps_the_files_text_as_the_value():
+    from lattice.components.forms import nodes
+    schema = {"type": "object", "properties": {
+        "cone": {"type": "string", "x-widget": "file", "x-accept": ".geojson,.json"}}}
+    ctx = nodes.Context(root=schema, ui={}, errors={})
+    node = nodes.build(schema, {"cone": '{"type": "FeatureCollection"}'}, ctx)
+    cone = node.children[0]
+    assert cone.widget == "file" and cone.attrs == {"accept": ".geojson,.json"}
+    form = FormData([("data/cone", '{"type": "FeatureCollection"}')])
+    assert nodes.parse(schema, form, nodes.Context(root=schema, ui={}, errors={}),
+                       required=True) == {"cone": '{"type": "FeatureCollection"}'}

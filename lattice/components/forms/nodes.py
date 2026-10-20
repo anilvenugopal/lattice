@@ -146,6 +146,8 @@ def build(schema: Any, value: Any, ctx: Context, name: str = ROOT, key: str = ""
             node.value = node.value.replace(" ", "T")[:16]
         node.attrs = {k: s[src] for k, src in (("minlength", "minLength"),
                       ("maxlength", "maxLength"), ("pattern", "pattern")) if src in s}
+        if node.widget == "file":       # the file's text becomes the string's value
+            node.attrs = {"accept": hints.get("accept") or s.get("x-accept", "")}
     else:
         node.value = "" if value is None else json.dumps(value, indent=2)
     return node

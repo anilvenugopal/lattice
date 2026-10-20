@@ -12,6 +12,7 @@ from lattice.components.chart import ChartSpec
 from lattice.components.documents import DocumentKind
 from lattice.components.forms import FormSpec, SchemaDef
 from lattice.components.grid import GridSpec
+from lattice.components.map import MapSpec
 from lattice.components.record import RecordPanel
 from lattice.components.references import ReferenceKind
 from lattice.components.search.providers import SearchProvider
@@ -36,6 +37,7 @@ class AppManifest:
     # registered for actions, export, Ctrl+J and tiles
     grids: list[GridSpec] = field(default_factory=list)
     charts: list[ChartSpec] = field(default_factory=list)  # served at /_chart/{key}/data
+    maps: list[MapSpec] = field(default_factory=list)      # served at /_map/{key}/data
     forms: list[FormSpec] = field(default_factory=list)  # JSON Schema forms: /_form/{key}/render
     schemas: list[SchemaDef] = field(default_factory=list)  # named schemas forms can apply
     documents: list[DocumentKind] = field(default_factory=list)  # kinds in the document store

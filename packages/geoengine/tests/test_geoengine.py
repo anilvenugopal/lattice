@@ -73,7 +73,7 @@ def test_unknown_quality_tiers_are_refused(conn):
 
 def test_migrations_run_once(conn):
     assert geoengine.migrate(conn) == []
-    assert geoengine.schema_version(conn) == "0001_geo"
+    assert geoengine.schema_version(conn) == "0002_point_view"
 
 
 def test_quality_tiers():
@@ -92,3 +92,23 @@ def test_topojson_to_geojson():
     assert geo["features"][0]["id"] == "01"
     assert geo["features"][0]["geometry"]["coordinates"] == [[[0, 0], [1, 0], [1, 1], [0, 1],
                                                               [0, 0]]]
+
+
+def test_topojson_drops_rings_quantization_collapsed():
+    topology = {"type": "Topology",
+                "arcs": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]], [[5, 5], [5, 5]]],
+                "objects": {"shapes": {"type": "GeometryCollection", "geometries": [
+                    {"type": "MultiPolygon", "id": "a", "arcs": [[[1]], [[0]]]},
+                    {"type": "Polygon", "id": "b", "arcs": [[1]]}]}}}
+    geo = geoengine.to_geojson(topology, "shapes")
+    assert [f["id"] for f in geo["features"]] == ["a"]
+    assert len(geo["features"][0]["geometry"]["coordinates"]) == 1
+
+
+def test_the_point_view_can_be_filtered_beside_area_layers(conn):
+    setup(conn)
+    rows = conn.execute(text("SELECT external_id, round(CAST(lon AS numeric), 1) AS lon "
+                             "FROM geo.point WHERE layer = 'homes' AND lon IS NOT NULL "
+                             "ORDER BY external_id")).all()
+    assert [(r.external_id, float(r.lon)) for r in rows] == [("far", -90.0), ("in", -95.2),
+                                                              ("near", -95.0)]

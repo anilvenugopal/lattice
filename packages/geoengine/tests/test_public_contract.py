@@ -37,7 +37,7 @@ def test_python_names():
 
 
 def test_tables_have_exactly_the_listed_columns(conn):
-    for table in ("layer", "feature"):
+    for table in ("layer", "feature", "point"):
         block = section("Tables in schema geo").split(f"### geo.{table}", 1)[1].split("###")[0]
         listed = {name: kind for name, kind in rows(block)}
         actual = {r.column_name: r.data_type if r.data_type != "USER-DEFINED" else r.udt_name
