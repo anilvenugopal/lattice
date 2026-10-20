@@ -39,6 +39,7 @@ from lattice.kernel.queries import SQL
 from lattice.kernel.services import audit, users
 from lattice.kernel.web import flash, render_page
 from lattice.platform import notifications as notification_pages
+from lattice.platform import webhooks as webhook_pages
 
 router = APIRouter(dependencies=[Depends(csrf_protect)])
 USERS_MANAGE, ROLES_MANAGE = "lattice.users.manage", "lattice.roles.manage"
@@ -447,11 +448,15 @@ PERMISSIONS = [
                "Administration › System and UI kit."),
     Permission(notification_pages.EMAIL_VIEW, "Read sent email",
                "Administration › Email: every email Lattice sent or logged, and test sending."),
+    Permission(webhook_pages.MANAGE, "Manage webhooks",
+               "Administration › Webhooks: add, test and remove the addresses that receive "
+               "this site's events, and read their signing secrets."),
 ]
 
 APP = AppManifest(
-    key="admin", label="Administration", routers=[router, notification_pages.admin_router],
-    permissions=PERMISSIONS, grids=[USERS, ROLES, SESSIONS, AUDIT, notification_pages.EMAILS],
+    key="admin", label="Administration", routers=[router, notification_pages.admin_router, webhook_pages.router],
+    permissions=PERMISSIONS, grids=[USERS, ROLES, SESSIONS, AUDIT, notification_pages.EMAILS,
+                                    webhook_pages.WEBHOOKS, webhook_pages.DELIVERIES],
     nav=[
         NavNode("admin", "Administration", "/admin/users", icon="shield",
                 description="Users, roles, sessions, audit log and system settings"),
@@ -469,6 +474,8 @@ APP = AppManifest(
                 keywords="history events"),
         NavNode("admin.email", "Email", "/admin/email", parent="admin",
                 permission=notification_pages.EMAIL_VIEW, keywords="mail smtp notifications sent"),
+        NavNode("admin.webhooks", "Webhooks", "/admin/webhooks", parent="admin",
+                permission=webhook_pages.MANAGE, keywords="slack teams http events integrations"),
         NavNode("admin.system", "System", "/admin/system", parent="admin", permission=SYSTEM_VIEW,
                 keywords="configuration settings health"),
         NavNode("admin.uikit", "UI kit", "/admin/ui-kit", parent="admin", permission=SYSTEM_VIEW,

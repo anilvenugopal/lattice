@@ -112,3 +112,13 @@ UPDATE lattice.notification SET created_at = created_at - make_interval(days => 
 -- The emails queued for a user, oldest first, for tests/test_notifications.py.
 SELECT id, kind, subject, body, status, attempts, notification_ids, last_error
 FROM lattice.email WHERE user_id = :user_id ORDER BY id;
+
+-- name: webhook_deliveries
+-- Every queued or sent webhook post, oldest first, for tests/test_webhooks.py.
+SELECT d.id, d.webhook_id, d.event_type, d.body, d.status, d.attempts, d.response_status,
+       w.secret, w.name
+FROM lattice.webhook_delivery d JOIN lattice.webhook w ON w.id = d.webhook_id ORDER BY d.id;
+
+-- name: deliveries_due
+-- Make every queued webhook post due now, for the retry test.
+UPDATE lattice.webhook_delivery SET next_attempt_at = lattice.utc_now() - interval '1 hour';

@@ -1,0 +1,12 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card %}
+{% from "components/grid.html" import data_grid %}
+{% block main %}
+<div class="page stack-lg">
+  {{ page_header("Webhooks", "Addresses that receive this site's events: other systems as CloudEvents JSON, chat channels as a message. Every post is signed and retried.") }}
+  {{ data_grid(hooks) }}
+  {% call card("Deliveries", "Every post, as sent, with the receiver's answer", flush=True) %}
+    {{ data_grid(deliveries) }}
+  {% endcall %}
+</div>
+{% endblock %}

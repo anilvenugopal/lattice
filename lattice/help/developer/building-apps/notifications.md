@@ -106,4 +106,28 @@ made one; keep it `"app"` unless the kind is urgent for everyone.
   is sent: emails are kept as **logged**, readable in **Administration › Email**
   (permission `lattice.email.view`), which also sends a test email.
 
-Signed webhooks for chat tools and other systems are the next phase of ADR 0016.
+## Webhooks
+
+Administrators register webhooks in **Administration › Webhooks** (permission
+`lattice.webhooks.manage`): an address, the event types it takes (or every
+event), and a format. Every event your app publishes reaches them; there is
+nothing for an app to add, beyond publishing events.
+
+| Format | Body posted |
+|---|---|
+| `cloudevents` | The CloudEvent's JSON (`event.to_dict()`), `Content-Type: application/cloudevents+json` |
+| `chat` | `{"text": "[Site] Ann commented: Roof photos attached."}`, from the title and body of the notification kind tied to the event, else the event type |
+
+Every post carries `X-Lattice-Timestamp` and `X-Lattice-Signature:
+sha256=<hex>`, the HMAC-SHA256 of `"{timestamp}.{body}"` with the webhook's
+secret. A receiver checks it like this:
+
+```python
+expected = "sha256=" + hmac.new(secret, f"{ts}.{body}".encode(), "sha256").hexdigest()
+ok = hmac.compare_digest(expected, request.headers["X-Lattice-Signature"])
+```
+
+Posts are queued when the event is delivered and sent by the background loop
+every 30 seconds, with up to five tries; a 2xx answer delivers them. Keep event
+`data` small and free of what other systems should not see: it is posted as
+is.

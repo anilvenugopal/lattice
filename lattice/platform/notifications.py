@@ -25,7 +25,7 @@ from lattice.kernel.auth.deps import current_user, require
 from lattice.kernel.config import settings
 from lattice.kernel.database import Db, get_db, transaction
 from lattice.kernel.queries import SQL
-from lattice.kernel.services import notifications
+from lattice.kernel.services import notifications, webhooks
 from lattice.kernel.web import render, render_page, toast
 
 log = logging.getLogger(__name__)
@@ -123,13 +123,15 @@ def toggle_follow(request: Request, subject: str = Form(...), db: Db = Depends(g
 
 
 async def background() -> None:
-    """Started with the host: every 30 seconds, queue daily summaries that are due and send
-    queued emails; hourly, delete notifications past their retention."""
+    """Started with the host: every 30 seconds, queue daily summaries that are due, send
+    queued emails and post queued webhooks; hourly, delete notifications past retention."""
     def deliver() -> None:
         with transaction() as db:
             notifications.queue_digests(db)
         with transaction() as db:
             notifications.send_due(db)
+        with transaction() as db:
+            webhooks.send_due(db)
 
     def expire() -> None:
         with transaction() as db:
