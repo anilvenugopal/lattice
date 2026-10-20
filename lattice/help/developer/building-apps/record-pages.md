@@ -53,6 +53,7 @@ every detail page ([Pages and navigation](pages-and-navigation.md)).
 | `history` | `False` hides **Activity** |
 | `back` | **Back to list** target; default the grid's `path` |
 | `crumb` | Breadcrumb text, formatted with the row; default the title |
+| `reference_kind` | The record's reference kind (`"showcase.claim"`): brings other apps' panels, Attachments and Follow; see below |
 
 `RecordPage` refuses a property or status that is not one of the grid's
 columns.
@@ -93,5 +94,16 @@ def _where(request: Request, db: Db, row: dict) -> dict:
 | `permission` | Who sees it; empty means everyone who can open the record |
 | `flush` | No padding inside the card, for a grid |
 
-Panels from other apps (a Jobs panel on any record, for example) come with the
-integration framework, in step 7 of the plan.
+## What a reference kind adds
+
+Set `reference_kind` to the kind your app declares in `references=`, and the
+page gains, with no other code:
+
+| Addition | From |
+|---|---|
+| **Other apps' panels**: Comments, and any `RecordPanel` another app declares for your kind or for every kind | [Working across apps](working-across-apps.md) |
+| **Attachments**: files on the record, with preview, download and removal | [Attachments and folders](attachments.md) |
+| **Follow**: people choose to be notified about the record | [Notifications](notifications.md) |
+
+Each checks access through your reference kind's resolver: if it returns
+nothing for a user, they cannot see the record's comments, files or follow it.

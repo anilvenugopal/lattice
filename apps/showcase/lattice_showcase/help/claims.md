@@ -35,6 +35,12 @@ field reports. **Open in claims system** on a claim leads back to it.
   to the neighbourhood around this claim.
 - **Comments**: a comment tells the claim's desk handler, in their
   [notifications](#following-a-claim).
+- **Attachments**: photos, estimates and letters kept with the claim: drop
+  them on the panel, open images and PDFs, download the rest. See
+  [Attachments and folders](/help/lattice/user-guide/attachments).
+- **Claim file**: the claim's folder on the shared drive. **Browse…** to choose
+  it, or to create one; it is kept with the claim. The showcase uses a sample
+  share; a real site uses its own mounted drive.
 
 ## Field reports
 
