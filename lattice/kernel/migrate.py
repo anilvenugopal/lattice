@@ -31,8 +31,16 @@ def pending(folder: Path, done: set[str]) -> list[Path]:
 
 
 def sources_for(apps) -> list[tuple[str, Path]]:
-    """Lattice's migrations, then each app's (`AppManifest.sql`), in the host's order."""
-    return [("lattice", LATTICE_SCHEMA)] + [(a.key, a.sql / "schema") for a in apps if a.sql]
+    """Lattice's migrations, then each app's libraries' (`AppManifest.library_schemas`) and its
+    own (`AppManifest.sql`), in the host's order. A library several apps use runs once."""
+    sources = [("lattice", LATTICE_SCHEMA)]
+    for app in apps:
+        for library in app.library_schemas:
+            if library not in sources:
+                sources.append(library)
+        if app.sql:
+            sources.append((app.key, app.sql / "schema"))
+    return sources
 
 
 def migrate(sources: list[tuple[str, Path]]) -> list[str]:

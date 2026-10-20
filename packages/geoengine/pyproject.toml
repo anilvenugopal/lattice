@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "geoengine"
+version = "0.1.0"
+description = "Spatial data and computation on Postgres and PostGIS: layers of points and areas, point-in-area matching, distances, H3 hexagons and location quality tiers. Knows nothing of Lattice or of insurance."
+requires-python = ">=3.14"
+dependencies = [
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
+    "h3>=4.5",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["geoengine"]

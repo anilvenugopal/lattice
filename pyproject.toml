@@ -32,18 +32,19 @@ lattice = "lattice.cli:main"
 [dependency-groups]
 # The showcase app and host are installed for development and tests only; the
 # lattice package itself never depends on an app.
-dev = ["pytest", "ruff", "cryptography", "import-linter", "lattice-showcase", "lattice-comments", "lattice-showcase-host"]
+dev = ["pytest", "ruff", "cryptography", "import-linter", "lattice-showcase", "lattice-comments", "lattice-showcase-host", "geoengine"]
 
 [tool.uv]
 default-groups = ["dev"]
 
 [tool.uv.workspace]
-members = ["apps/*", "hosts/*"]
+members = ["apps/*", "hosts/*", "packages/*"]
 
 [tool.uv.sources]
 lattice-showcase = { workspace = true }
 lattice-comments = { workspace = true }
 lattice-showcase-host = { workspace = true }
+geoengine = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["lattice"]
@@ -53,7 +54,7 @@ line-length = 100
 target-version = "py314"
 
 [tool.ruff.lint.isort]
-known-first-party = ["lattice", "lattice_showcase", "lattice_comments", "showcase_host"]
+known-first-party = ["lattice", "lattice_showcase", "lattice_comments", "showcase_host", "geoengine"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "TID251"]
@@ -64,7 +65,7 @@ ignore = ["E501", "B008"]
 "sqlalchemy.orm".msg = "No ORM in Lattice: write a named query in a sql/*.sql file and run it with Db."
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "apps/showcase/tests", "apps/comments/tests"]
+testpaths = ["tests", "apps/showcase/tests", "apps/comments/tests", "packages/geoengine/tests"]
 addopts = "--import-mode=importlib"
 # Deprecations fail the tests, so they are fixed when they appear. The one exception
 # is in Starlette's own test client, which Lattice does not control.
@@ -75,7 +76,7 @@ filterwarnings = [
 
 # Import contracts (ADR 0002), checked by tests/test_import_contracts.py.
 [tool.importlinter]
-root_packages = ["lattice", "lattice_showcase", "lattice_comments", "showcase_host"]
+root_packages = ["lattice", "lattice_showcase", "lattice_comments", "showcase_host", "geoengine"]
 include_external_packages = true
 
 [[tool.importlinter.contracts]]
@@ -111,3 +112,17 @@ type = "forbidden"
 source_modules = ["lattice_showcase", "lattice_comments", "showcase_host"]
 forbidden_modules = ["sqlalchemy", "psycopg"]
 allow_indirect_imports = true
+
+# Engine packages (ADR 0012, 0013) know nothing of Lattice or its apps, and Lattice's core
+# never names them: an app that uses one brings it in.
+[[tool.importlinter.contracts]]
+name = "Engines never import Lattice or apps"
+type = "forbidden"
+source_modules = ["geoengine"]
+forbidden_modules = ["lattice", "lattice_showcase", "lattice_comments", "showcase_host"]
+
+[[tool.importlinter.contracts]]
+name = "Lattice never imports an engine"
+type = "forbidden"
+source_modules = ["lattice"]
+forbidden_modules = ["geoengine"]

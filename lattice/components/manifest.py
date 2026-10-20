@@ -58,6 +58,9 @@ class AppManifest:
     icons: dict[str, str] = field(default_factory=dict)
     # What the app's users may do: checked with require(), permission=, can().
     permissions: list[Permission] = field(default_factory=list)
+    # Schemas of libraries the app uses, as (schema, migrations folder), e.g. geoengine.SCHEMA.
+    # `lattice migrate` applies them before the app's own, once even if several apps list them.
+    library_schemas: list[tuple[str, Path]] = field(default_factory=list)
     # Folder of the app's SQL: named queries in *.sql, migrations in schema/*.sql.
     # The migrations create and fill the Postgres schema named after the app's key.
     sql: Path | None = None

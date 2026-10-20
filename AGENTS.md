@@ -51,9 +51,10 @@ are `LATTICE_*` environment variables (`.env.example`).
 | `lattice/testing.py` | Pytest fixtures for core and app tests (`db`, `users`, `client`, `as_user`, `host_apps`…) |
 | `lattice/templates/`, `lattice/static/` | Shell layout, shared macros, grid templates; the five CSS layers |
 | `apps/showcase/` | `lattice-showcase`: every component on sample data (Items, Live updates, Reading pane, Charts, Specs, Free-form, Flows), its `sql/` (schema `showcase` and named queries), templates, styles, seed and tests |
+| `packages/geoengine/` | `geoengine`: spatial engine on PostGIS (layers, point-in-area, distances, H3, quality tiers). Imports nothing of Lattice; Lattice never imports it; apps use it and list `geoengine.SCHEMA` in `library_schemas` (ADR 0013) |
 | `hosts/showcase/` | `lattice-showcase-host`: runs Lattice with the showcase app |
 | `tests/sql/`, `apps/*/tests/sql/` | Named queries the tests use to set up and check rows |
-| `compose.yaml` | Postgres 18 for development and tests (Taskline needs 18) |
+| `compose.yaml` | Postgres 18 with PostGIS for development and tests (Taskline needs 18, geoengine PostGIS) |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | Target design and decisions. Read before changing anything they cover |
 | `lattice/help/` | The user guide and developer guide, served in the app at `/help`. `developer/building-apps/` covers the grid, pages, styling and access; `developer/running/` covers sign-in, users and branding. `developer/reference/` is generated: run `uv run lattice docs build` after changing what it documents |
 
