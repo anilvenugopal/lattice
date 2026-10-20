@@ -37,9 +37,6 @@ PAGES = [
     ("Field reports", "/showcase/field-reports",
      "Free-form reports from surveyors, read beside the list. No two have the same fields.",
      "GridSpec(layout=\"split\"), FormSpec(schema=None)"),
-    ("Notices", "/showcase/notices",
-     "What you are told about the claims you handle. Only you see yours.",
-     "Row-level access in the grid query"),
     ("Locations", "/showcase/locations",
      "The 42,000 insured locations. Draw a polygon, rectangle or circle and the list, "
      "totals and charts follow; save the shape as an area.",
@@ -54,7 +51,7 @@ SOURCES = [
      "Seeded for past events; a labelled simulator for Delta"),
     ("Hurricane forecast", "National Hurricane Center advisories", "Three sample advisory cones"),
     ("Loss estimate", "A licensed catastrophe model", "A simple, stated Monte Carlo"),
-    ("Events, footprints, exposure runs, assignments, assessments, field reports, notices, "
+    ("Events, footprints, exposure runs, assignments, assessments, field reports, "
      "comments", "This app", "This app"),
 ]
 

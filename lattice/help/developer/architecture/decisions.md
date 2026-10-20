@@ -118,6 +118,7 @@ Taken while planning step 2, on 18 October 2026:
 | 0013 | Geospatial: a separate geoengine package, PostGIS, and a Lattice map component | Accepted |
 | 0014 | Timelines: a TimelineSpec component drawn in HTML | Accepted |
 | 0015 | Chart colours: one hue by default, colour only where it means something | Accepted |
+| 0016 | Notifications: an inbox in Lattice's core, fed by apps and by following records | Accepted |
 
 A record is never rewritten once accepted. A later decision that changes it is
 a new record naming the one it replaces.

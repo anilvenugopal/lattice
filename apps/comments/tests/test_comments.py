@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 import geoengine
-from lattice.api import sql_queries, urn
+from lattice.api import notifications, sql_queries, urn
 from lattice.testing import csrf
 
 CHECK = sql_queries(Path(__file__).parent / "sql").checks
@@ -21,8 +21,10 @@ def location(db):
 
 @pytest.fixture
 def claim(db, users, location):
-    """A claim the viewer handles."""
-    return db.value(CHECK.add_claim, claim_number="CLM-26-T00901", handler_id=users["viewer"].id)
+    """A claim the viewer handles, and so follows."""
+    claim_id = db.value(CHECK.add_claim, claim_number="CLM-26-T00901", handler_id=users["viewer"].id)
+    notifications.follow(db, users["viewer"].id, urn("showcase.claim", claim_id))
+    return claim_id
 
 
 def comment(client, subject, body):
@@ -37,19 +39,20 @@ def test_the_panel_appears_on_the_showcase_claim_page(as_user, claim):
     assert 'name="body"' in as_user("editor").get(f"/showcase/claims/{claim}").text
 
 
-def test_a_comment_reaches_the_claims_handler(as_user, users, claim, db):
+def test_a_comment_reaches_the_claims_followers(as_user, users, claim, db):
     c = as_user("editor")
     res = comment(c, urn("showcase.claim", claim), "Roof photos attached.")
     assert res.status_code == 200 and "Roof photos attached." in res.text
-    [notice, *_] = db.all(CHECK.notices_of, owner_id=users["viewer"].id)
-    assert notice["subject"] == "Editor commented on CLM-26-T00901 · Pat Pump"
-    assert "Roof photos attached." in notice["body"]
+    [note, *_] = db.all(CHECK.notifications_of, owner_id=users["viewer"].id)
+    assert (note["kind"], note["title"]) == ("comments.on_followed", "Editor commented")
+    assert note["body"] == "Roof photos attached." and note["subject"] == urn("showcase.claim", claim)
 
 
-def test_commenting_on_your_own_claim_sends_no_notice(as_user, users, location, db):
+def test_commenting_on_a_claim_you_follow_tells_you_nothing(as_user, users, location, db):
     own = db.value(CHECK.add_claim, claim_number="CLM-26-T00902", handler_id=users["editor"].id)
+    notifications.follow(db, users["editor"].id, urn("showcase.claim", own))
     comment(as_user("editor"), urn("showcase.claim", own), "Note to self")
-    assert db.all(CHECK.notices_of, owner_id=users["editor"].id) == []
+    assert db.all(CHECK.notifications_of, owner_id=users["editor"].id) == []
 
 
 def test_viewers_cannot_comment_and_unknown_records_are_refused(as_user, claim):

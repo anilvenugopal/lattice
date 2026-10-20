@@ -2,22 +2,16 @@
 
 - Its events and claims can be referenced: `urn:lattice:showcase.claim:42` resolves to
   the claim's number and status for any app's `ref()`.
-- It listens for `comments.added`: a comment on a claim gives its desk handler a notice.
+
+A claim's desk handler follows the claim (claims.take, cat_seed), so comments on it reach
+them through Lattice's notifications (ADR 0016).
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from lattice.api import (
-    CloudEvent,
-    Db,
-    ReferenceKind,
-    Resolved,
-    parse,
-    sql_queries,
-)
-from lattice_showcase import notices
+from lattice.api import Db, ReferenceKind, Resolved, sql_queries
 
 QUERIES = sql_queries(Path(__file__).parent / "sql")
 
@@ -46,17 +40,3 @@ def resolve_claim(db: Db, user, claim_id: str) -> Resolved | None:
 
 REFERENCES = [ReferenceKind("showcase.event", "Event", resolve_event, icon="showcase:storm"),
               ReferenceKind("showcase.claim", "Claim", resolve_claim, icon="queue")]
-
-
-def notify_handler(db: Db, event: CloudEvent) -> None:
-    """comments.added on a claim: tell its handler, unless they wrote the comment."""
-    ref = parse(event.subject)
-    if ref.kind != "showcase.claim" or not ref.id.isdigit():
-        return
-    claim = db.first(QUERIES.claims.handler, id=int(ref.id))
-    if not claim or not claim["handler_id"] or claim["handler_id"] == event.data.get("author_id"):
-        return
-    author = event.data.get("author", "Someone")
-    notices.tell(db, claim["handler_id"],
-                 f"{author} commented on {claim['claim_number']} · {claim['insured']}",
-                 event.data.get("excerpt", ""), f"/showcase/claims/{ref.id}")

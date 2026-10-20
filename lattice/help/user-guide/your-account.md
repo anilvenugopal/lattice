@@ -23,6 +23,12 @@ Choose **Save preferences**. They follow you to any computer you sign in from.
 To switch theme quickly, use the moon or sun icon in the top bar, or press
 Ctrl J and type "theme".
 
+## Notifications
+
+**Account › Notifications** lists what you have been told about: comments on
+records you follow, and anything an app tells you directly. See
+[Notifications](notifications.md).
+
 ## Profile
 
 **Profile** shows your name, email, roles and how you sign in.

@@ -5,6 +5,7 @@
 "account.preferences" = "user-guide/your-account#preferences"
 "account.profile" = "user-guide/your-account#profile"
 "account.security" = "user-guide/your-account#security"
+"account.notifications" = "user-guide/notifications"
 "admin" = "user-guide/administration"
 "admin.users" = "user-guide/administration#users"
 "admin.user" = "user-guide/administration#users"

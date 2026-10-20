@@ -98,3 +98,12 @@ SELECT i AS id, 'row ' || lpad(CAST(i % 7 AS text), 2, '0') AS name,
        CASE WHEN i % 4 = 0 THEN NULL
             ELSE TIMESTAMP '2026-10-01 09:00' + make_interval(hours => i % 9) END AS made_at
 FROM generate_series(1, 23) AS i;
+
+-- name: notifications_of
+-- A user's notifications, newest first, for tests/test_notifications.py.
+SELECT id, kind, title, body, subject, count, read_at, resolved_at, actor_id
+FROM lattice.notification WHERE user_id = :user_id ORDER BY id DESC;
+
+-- name: age_notifications
+-- Make every notification look old, for the retention test.
+UPDATE lattice.notification SET created_at = created_at - make_interval(days => :days);

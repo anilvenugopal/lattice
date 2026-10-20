@@ -1,12 +1,13 @@
 """Comments: comments on any record of any app, by reference (ADR 0011).
 
 A RecordPanel shows them on every record page that names its reference kind; a grid lists
-them all; `comments.added` tells the owning app about each new one.
+them all; `comments.added` tells the owning app about each new one, and the people
+following the record are notified (ADR 0016).
 """
 
 from pathlib import Path
 
-from lattice.api import AppManifest, NavNode
+from lattice.api import AppManifest, NavNode, NotificationKind
 from lattice_comments import comments
 
 HERE = Path(__file__).parent
@@ -20,6 +21,10 @@ APP = AppManifest(
     grids=[comments.GRID],
     panels=[comments.PANEL],
     publishes=["comments.added"],
+    notifications=[NotificationKind(
+        "comments.on_followed", "New comment on a record you follow",
+        "Someone commented on a record you follow.",
+        event="comments.added", title="{author} commented", body="{excerpt}")],
     permissions=comments.PERMISSIONS,
     static=HERE / "static",
     stylesheets=["comments.css"],

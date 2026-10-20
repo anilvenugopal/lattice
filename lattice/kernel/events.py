@@ -81,10 +81,18 @@ def publish(db: Db, type: str, subject: str = "", data: dict | None = None) -> C
 
 
 def deliver(event: CloudEvent) -> None:
-    """Hand one event to each subscriber, each in its own transaction."""
+    """Hand one event to each subscriber, each in its own transaction, then to
+    notifications: the subject's followers are told, and what the event closes is cleared."""
+    from lattice.kernel.services import notifications
+
     for app, handler in SUBSCRIBERS.get(event.type, []):
         try:
             with transaction() as db:
                 handler(db, event)
         except Exception:
             log.exception("Subscriber %s of %s failed on event %s", app, event.type, event.id)
+    try:
+        with transaction() as db:
+            notifications.on_event(db, event)
+    except Exception:
+        log.exception("Notifications failed on event %s (%s)", event.id, event.type)

@@ -39,3 +39,9 @@
   background-image: radial-gradient(circle at 20% 0%, var(--surface-selected) 0, transparent 45%);
 }
 .bare__main { margin: auto; width: 100%; max-width: 400px; padding: var(--sp-6) var(--sp-4); }
+
+/* The notification bell and its unread count (ADR 0016). */
+.bell { position: relative; }
+.bell__count { position: absolute; top: 2px; right: 0; min-width: 16px; height: 16px; padding: 0 4px;
+  font-size: var(--fs-2xs); font-weight: var(--fw-semibold); line-height: 16px; text-align: center;
+  color: var(--text-on-accent); background: var(--accent); border-radius: var(--r-pill); }

@@ -20,9 +20,9 @@ from fastapi import HTTPException, Request
 from lattice.components.grid import engine
 from lattice.components.grid.render import field_config
 from lattice.components.grid.spec import GridSpec
-from lattice.components.references import Ref
+from lattice.components.references import Ref, urn
 from lattice.kernel.database import Db
-from lattice.kernel.services import audit
+from lattice.kernel.services import audit, notifications
 from lattice.kernel.web import fmt, fmt_url, render_page
 
 
@@ -136,6 +136,9 @@ def render_record_page(request: Request, db: Db, page: RecordPage, record_id: An
                 panels.append({"panel": panel, "label": panel.label, "values": values,
                                "subject": subject})
     title = fmt(page.title, row)
+    subject = urn(page.reference_kind, row["id"]) if page.reference_kind else ""
+    follow = {"subject": subject, "following": notifications.following(db, user.id, subject)} \
+        if subject else None
     return render_page(
         request, "components/record_page.html", page.nav_key,
         page=page, record=row, spec=grid, title=title, subtitle=fmt(page.subtitle, row),
@@ -145,7 +148,7 @@ def render_record_page(request: Request, db: Db, page: RecordPage, record_id: An
         events=audit.history(db, grid.key, row["id"]) if page.history else None,
         config={"endpoint": f"/_grid/{grid.key}", "id": str(row["id"]), "back": page.back or grid.path,
                 "actions": {a.key: _action_config(a, db, user) for a in actions}},
-        crumb=fmt(page.crumb, row) if page.crumb else title, **extra)
+        follow=follow, crumb=fmt(page.crumb, row) if page.crumb else title, **extra)
 
 
 def _action_config(action, db, user) -> dict:

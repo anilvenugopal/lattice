@@ -25,6 +25,7 @@ Values are read from the environment, then from a `.env` file in the working fol
 | `LATTICE_SESSION_MAX_HOURS` | `24` | A session ends this many hours after sign-in, whatever the activity. |
 | `LATTICE_COOKIE_SECURE` | unset | Secure flag on cookies. Unset: on in production or when the request is HTTPS. |
 | `LATTICE_CHART_COLORS` | `brand` | How charts that name no colour mode are coloured: `brand`, shades of the theme colour, or `neutral`, greys (ADR 0015). |
+| `LATTICE_NOTIFICATION_DAYS` | `90` | Notifications older than this many days are deleted (ADR 0016). |
 | `LATTICE_GRID_QUERY_TIMEOUT_SECONDS` | `15` | A grid query (rows, count, export, Ctrl+J results) running longer than this is cancelled, and the user is asked to narrow the search or filters. |
 | `LATTICE_BCRYPT_ROUNDS` | `12` | bcrypt cost for password hashes. |
 | `LATTICE_PASSWORD_LOGIN_ENABLED` | `true` | Show the email and password form on the sign-in page. |

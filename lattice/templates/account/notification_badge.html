@@ -1,0 +1,3 @@
+{# The bell's unread count (platform/notifications.py badge), refreshed every minute. #}
+<span class="bell__count" hx-get="/account/notifications/badge" hx-trigger="every 60s" hx-swap="outerHTML"
+      {% if not count %}hidden{% endif %}>{{ count if count < 100 else "99+" }}</span>

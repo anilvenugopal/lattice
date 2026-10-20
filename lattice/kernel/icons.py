@@ -60,6 +60,7 @@ PATHS: dict[str, str] = {
     "flag": '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
     "bookmark": '<path d="M6 3h12v18l-6-4-6 4z"/>',
     "pin": '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+    "bell": '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
 }
 
 

@@ -12,5 +12,4 @@
 "claims.intake"     = "claims#live-intake"
 "claims.deployment" = "claims#deployment"
 "claims.reports"    = "claims#field-reports"
-"claims.notices"    = "claims#notices"
 "locations"         = "locations"

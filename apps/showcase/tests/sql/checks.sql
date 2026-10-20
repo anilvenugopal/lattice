@@ -19,13 +19,7 @@ RETURNING id;
 -- One claim.
 SELECT id, status, priority, zone_id, handler_id FROM showcase.claim WHERE id = :id;
 
--- name: add_notice
--- A notice for a user; returns its id.
-INSERT INTO showcase.notice (owner_id, subject) VALUES (:owner_id, :subject) RETURNING id;
 
--- name: notice
--- One notice.
-SELECT id, is_read FROM showcase.notice WHERE id = :id;
 
 -- name: audit_events
 -- Audit events with this action.

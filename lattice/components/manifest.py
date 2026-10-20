@@ -23,6 +23,7 @@ from lattice.kernel.database import Db
 from lattice.kernel.events import Subscriber
 from lattice.kernel.migrate import Library
 from lattice.kernel.nav import NavNode
+from lattice.kernel.services.notifications import NotificationKind
 
 
 @dataclass(frozen=True)
@@ -50,6 +51,8 @@ class AppManifest:
     panels: list[RecordPanel] = field(default_factory=list)
     publishes: list[str] = field(default_factory=list)      # event types: "{key}.{event}"
     subscribes: dict[str, Subscriber] = field(default_factory=dict)  # event type -> handler
+    # What people may be told about (ADR 0016): kinds for notify(), or tied to an event.
+    notifications: list[NotificationKind] = field(default_factory=list)
     search: list[SearchProvider] = field(default_factory=list)  # extra Ctrl+J sources
     tiles: list[HomeTile] = field(default_factory=list)  # count tiles on the home page
     # Folder holding templates/{key}/…; searched before core templates.

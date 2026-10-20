@@ -56,6 +56,7 @@ from lattice.api import (
     documents,
     flash,
     get_db,
+    notifications,
     parse_form,
     render_grid_page,
     render_page,
@@ -64,6 +65,7 @@ from lattice.api import (
     settings,
     sql_queries,
     transaction,
+    urn,
 )
 from lattice.api import (
     Field as InputField,
@@ -109,8 +111,11 @@ def assign_surveyor(ctx: ActionContext) -> str:
 
 
 def take(ctx: ActionContext) -> str:
+    """Become the desk handler, and follow the claims so comments on them reach you."""
     ctx.db.run(SQL.take, ids=ctx.ids, user_id=ctx.user.id)
-    return f"You now handle {ctx.count} claim(s)."
+    for claim_id in ctx.ids:
+        notifications.follow(ctx.db, ctx.user.id, urn("showcase.claim", claim_id))
+    return f"You now handle {ctx.count} claim(s), and follow them."
 
 
 def prioritise(ctx: ActionContext) -> str:

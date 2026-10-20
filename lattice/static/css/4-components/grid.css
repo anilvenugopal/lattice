@@ -100,3 +100,6 @@
   .dg:not(.dg--split) .dg__panel { position: absolute; top: 0; right: 0; bottom: 0; z-index: 20; box-shadow: var(--shadow-lg); }
   .dg__search { width: 200px; }
 }
+
+/* A row the user has not read yet (GridSpec.row_class returning "is-unread"). */
+.dg tr.is-unread td { font-weight: var(--fw-semibold); color: var(--text); }

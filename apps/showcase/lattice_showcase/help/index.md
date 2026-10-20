@@ -10,7 +10,7 @@ know how claims are arriving and who is handling them.
 
 The app sits beside the systems of record. It reads policies and claims from
 them, and keeps the response itself: events, footprints, exposure, estimates,
-assignments, assessments, field reports and notices.
+assignments, assessments and field reports.
 
 | Page | Use it to |
 |---|---|

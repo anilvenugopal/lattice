@@ -1,8 +1,8 @@
 ---
 title: Claims
-summary: Claims across events: assignment, assessments, field reports, live intake and notices.
+summary: Claims across events: assignment, assessments, field reports, live intake and following.
 order: 20
-keywords: claims fnol surveyor adjuster zone priority assessment field report intake deployment notices handler
+keywords: claims fnol surveyor adjuster zone priority assessment field report intake deployment follow notifications handler
 ---
 
 Claims come from the claims system, the system of record. This app keeps what
@@ -34,7 +34,7 @@ field reports. **Open in claims system** on a claim leads back to it.
 - **Claims within 1 mile** and **Locations within 5 miles**: the lists, narrowed
   to the neighbourhood around this claim.
 - **Comments**: a comment tells the claim's desk handler, in their
-  [Notices](#notices).
+  [notifications](#following-a-claim).
 
 ## Field reports
 
@@ -58,8 +58,10 @@ Below it, **Surveyor visits** shows each surveyor's inspection visits through
 the day. Bars stacked on top of each other are visits booked at the same time:
 a surveyor with more work than hours.
 
-## Notices
+## Following a claim
 
-What you are told about the claims you handle, such as a comment. Only you see
-your notices. Opening one marks it read; **Unread notices** on the home page
-counts them.
+**Follow** on a claim's page tells you about changes to it: a new comment, for
+example, reaches you under the bell in the top bar. Taking a claim (**Take**)
+follows it for you, so the desk handler hears about every comment. See
+[Notifications](/help/lattice/user-guide/notifications) for the bell, the list
+and clearing them.

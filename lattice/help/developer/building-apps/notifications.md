@@ -1,0 +1,91 @@
+---
+title: Notifications
+summary: Tell people about what needs them: notify() from your app, kinds tied to your events, following records, and how notifications clear.
+order: 66
+keywords: notifications notify follow followers bell inbox kind NotificationKind event clears unread collapse email webhook
+---
+
+**Events say what happened; notifications decide who is told.** Every user has
+an inbox in Lattice: the bell in the top bar, **Account › Notifications**, and a
+home tile ([ADR 0016](/help/lattice/developer/architecture/decisions)). Your app
+puts things in it three ways.
+
+| Way | Use when | Who is told |
+|---|---|---|
+| `notifications.notify(db, user_ids, kind, title, …)` | Your app knows who: the new owner, the on-call role | The people you name |
+| Following a record | People want to hear about one record | Its followers |
+| A kind tied to an event | Every follower should hear when your event happens | Followers of the event's subject |
+
+## Declare kinds
+
+Every notification has a kind your app declares, like a permission. Its key
+starts with your app's key:
+
+```python
+from lattice.api import AppManifest, NotificationKind
+
+APP = AppManifest(
+    key="comments", …, publishes=["comments.added"],
+    notifications=[NotificationKind(
+        "comments.on_followed", "New comment on a record you follow",
+        event="comments.added", title="{author} commented", body="{excerpt}")],
+)
+```
+
+| Field | Means |
+|---|---|
+| `key`, `label`, `description` | The kind, as people will see it when they choose how to be told |
+| `event` | When your app publishes this event, the people following its subject are told |
+| `title`, `body` | Formatted with the event's `data`; a missing key is empty |
+| `clears` | Events that resolve open notifications of this kind about the same record, such as `["incidents.resolved"]` |
+
+The person who caused the event (`data["actor_id"]` or `data["author_id"]`) is
+not told about their own action. `create_app` refuses a kind outside your
+namespace, or one naming an event your app does not publish.
+
+## Notify directly
+
+```python
+from lattice.api import notifications, urn
+
+notifications.notify(db, [owner_id], "incidents.assigned", "INC-42 is yours",
+                     body="Database connections failing on prod-eu",
+                     subject=urn("incidents.incident", 42), actor_id=user.id)
+```
+
+It writes in your transaction, so a failed request tells nobody. An unread
+notification of the same kind about the same record is updated, with its count
+raised, instead of repeated.
+
+**Notifications refer, they do not copy.** Keep `title` and `body` short and
+free of anything the reader may not see; the record itself is drawn from
+`subject` when the notification is read, through `ref()`, with the reader's
+access at that moment.
+
+## Following
+
+Every record page whose `RecordPage` sets `reference_kind` shows **Follow**;
+people choose for themselves. Your app can follow records for people too:
+
+```python
+notifications.follow(db, user.id, urn("showcase.claim", claim_id))   # or a list of ids
+notifications.unfollow(db, user.id, urn("showcase.claim", claim_id))
+notifications.following(db, user.id, urn("showcase.claim", claim_id))
+```
+
+The showcase's **Take** action follows the claims it gives you, so comments on
+them reach you through the Comments app's kind above.
+
+## How they clear
+
+- Opening one marks it read and goes to its record.
+- **Mark read**, **Mark all read** and **Dismiss** in the list.
+- A `clears` event, or `notifications.resolve(db, subject, ["incidents.assigned"])`.
+- After `LATTICE_NOTIFICATION_DAYS` (90) days they are deleted.
+
+## Channels
+
+Today notifications are in the app. Email (immediate, or a daily digest) with
+per-person choices per kind, and signed webhooks for chat tools and other
+systems, are the next phases of ADR 0016; the kinds you declare now are what
+people will choose from.

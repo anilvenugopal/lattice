@@ -76,22 +76,6 @@ def test_action_on_all_matching_rows(as_user, claims, db):
     assert {db.one(CHECK.claim, id=claims[i].id)["handler_id"] for i in (0, 4)} == {admin}
 
 
-def test_query_scopes_rows_per_user(as_user, users, claims, db):
-    theirs = db.value(CHECK.add_notice, owner_id=users["viewer"].id, subject="For the viewer")
-    c = as_user("editor")
-    assert c.get(f"/_grid/showcase.notices/panel/{theirs}").status_code == 404
-    assert post_json(c, "/_grid/showcase.notices/action/read", {"ids": [theirs]}).status_code == 400
-    assert not db.one(CHECK.notice, id=theirs)["is_read"]
-    assert "For the viewer" not in c.get("/_grid/showcase.notices/rows?view=all").text
-    assert c.get(f"/showcase/notices/{theirs}", follow_redirects=False).status_code == 404
-
-
-def test_opening_a_notice_marks_it_read(as_user, users, claims, db):
-    mine = db.value(CHECK.add_notice, owner_id=users["editor"].id, subject="Mine")
-    res = as_user("editor").get(f"/showcase/notices/{mine}", follow_redirects=False)
-    assert res.status_code == 303 and db.one(CHECK.notice, id=mine)["is_read"]
-
-
 def test_column_preferences_and_export(as_user, users, claims, db):
     c = as_user("viewer")
     resp = post_json(c, "/_grid/showcase.claims/columns",

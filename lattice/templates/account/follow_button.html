@@ -1,0 +1,6 @@
+{# Follow or stop following a record (platform/notifications.py toggle_follow). #}
+<button type="button" class="btn btn--ghost{% if following %} is-on{% endif %}" id="follow-button"
+        hx-post="/account/follow" hx-vals='{{ {"subject": subject} | tojson }}' hx-swap="outerHTML"
+        aria-pressed="{{ 'true' if following else 'false' }}"
+        data-tip="{{ 'You are told about changes. Click to stop.' if following else 'Be told about changes to this record' }}">
+  {{ icon('bell', 14) }}{{ 'Following' if following else 'Follow' }}</button>
