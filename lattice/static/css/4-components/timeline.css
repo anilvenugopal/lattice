@@ -1,0 +1,29 @@
+/* Timelines (components/timeline.html, static/js/timeline.js; ADR 0014). */
+.tl__range { font-size: var(--fs-sm); color: var(--text-3); }
+.tl__body { position: relative; overflow-y: auto; padding: var(--sp-2) var(--sp-4) var(--sp-3); transition: opacity var(--dur); }
+.tl__body.is-loading { opacity: 0.6; }
+.tl__axis, .tl__lane { display: grid; grid-template-columns: 220px 1fr; gap: var(--sp-3); }
+.tl__ticks { position: relative; height: 20px; border-bottom: 1px solid var(--border); }
+.tl__tick { position: absolute; bottom: 3px; transform: translateX(-50%); font-size: var(--fs-xs); color: var(--text-3); white-space: nowrap; }
+.tl__lanes { position: relative; }
+.tl__lanes > .tl__now, .tl__lanes > .tl__select { margin-left: calc(220px + var(--sp-3)); }
+.tl__lane { align-items: center; min-height: 30px; border-bottom: 1px solid var(--border); }
+.tl__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-sm); color: var(--text-2); }
+.tl__track { position: relative; min-height: 30px; cursor: crosshair; user-select: none; }
+.tl__bar { position: absolute; height: 18px; min-width: 3px; padding: 0 4px; overflow: hidden;
+  border: 0; border-radius: var(--r-sm); background: var(--chart-1); color: var(--surface-panel);
+  font-size: var(--fs-xs); line-height: 18px; text-align: left; white-space: nowrap; text-overflow: ellipsis; cursor: pointer; }
+.tl__bar:hover { filter: brightness(1.08); }
+.tl__bar:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+.tl__bar.is-open { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right: 3px dotted var(--surface-panel); }
+.tl__bar.is-marker { width: 12px; min-width: 12px; height: 12px; padding: 0; border-radius: 2px; transform: translateX(-6px) rotate(45deg); }
+.tl__bar.tone-neutral { background-color: var(--chart-neutral); }
+.tl__bar.tone-info { background-color: var(--chart-info); }
+.tl__bar.tone-success { background-color: var(--chart-success); }
+.tl__bar.tone-warning { background-color: var(--chart-warning); }
+.tl__bar.tone-danger { background-color: var(--chart-danger); }
+.tl__bar.tone-accent { background-color: var(--chart-accent); }
+.tl__now { position: absolute; top: 0; bottom: 0; width: 0; border-left: 2px dashed var(--chart-danger); pointer-events: none; }
+.tl__select { position: absolute; top: 0; bottom: 0; background: var(--tone-info-bg); opacity: 0.6; pointer-events: none; }
+.tl__note { margin: var(--sp-2) 0 0; font-size: var(--fs-sm); color: var(--text-3); }
+.tl__note--error { color: var(--tone-danger-fg); }

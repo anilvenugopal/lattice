@@ -116,6 +116,7 @@ Taken while planning step 2, on 18 October 2026:
 | 0011 | Integration standards: URN references, CloudEvents, published views, OpenAPI between processes | Accepted |
 | 0012 | Taskline UI on Taskline's published contract: views, async commands, no events | Accepted |
 | 0013 | Geospatial: a separate geoengine package, PostGIS, and a Lattice map component | Accepted |
+| 0014 | Timelines: a TimelineSpec component drawn in HTML | Accepted |
 
 A record is never rewritten once accepted. A later decision that changes it is
 a new record naming the one it replaces.

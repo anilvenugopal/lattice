@@ -34,6 +34,7 @@ from lattice.components.manifest import AppManifest
 from lattice.components.map import router as map_router
 from lattice.components.search import providers as search_providers
 from lattice.components.search import router as search_router
+from lattice.components.timeline import router as timeline_router
 from lattice.kernel import css_rules, events, icons, nav, slots
 from lattice.kernel.auth import permissions
 from lattice.kernel.auth import routes as auth_routes
@@ -77,6 +78,13 @@ def _check(app: AppManifest) -> None:
     for spec in app.maps:
         if not spec.key.startswith(app.key + "."):
             fail(f"map key {spec.key!r} must start with {app.key + '.'!r}")
+        try:
+            spec.check()
+        except ValueError as exc:
+            fail(str(exc))
+    for spec in app.timelines:
+        if not spec.key.startswith(app.key + "."):
+            fail(f"timeline key {spec.key!r} must start with {app.key + '.'!r}")
         try:
             spec.check()
         except ValueError as exc:
@@ -151,6 +159,8 @@ def _register(app: AppManifest, platform: bool) -> None:
         chart_router.register(chart)
     for spec in app.maps:
         map_router.register(spec)
+    for spec in app.timelines:
+        timeline_router.register(spec)
     for spec in app.forms:
         forms.register_form(spec)
     for schema in app.schemas:
@@ -213,6 +223,7 @@ def _check_permissions() -> None:
     named += [(f"chart {c.key!r}", c.permission) for c in chart_router.REGISTRY.values()]
     named += [(f"form {f.key!r}", f.permission) for f in forms.FORMS.values()]
     named += [(f"map {m.key!r}", m.permission) for m in map_router.REGISTRY.values()]
+    named += [(f"timeline {t.key!r}", t.permission) for t in timeline_router.REGISTRY.values()]
     named += [(f"record panel {p.key!r}", p.permission) for p in record_component.PANELS]
     named += [(f"Ctrl+J source {p.key!r}", p.permission) for p in search_providers.registered()]
     named += [(f"help topic {t.url}", t.permission)
@@ -231,6 +242,7 @@ def _reset_registries() -> None:
     grid_router.REGISTRY.clear()
     chart_router.REGISTRY.clear()
     map_router.REGISTRY.clear()
+    timeline_router.REGISTRY.clear()
     forms.FORMS.clear()
     forms.SCHEMAS.clear()
     references.KINDS.clear()
@@ -303,7 +315,7 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
     web.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
     web.add_middleware(AuthMiddleware)
     for router in (auth_routes.router, grid_router.router, chart_router.router,
-                   map_router.router, form_router.router, search_router.router,
+                   map_router.router, timeline_router.router, form_router.router, search_router.router,
                    help_router.router):
         web.include_router(router)
     for app, mount in ordered:
