@@ -73,6 +73,14 @@ is a few hundred MB, so it is not in git; `make maps` downloads it once. Maps sh
 "© OpenStreetMap contributors", as the licence requires. Without the file, maps
 draw state and county outlines only.
 
+**Draw-to-search** (added 19 October 2026, after the stage 2 review). Users draw a
+polygon, rectangle or circle on a map (Terra Draw, MIT, vendored). The shape becomes a
+filter of the linked grid: a GridSpec that declares its longitude and latitude columns
+(`spatial=("lon", "lat")`) accepts a drawn shape in its URL state, and its query gains one
+PostGIS condition (`ST_Intersects` with the shape). Lists, totals, charts and maps follow,
+because they all read the grid's state. This is the one place Lattice's core writes a
+PostGIS function, and only for grids that declare `spatial`; such a host needs PostGIS.
+
 ## Consequences
 
 - Spatial joins on tens of thousands of locations run in Postgres with indexes, as

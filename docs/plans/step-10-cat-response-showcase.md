@@ -42,8 +42,8 @@ system" link (to a placeholder page in the showcase).
 | **Overview** | What the showcase is, the story, and the showcase-vs-production table above | — |
 | **Events** | All events; tabs Active and Closed; **Declare event** | Grid, saved views |
 | **Event page** | Header with lifecycle stepper (Watch → Landfall → Response → Recovery → Closed); key totals; map of exposure and claims; claims per day; footprint versions; Comments | Record page, stepper, map, charts, panels |
-| **Declare event** | The event form, which changes by peril (hurricane: category, wind speed, PCS code; hail: hail size; wildfire: acres, containment; freeze: minimum temperature). Footprint by picking counties on a map, or uploading a GeoJSON file | JSON Schema form with variants, upload, map |
-| **Exposure** (per event) | Locations inside the footprint: insured value by county (map), by line and construction (treemap), hexagon concentration, location quality tiers; **Run exposure** after a footprint change, with progress | Grid, map, charts, async action, live list |
+| **Declare event** | The event form, which changes by peril (hurricane: category, wind speed, PCS code; hail: hail size; wildfire: acres, containment; freeze: minimum temperature). Footprint by picking counties, uploading a GeoJSON file, or **drawing it on the map** | JSON Schema form with variants, upload, map drawing |
+| **Exposure** (per event) | Locations inside the footprint: insured value by county (map), by line and construction (treemap), hexagon concentration, location quality tiers; **Run exposure** after a footprint change, with progress; **draw a shape** to narrow the list, totals and charts to it | Grid with spatial filter, map drawing, charts, async action, live list |
 | **Loss estimate** (per event) | **Monte Carlo, illustrative**: 1,000 simulated storms; histogram of losses; average; 1-in-100 and 1-in-250; exceedance curve; assumptions stated | Background job, charts |
 | **Claims** | Claims across events: intake channel, severity, zone, adjuster; bulk **Assign zone**, **Raise priority**; map; one-month calendar around landfall; sankey channel → severity → status; event comparison (claims per day since landfall, one line per event) | Grid, bulk actions, charts, map |
 | **Claim page** | Policy and location (with quality tier), the damage assessment, the claim's tree (claim → coverages → payments estimate), field reports, Comments, history | Record page, tree, panels, forms |
@@ -51,7 +51,7 @@ system" link (to a placeholder page in the showcase).
 | **Field reports** | Free-form reports surveyors send; the lead's reading pane | Split grid, free-form documents |
 | **Deployment** | Teams → zones → claims as a graph; select a node to reassign or escalate | Graph with node actions |
 | **Intake (live)** | The claims simulator for Hurricane Delta, labelled; start, pause, and a speed control so a presenter can make a spike | Polling grid, async actions |
-| **Locations** | The exposure snapshot: search, tiers, hexagon map | Grid, map |
+| **Locations** | The exposure snapshot: search, tiers, hexagon map; **draw a polygon, rectangle or circle** and the list, totals and charts follow; **Save as area** keeps the shape as a named area, usable as a footprint | Grid with spatial filter, map drawing, charts |
 
 The Comments app stays: notes on claims and events, and the zone lead is told.
 
@@ -63,7 +63,7 @@ The Comments app stays: notes on claims and events, and the zone lead is told.
 | 2 | **Lattice map component** | `MapSpec` with points, hexagons, regions (US states and counties) and areas; linked to grid filters; MapLibre vendored; tokens for colours, light and dark; the self-hosted basemap with `make maps`, falling back to outlines; a file upload field for forms |
 | 3 | **Chart fixes** | The calendar as a single month grid (with month navigation); a histogram kind; an exceedance curve (line on sorted values) |
 | 4 | **Data and events** | 40,000 locations with realistic counties, construction, occupancy, values and tiers; the four events with footprints; past claims with plausible curves; the sample hurricane advisories |
-| 5 | **Pages, part 1** | Overview, Events, Event page, Declare event, Exposure, Locations |
+| 5 | **Pages, part 1** | Overview, Events, Event page, Declare event, Exposure, Locations. **Draw-to-search** (added 19 October 2026): Terra Draw vendored; a grid's spatial filter (`GridSpec.spatial=(lon, lat)`, a drawn shape in the URL as a filter); drawing on any map linked to such a grid; Save as area |
 | 6 | **Pages, part 2** | Claims, Claim page, Damage assessment, Field reports, Deployment, Intake (live) |
 | 7 | **Monte Carlo** | The loss estimate job and page, with its assumptions page |
 | 8 | **Docs and tests** | Help for every page in the audience's terms; developer help for geoengine and maps; the old showcase removed |
