@@ -22,8 +22,7 @@ from lattice.kernel.auth.passwords import hash_password, policy_errors
 from lattice.kernel.config import settings
 from lattice.kernel.database import transaction
 from lattice.kernel.dev_seed import DEV_USERS
-from lattice.kernel.migrate import drop_schemas, new_migration, sources_for
-from lattice.kernel.migrate import migrate as run_migrations
+from lattice.kernel.migrate import drop_list, drop_schemas, migrate_all, new_migration, sources_for
 from lattice.kernel.queries import SQL
 from lattice.kernel.services import users
 
@@ -35,7 +34,7 @@ def _load_host():
 
 def migrate(_args) -> None:
     host = _load_host()
-    applied = run_migrations(sources_for(host.state.apps))
+    applied = migrate_all(host.state.apps)
     print("Applied: " + ", ".join(applied) if applied else "Nothing to apply.")
     with transaction() as db:
         new = permissions.sync(db)
@@ -53,9 +52,9 @@ def create_migration(args) -> None:
 def reset(_args) -> None:
     if settings.is_production:
         raise SystemExit("Refusing to reset a production database.")
-    sources = sources_for(_load_host().state.apps)
-    drop_schemas(sources)
-    print("Dropped schemas: " + ", ".join(schema for schema, _ in sources))
+    schemas = drop_list(_load_host().state.apps)
+    drop_schemas(schemas)
+    print("Dropped schemas: " + ", ".join(schema for schema, _ in schemas))
     migrate(_args)
     seed(_args)
 

@@ -20,6 +20,7 @@ from lattice.components.tiles import HomeTile
 from lattice.kernel.auth.permissions import Permission
 from lattice.kernel.database import Db
 from lattice.kernel.events import Subscriber
+from lattice.kernel.migrate import Library
 from lattice.kernel.nav import NavNode
 
 
@@ -63,6 +64,8 @@ class AppManifest:
     # Schemas of libraries the app uses, as (schema, migrations folder), e.g. geoengine.SCHEMA.
     # `lattice migrate` applies them before the app's own, once even if several apps list them.
     library_schemas: list[tuple[str, Path]] = field(default_factory=list)
+    # Libraries that migrate themselves (a callable, not a folder), e.g. Taskline.
+    libraries: list[Library] = field(default_factory=list)
     # Folder of the app's SQL: named queries in *.sql, migrations in schema/*.sql.
     # The migrations create and fill the Postgres schema named after the app's key.
     sql: Path | None = None

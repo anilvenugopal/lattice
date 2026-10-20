@@ -135,6 +135,9 @@ the layers below it. Apps import only `lattice.api`.
   apps' record pages), and `publishes=` and `subscribes=` (CloudEvents, delivered
   after commit). Guide:
   `lattice/help/developer/building-apps/working-across-apps.md`.
+- Libraries: a folder of SQL is `library_schemas=` (geoengine); a library that
+  migrates itself is `libraries=[Library(name, schemas, migrate)]` (Taskline),
+  run after Lattice's migrations and before the apps'.
 - Background work: `background=` (an async function started with the host).
   Example data: `seed=` (run by `lattice seed`).
 

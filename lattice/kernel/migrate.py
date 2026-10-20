@@ -3,18 +3,25 @@
 Lattice and every app own one Postgres schema each (`lattice`, `showcase`…) and keep
 their migrations in `sql/schema/` (0001_lattice.sql, 0002_….sql). The schema's
 `_schema_version` table records which files have run. `lattice migrate` applies
-Lattice's files first, then each app's, all in one transaction: a failure leaves
-the database unchanged. An advisory lock stops two runs at once.
+Lattice's files first, then the libraries', then each app's (`migrate_all`). Each
+step is one transaction, so a failing file leaves its step unchanged. An advisory
+lock stops two runs at once.
 
 A file that has run is never edited; a change is a new file.
+
+A library whose migrations need more than a folder of SQL (Taskline records its
+instance and grants a reader role) brings its own `migrate()` as a `Library`. It runs
+after Lattice's migrations and before the apps', in its own transaction.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 
-from sqlalchemy import text
+from sqlalchemy import Engine, text
 
 from lattice.kernel.database import engine
 
@@ -24,6 +31,50 @@ LATTICE_SCHEMA = Path(__file__).parents[1] / "sql" / "schema"
 
 class MigrationError(Exception):
     """A schema name or migration file breaks a rule."""
+
+
+@dataclass(frozen=True)
+class Library:
+    """A library that migrates its own schemas, e.g.
+    `Library("taskline", ["jobs", "taskline_api"], lambda engine: taskline.migrate(engine, …))`.
+    """
+
+    name: str                                  # listed once however many apps declare it
+    schemas: list[str] = field(default_factory=list)   # what it owns: `lattice reset` drops them
+    # Applies its pending migrations on Lattice's engine; returns what it applied.
+    migrate: Callable[[Engine], list[str]] = field(default=lambda engine: [], compare=False)
+
+
+def libraries_for(apps) -> list[Library]:
+    """Each app's `AppManifest.libraries`, in the host's order, each name once."""
+    found: dict[str, Library] = {}
+    for app in apps:
+        for library in app.libraries:
+            found.setdefault(library.name, library)
+    return list(found.values())
+
+
+def migrate_all(apps) -> list[str]:
+    """Lattice's migrations, then the libraries', then the apps' (with their library schemas).
+
+    Each step commits on its own: a failing library or app leaves the steps before it
+    applied. Returns what was applied, as "schema/file" or "library/version".
+    """
+    lattice, *rest = sources_for(apps)
+    applied = migrate([lattice])
+    for library in libraries_for(apps):
+        try:
+            applied += [f"{library.name}/{v}" for v in library.migrate(engine())]
+        except Exception as exc:
+            raise MigrationError(f"Library {library.name!r} failed to migrate: {exc}") from exc
+    return applied + migrate(rest)
+
+
+def drop_list(apps) -> list[tuple[str, Path | None]]:
+    """Every schema `lattice reset` drops: Lattice's, the libraries' and the apps'."""
+    lattice, *rest = sources_for(apps)
+    owned = [(s, None) for library in libraries_for(apps) for s in library.schemas]
+    return [lattice, *owned, *rest]
 
 
 def pending(folder: Path, done: set[str]) -> list[Path]:
@@ -67,7 +118,7 @@ def migrate(sources: list[tuple[str, Path]]) -> list[str]:
     return applied
 
 
-def drop_schemas(sources: list[tuple[str, Path]]) -> None:
+def drop_schemas(sources: list[tuple[str, Path | None]]) -> None:
     """Drop every schema in `sources`, with all its tables and data. Development only."""
     with engine().begin() as conn:
         for schema, _folder in reversed(sources):
