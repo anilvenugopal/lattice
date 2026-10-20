@@ -33,6 +33,8 @@ it to zoom; click a bar to open the event.
   exposure it covered. For Delta, the exposed value falls as the forecast
   moves east, away from Houston.
 - **Comments**: notes for the team.
+- **Attachments**: files kept with the event, such as advisories or a
+  perimeter map. See [Attachments and folders](/help/lattice/user-guide/attachments).
 
 ## Declare an event
 
