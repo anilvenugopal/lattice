@@ -49,23 +49,23 @@ BUSINESS = ["Bayou {} Grill", "{} Logistics", "{} Medical Plaza", "{} Hardware",
 TIERS = (["rooftop"] * 70 + ["parcel"] * 15 + ["street"] * 8 + ["zip"] * 6 + ["county"] * 1)
 
 
-def _weighted(rng: random.Random, options: dict) -> str:
+def weighted(rng: random.Random, options: dict) -> str:
     return rng.choices(list(options), list(options.values()))[0]
 
 
 def _location(rng: random.Random, n: int, city: str) -> dict:
-    line = _weighted(rng, {"homeowners": 70, "commercial_property": 20, "auto": 10})
+    line = weighted(rng, {"homeowners": 70, "commercial_property": 20, "auto": 10})
     if line == "homeowners":
-        occupancy = _weighted(rng, {"single_family": 82, "condo": 12, "mobile_home": 6})
+        occupancy = weighted(rng, {"single_family": 82, "condo": 12, "mobile_home": 6})
         construction = ("manufactured" if occupancy == "mobile_home"
-                        else _weighted(rng, {"frame": 60, "masonry": 38, "steel": 2}))
+                        else weighted(rng, {"frame": 60, "masonry": 38, "steel": 2}))
         tiv = round(rng.lognormvariate(12.75, 0.45), -3)
         deductible = max(1000, round(tiv * rng.choice([0.01, 0.02]), -2))
         insured = f"{rng.choice(FIRST)} {rng.choice(LAST)}"
     elif line == "commercial_property":
-        occupancy = _weighted(rng, {"retail": 30, "office": 25, "warehouse": 20,
+        occupancy = weighted(rng, {"retail": 30, "office": 25, "warehouse": 20,
                                     "restaurant": 15, "hotel": 10})
-        construction = _weighted(rng, {"masonry": 45, "steel": 40, "frame": 15})
+        construction = weighted(rng, {"masonry": 45, "steel": 40, "frame": 15})
         tiv = round(rng.lognormvariate(14.6, 0.8), -3)
         deductible = rng.choice([10000, 25000, 50000, 100000])
         insured = rng.choice(BUSINESS).format(rng.choice(LAST))
@@ -125,7 +125,8 @@ STAFF = [
     ("Ray", "Fontenot", "surveyor", "Gulf Coast CAT", "Lafayette"), ("Jo", "Boudreaux", "surveyor", "Gulf Coast CAT", "Baton Rouge"),
     ("Sam", "Okafor", "surveyor", "Texas Field", "Dallas"), ("Mia", "Larsen", "surveyor", "Texas Field", "Fort Worth"),
     ("Eli", "Grant", "surveyor", "Texas Field", "Austin"), ("Zoe", "Marsh", "surveyor", "California Field", "Santa Rosa"),
-    ("Ian", "Ruiz", "surveyor", "California Field", "Napa"), ("Ava", "Brooks", "adjuster", "Desk Adjusting", "Austin"),
+    ("Ian", "Ruiz", "surveyor", "California Field", "Napa"),
+    ("Dee", "Landry", "surveyor", "Gulf Coast CAT", "Beaumont"), ("Nate", "Guidry", "surveyor", "Gulf Coast CAT", "Lake Charles"), ("Ava", "Brooks", "adjuster", "Desk Adjusting", "Austin"),
     ("Noah", "Singh", "adjuster", "Desk Adjusting", "Austin"), ("Lena", "Ford", "adjuster", "Desk Adjusting", "Houston"),
     ("Owen", "Price", "adjuster", "Desk Adjusting", "Dallas"), ("Ruth", "Kaplan", "adjuster", "Desk Adjusting", "Tampa"),
     ("Femi", "Adeyemi", "adjuster", "Desk Adjusting", "New Orleans"), ("Jade", "Moreau", "adjuster", "Desk Adjusting", "Sacramento"),
@@ -209,25 +210,24 @@ DELTA_TRACKS = [
     ("Advisory 12, 16 Oct", datetime(2026, 10, 16, 4), [(-91.5, 25.2), (-93.2, 26.6), (-94.6, 28.0), (-95.2, 29.4), (-95.4, 30.8), (-95.3, 32.2)], 0.22, 0.25),
     ("Advisory 17, 17 Oct", datetime(2026, 10, 17, 10), [(-91.8, 26.0), (-92.8, 27.4), (-93.4, 28.8), (-93.5, 29.8), (-93.2, 31.0), (-92.6, 32.2)], 0.2, 0.18),
 ]
+# Each event's zones: the counties in it, its lead, and the surveyors working it.
 ZONES = {
-    "CAT-2610": [("Galveston & Houston", {"48167", "48201", "48039", "48157", "48071"}, "Rosa Delgado"),
-                 ("Beaumont–Port Arthur", {"48245", "48361", "48199", "48351"}, "Rosa Delgado"),
-                 ("Lake Charles", {"22019", "22023", "22053", "22011"}, "Marcus Bell"),
-                 ("Lafayette & Acadiana", {"22055", "22113", "22045", "22099", "22001", "22097"}, "Marcus Bell")],
-    "CAT-2604": [("Dallas", {"48113"}, "Hannah Cho"), ("Fort Worth", {"48439"}, "Hannah Cho"),
-                 ("Collin & Denton", {"48085", "48121"}, "Hannah Cho")],
-    "CAT-2602": [("Houston area", {"48201", "48157", "48339", "48039", "48167", "48071"}, "Rosa Delgado"),
-                 ("North Texas", {"48113", "48439", "48085", "48121"}, "Hannah Cho"),
-                 ("Central Texas", {"48453", "48491", "48029", "48209", "48187"}, "Grace Whitfield")],
-    "CAT-2608": [("Napa", {"06055"}, "Daniel Ortiz"), ("Sonoma", {"06097"}, "Daniel Ortiz")],
+    "CAT-2610": [("Galveston & Houston", {"48167", "48201", "48039", "48157", "48071"}, "Rosa Delgado", ["Tom Reyes", "Ana Pham"]),
+                 ("Beaumont–Port Arthur", {"48245", "48361", "48199", "48351"}, "Rosa Delgado", ["Luis Navarro", "Dee Landry"]),
+                 ("Lake Charles", {"22019", "22023", "22053", "22011"}, "Marcus Bell", ["Kim Haddad", "Nate Guidry"]),
+                 ("Lafayette & Acadiana", {"22055", "22113", "22045", "22099", "22001", "22097"}, "Marcus Bell", ["Ray Fontenot", "Jo Boudreaux"])],
+    "CAT-2604": [("Dallas", {"48113"}, "Hannah Cho", ["Sam Okafor"]), ("Fort Worth", {"48439"}, "Hannah Cho", ["Mia Larsen"]),
+                 ("Collin & Denton", {"48085", "48121"}, "Hannah Cho", ["Eli Grant"])],
+    "CAT-2602": [("Houston area", {"48201", "48157", "48339", "48039", "48167", "48071"}, "Rosa Delgado", ["Tom Reyes", "Ana Pham"]),
+                 ("North Texas", {"48113", "48439", "48085", "48121"}, "Hannah Cho", ["Sam Okafor", "Mia Larsen"]),
+                 ("Central Texas", {"48453", "48491", "48029", "48209", "48187"}, "Grace Whitfield", ["Eli Grant"])],
+    "CAT-2608": [("Napa", {"06055"}, "Daniel Ortiz", ["Ian Ruiz"]), ("Sonoma", {"06097"}, "Daniel Ortiz", ["Zoe Marsh"])],
 }
 
 
 def seed_events(db: Db, rng: random.Random, counties: dict) -> None:
     staff = {s[0]: db.value(SQL.add_staff, name=s[0], role=s[1], team=s[2], home=s[3])
              for s in STAFF}
-    surveyors = [sid for (name, role, *_), sid in zip(STAFF, staff.values(), strict=True)
-                 if role == "surveyor"]
     adjusters = [sid for (name, role, *_), sid in zip(STAFF, staff.values(), strict=True)
                  if role == "adjuster"]
     tx = {f["id"] for f in counties["features"] if f["id"].startswith("48")}
@@ -264,8 +264,9 @@ def seed_events(db: Db, rng: random.Random, counties: dict) -> None:
             db.run(SQL.total_exposure_run, run_id=run_id)
 
         zones = []
-        for name, fips, lead in ZONES[spec["code"]]:
-            zones.append((db.value(SQL.add_zone, event_id=event_id, name=name, lead_id=staff[lead]), fips))
+        for name, fips, lead, pool in ZONES[spec["code"]]:
+            zone_id = db.value(SQL.add_zone, event_id=event_id, name=name, lead_id=staff[lead])
+            zones.append((zone_id, fips, [staff[p] for p in pool]))
         exposed = db.all(SQL.exposed, run_id=run_id)
         if spec["code"] == "CAT-2610":          # hardest hit near landfall: weight by closeness
             exposed = [e for e in exposed if e["county_fips"][:2] in ("22", "48")]
@@ -278,27 +279,28 @@ def seed_events(db: Db, rng: random.Random, counties: dict) -> None:
             reported = landfall + timedelta(days=days, hours=rng.uniform(6, 20))
             if reported > NOW:
                 reported = NOW - timedelta(minutes=rng.randint(5, 600))
-            severity = _weighted(rng, spec["severity"])
+            severity = weighted(rng, spec["severity"])
             lo, hi = SEVERITY_SHARE[severity]
             estimate = round(float(loc["tiv"]) * rng.uniform(lo, hi), -2)
             if spec["status"] == "closed":
-                status = _weighted(rng, {"closed": 92, "settled": 8})
+                status = weighted(rng, {"closed": 92, "settled": 8})
             elif spec["status"] == "recovery":
-                status = _weighted(rng, {"closed": 55, "settled": 25, "inspected": 15, "assigned": 5})
+                status = weighted(rng, {"closed": 55, "settled": 25, "inspected": 15, "assigned": 5})
             else:
                 age = (NOW - reported).total_seconds() / 86400
-                status = _weighted(rng, {"new": 60, "assigned": 40} if age < 0.6 else
+                status = weighted(rng, {"new": 60, "assigned": 40} if age < 0.6 else
                                    {"new": 20, "assigned": 50, "inspected": 30})
-            zone_id = next((z for z, fips in zones if loc["county_fips"] in fips), None)
+            zone_id, _, pool = next((z for z in zones if loc["county_fips"] in z[1]),
+                                    (None, None, zones[0][2]))
             paid = round(estimate * rng.uniform(0.8, 1.0), -2) if status in ("settled", "closed") else 0
             claims.append(dict(
                 claim_number=f"CLM-{spec['starts_on']:%y}-{claim_no:06d}",
                 event_id=event_id, location_id=loc["id"], loss_date=spec["landfall_on"],
-                reported_at=reported, channel=_weighted(rng, CHANNEL),
-                cause=_weighted(rng, spec["causes"]), severity=severity, status=status,
+                reported_at=reported, channel=weighted(rng, CHANNEL),
+                cause=weighted(rng, spec["causes"]), severity=severity, status=status,
                 priority=severity in ("major", "total") and rng.random() < 0.5,
                 estimate=estimate, paid=paid, zone_id=zone_id,
-                surveyor_id=rng.choice(surveyors) if status != "new" else None,
+                surveyor_id=rng.choice(pool) if status != "new" else None,
                 adjuster_id=rng.choice(adjusters) if status in ("inspected", "settled", "closed") else None,
                 closed_at=reported + timedelta(days=rng.uniform(10, 70)) if status == "closed" else None,
                 updated_at=min(NOW, reported + timedelta(days=rng.uniform(0, 20)))))

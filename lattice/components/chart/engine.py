@@ -120,6 +120,9 @@ def data(chart: ChartSpec, db: Db, user, gq: grid_engine.GridQuery) -> dict:
     time = isinstance(chart.x, Time)
     if time or chart.kind in ("sankey", "choropleth"):
         categories = list(dict.fromkeys(p[0] for p in points))
+    elif chart.kind in ("line", "area"):       # an axis: keep its order, and every value
+        categories = sorted(dict.fromkeys(p[0] for p in points),
+                            key=lambda v: (not isinstance(v, int | float), v))
     else:
         categories, points = _top(chart, points)
 

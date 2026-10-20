@@ -1,0 +1,13 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header %}
+{% from "components/grid.html" import data_grid %}
+{% from "components/map.html" import map_view %}
+{% from "components/chart.html" import chart %}
+{% block main %}
+<div class="page stack-lg">
+  {{ page_header("Claims", "Copied from the claims system every few minutes. Assign surveyors and zones in bulk; draw on the map to work one neighbourhood.") }}
+  {{ map_view(map) }}
+  <div class="chart-row">{% for c in charts %}{{ chart(c) }}{% endfor %}</div>
+  {{ data_grid(grid) }}
+</div>
+{% endblock %}

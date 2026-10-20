@@ -57,7 +57,19 @@ def resolve_event(db: Db, user, event_id: str) -> Resolved | None:
                     badge=dict(STAGES)[row["status"]], tone=STAGE_TONES[row["status"]])
 
 
+def resolve_claim(db: Db, user, claim_id: str) -> Resolved | None:
+    if not claim_id.isdigit():
+        return None
+    row = db.first(QUERIES.claims.by_id, id=int(claim_id))
+    if row is None:
+        return None
+    from lattice_showcase.claims import STATUS_TONES, STATUSES
+    return Resolved(row["claim_number"], f"/showcase/claims/{row['id']}",
+                    badge=dict(STATUSES)[row["status"]], tone=STATUS_TONES[row["status"]])
+
+
 REFERENCES = [ReferenceKind("showcase.event", "Event", resolve_event, icon="showcase:storm"),
+              ReferenceKind("showcase.claim", "Claim", resolve_claim, icon="queue"),
               ReferenceKind("showcase.item", "Item", resolve_item, icon="queue"),
               ReferenceKind("showcase.spec", "Spec", resolve_spec, icon="showcase:form")]
 

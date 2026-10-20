@@ -95,7 +95,7 @@ The second argument is the label in tooltips and legends.
 `day`, `week`, `month`, `quarter`, `year`. Users zoom a time chart by dragging
 across it (Ctrl+wheel also zooms; Shift-drag pans); **Reset zoom** undoes it.
 
-**Many categories.** Category charts show the `limit` (12) largest values. With
+**Many categories.** Bar, pie and treemap charts on a category show the `limit` (12) largest values (line and area charts keep every value, in order, as an axis). With
 `Count` or `Sum`, the rest add up to one **Other**, drawn grey. With an average,
 minimum or maximum, the rest are left out.
 

@@ -13,6 +13,7 @@ from lattice.api import AppManifest, NavNode
 from lattice_showcase import (
     charts,
     claims,
+    deployment,
     events,
     exposure,
     flows,
@@ -31,7 +32,7 @@ HERE = Path(__file__).parent
 
 async def background() -> None:
     """The showcase's development simulators: jobs moving along, exposure runs running."""
-    await asyncio.gather(jobs.background(), exposure.background())
+    await asyncio.gather(jobs.background(), exposure.background(), claims.background())
 
 APP = AppManifest(
     key="showcase",
@@ -50,16 +51,20 @@ APP = AppManifest(
     static=HERE / "static",
     stylesheets=["showcase.css"],
     routers=[overview.router, events.router, exposure.router, locations.router, claims.router,
+             deployment.router,
              items.router, jobs.router, inbox.router, charts.router, specs.router, flows.router],
-    grids=[events.GRID, exposure.GRID, exposure.RUNS, locations.GRID, claims.GRID,
+    grids=[events.GRID, exposure.GRID, exposure.RUNS, locations.GRID, claims.GRID, claims.REPORTS,
+           claims.INTAKE, deployment.ZONES,
            items.GRID, jobs.GRID, inbox.GRID, specs.GRID],
-    charts=[*exposure.CHARTS, *locations.CHARTS, *claims.EVENT_CHARTS, *charts.CHARTS],
-    maps=[exposure.MAP, locations.MAP],
-    documents=[specs.SPEC, specs.NOTE],
-    forms=[specs.FREEFORM, events.DECLARE, exposure.FOOTPRINT_FORM],
+    charts=[*exposure.CHARTS, *locations.CHARTS, *claims.CHARTS, *claims.EVENT_CHARTS,
+            claims.INTAKE_CHART, *charts.CHARTS],
+    maps=[exposure.MAP, locations.MAP, claims.MAP],
+    documents=[specs.SPEC, specs.NOTE, claims.ASSESSMENT, claims.REPORT],
+    forms=[specs.FREEFORM, events.DECLARE, exposure.FOOTPRINT_FORM, claims.REPORT_FORM],
     references=links.REFERENCES,
     subscribes={"comments.added": links.notify_owner},
-    permissions=[*events.PERMISSIONS, *items.PERMISSIONS, *specs.PERMISSIONS],
+    permissions=[*events.PERMISSIONS, *claims.PERMISSIONS, *items.PERMISSIONS,
+                 *specs.PERMISSIONS],
     tiles=[*items.TILES, *jobs.TILES, *inbox.TILES],
     background=background,
     seed=seed,
@@ -83,6 +88,13 @@ APP = AppManifest(
         NavNode("claims", "Claims", "/showcase/claims", icon="queue", keywords="fnol losses",
                 description="Claims across events, from the claims system"),
         NavNode("claims.list", "Claims", "/showcase/claims", parent="claims"),
+        NavNode("claims.claim", "Claim", "/showcase/claims", parent="claims.list", hidden=True),
+        NavNode("claims.intake", "Live intake", "/showcase/intake", parent="claims",
+                keywords="fnol new claims arriving simulator"),
+        NavNode("claims.deployment", "Deployment", "/showcase/deployment", parent="claims",
+                keywords="surveyors zones teams graph"),
+        NavNode("claims.reports", "Field reports", "/showcase/field-reports", parent="claims",
+                keywords="surveyor notes inspection"),
         NavNode("locations", "Locations", "/showcase/locations", icon="showcase:map",
                 keywords="exposure portfolio map draw search",
                 description="The exposure snapshot, searched on the map"),

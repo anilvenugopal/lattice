@@ -1,0 +1,8 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, empty_state %}
+{% block main %}
+<div class="page page--narrow">
+  {{ page_header(claim_number) }}
+  {{ empty_state("This would open the claim in the claims system", "In production, this link goes to " ~ claim_number ~ " in the carrier's claims system, the system of record. The showcase has no claims system, so it stops here.") }}
+</div>
+{% endblock %}

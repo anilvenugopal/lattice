@@ -75,3 +75,17 @@ WHERE e.code = 'CAT-2610' ORDER BY f.version;
 -- name: count_locations
 -- How many insured locations the snapshot holds.
 SELECT count(*) FROM showcase.location;
+
+-- name: add_zone
+-- A zone for an event, for the claims tests; returns its id.
+INSERT INTO showcase.zone (event_id, name) VALUES (:event_id, :name) RETURNING id;
+
+-- name: add_surveyor
+-- A surveyor, for the claims tests; returns the id.
+INSERT INTO showcase.staff (name, role, team, home) VALUES (:name, 'surveyor', 'Test', 'Houston')
+RETURNING id;
+
+-- name: claims_of
+-- An event's claims.
+SELECT id, claim_number, status, surveyor_id, zone_id FROM showcase.claim
+WHERE event_id = :event_id ORDER BY id;

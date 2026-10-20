@@ -91,3 +91,69 @@ def test_pages_render(as_user, book):
     c = as_user("viewer")
     for path in ("/showcase/events", "/showcase/locations", "/showcase/claims"):
         assert c.get(path).status_code == 200, path
+
+
+def live_event(c, db):
+    """Declare an event over Harris, run its exposure and move it to landfall."""
+    event_id = int(declare(c).headers["location"].rsplit("/", 1)[1])
+    exposure.process_next()
+    post_json(c, "/_grid/showcase.events/action/advance", {"ids": [event_id]})
+    return event_id
+
+
+def test_intake_claims_handling_assessment_and_reports(as_user, book, db):
+    import random
+
+    from lattice_showcase import claims, deployment
+    c = as_user("editor")
+    event_id = live_event(c, db)
+    zone = db.value(CHECK.add_zone, event_id=event_id, name="Houston")
+    surveyor = db.value(CHECK.add_surveyor, name="Pat Field")
+
+    # The simulator adds claims only while running.
+    assert claims.simulate_intake(random.Random(1), 60) == 0
+    post_json(c, "/_grid/showcase.intake/action/start", {"ids": [], "values": {"per_minute": "120"}})
+    assert claims.simulate_intake(random.Random(1), 60) == 4      # only 4 exposed, none claimed yet
+    made = db.all(CHECK.claims_of, event_id=event_id)
+    assert {r["status"] for r in made} == {"new"} and {r["zone_id"] for r in made} == {zone}
+    post_json(c, "/_grid/showcase.intake/action/pause", {"ids": []})
+
+    # Assign a surveyor in bulk; the claims become assigned.
+    ids = [r["id"] for r in made]
+    post_json(c, "/_grid/showcase.claims/action/assign_surveyor",
+              {"ids": ids, "values": {"surveyor_id": str(surveyor)}})
+    assert {r["status"] for r in db.all(CHECK.claims_of, event_id=event_id)} == {"assigned"}
+
+    # The claim page, then an assessment, which records the inspection.
+    first = ids[0]
+    assert "Not assessed yet." in c.get(f"/showcase/claims/{first}").text
+    form = c.get(f"/showcase/claims/{first}/assessment").text
+    assert 'name="data/property/roof"' in form                  # a homeowners claim: the home form
+    res = c.post(f"/showcase/claims/{first}/assessment", follow_redirects=False, data={
+        "csrf_token": csrf(c), "data/claim_number": made[0]["claim_number"],
+        "data/property/__variant": "0", "data/property/roof": json.dumps("major"),
+        "data/damage_estimate": "45000", "data/photos": "12", "data/notes": "Roof decking exposed."})
+    assert res.status_code == 303, res.text
+    page = c.get(f"/showcase/claims/{first}").text
+    assert "$45,000" in page and "Roof decking exposed." in page
+    assert db.all(CHECK.claims_of, event_id=event_id)[0]["status"] == "inspected"
+
+    # A free-form field report, with a field the template didn't have.
+    res = c.post(f"/showcase/claims/{first}/report", follow_redirects=False, data={
+        "csrf_token": csrf(c), "__mode": "json",
+        "__json": json.dumps({"summary": "Gate locked", "observed": "No access.", "dog": True})})
+    assert res.status_code == 303
+    assert "Gate locked" in c.get("/_grid/showcase.field_report/rows").text
+
+    # The deployment graph shows the zone and the surveyor.
+    graph = c.get("/showcase/deployment").text
+    assert "Pat Field" in graph and "Houston" in graph
+    assert deployment.ZONES.key in graph or "/_grid/showcase.zones" in graph
+
+
+def test_claims_pages_render(as_user, book, db):
+    c = as_user("viewer")
+    for path in ("/showcase/claims", "/showcase/intake", "/showcase/deployment",
+                 "/showcase/field-reports", "/showcase/claims-system/CLM-26-000001"):
+        assert c.get(path).status_code == 200, path
+    assert c.get("/showcase/claims/1/assessment").status_code == 403    # viewers read only

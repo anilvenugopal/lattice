@@ -1,0 +1,4 @@
+{# Field reports reading pane: every field of a free-form report, whatever its shape. #}
+{% from "components/macros.html" import prop_list %}
+{% set data = doc.data %}
+{{ prop_list(data | dictsort | map("list") | list, columns=1) }}
