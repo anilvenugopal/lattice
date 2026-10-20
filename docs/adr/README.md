@@ -23,6 +23,6 @@ is a new record that names the one it replaces.
 | [0013](0013-geoengine-and-maps.md) | Geospatial: a separate geoengine package, PostGIS, and a Lattice map component | Accepted |
 | [0014](0014-timeline-component.md) | Timelines: a TimelineSpec component drawn in HTML | Accepted |
 | [0015](0015-chart-colours.md) | Chart colours: one hue by default, colour only where it means something | Accepted |
-| [0016](0016-notifications.md) | Notifications: an inbox in Lattice's core, fed by apps and by following records | Accepted (phase 1) |
+| [0016](0016-notifications.md) | Notifications: an inbox in Lattice's core, fed by apps and by following records | Accepted (phases 1 and 2) |
 
 Statuses: Proposed, Accepted, Superseded by NNNN.

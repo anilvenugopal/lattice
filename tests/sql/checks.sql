@@ -107,3 +107,8 @@ FROM lattice.notification WHERE user_id = :user_id ORDER BY id DESC;
 -- name: age_notifications
 -- Make every notification look old, for the retention test.
 UPDATE lattice.notification SET created_at = created_at - make_interval(days => :days);
+
+-- name: emails_to
+-- The emails queued for a user, oldest first, for tests/test_notifications.py.
+SELECT id, kind, subject, body, status, attempts, notification_ids, last_error
+FROM lattice.email WHERE user_id = :user_id ORDER BY id;

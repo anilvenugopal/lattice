@@ -41,6 +41,8 @@ def close(db: Db = Depends(get_db)):
 
 
 KINDS = [NotificationKind("desk.assigned", "A ticket is yours"),
+         NotificationKind("desk.urgent", "An urgent ticket", email="email"),
+         NotificationKind("desk.daily", "Ticket news", email="digest"),
          NotificationKind("desk.reply", "A reply on a ticket you follow", event="desk.replied",
                           title="{author} replied", body="{excerpt}", clears=["desk.closed"])]
 
@@ -144,3 +146,82 @@ def test_old_notifications_are_deleted(client, db, users):
 def test_kinds_are_checked(manifest, message):
     with pytest.raises(AppError, match=message):
         create_app(apps=[manifest])
+
+
+# ── Email (phase 2) ──────────────────────────────────────────────────────────
+
+def emails(db, user):
+    return db.all(CHECK.emails_to, user_id=user.id)
+
+
+def test_a_kind_that_emails_queues_one_and_a_choice_overrides_it(client, db, users):
+    ed, viewer = users["editor"], users["viewer"]
+    notifications.choose(db, viewer.id, "desk.urgent", "app")
+    notifications.notify(db, [ed.id, viewer.id], "desk.urgent", "Server down", body="secret detail",
+                         subject=TICKET)
+    notifications.notify(db, [ed.id], "desk.urgent", "Server still down", subject=TICKET)
+    [one] = emails(db, ed)                                     # the second waits on the first
+    assert one["subject"] == "Server down" and "/account/notifications/" in one["body"]
+    assert "secret detail" not in one["body"]                 # titles and links, never content
+    assert emails(db, viewer) == []
+    notifications.notify(db, [ed.id], "desk.assigned", "Ticket 9", subject=urn("desk.ticket", 9))
+    assert len(emails(db, ed)) == 1                            # in-app kinds send nothing
+
+
+def test_without_a_mail_server_emails_are_logged(client, db, users):
+    notifications.notify(db, [users["editor"].id], "desk.urgent", "Down", subject=TICKET)
+    assert notifications.send_due(db) == 0
+    [email] = emails(db, users["editor"])
+    assert email["status"] == "logged"
+    assert inbox(db, users["editor"])[0]["id"] in email["notification_ids"]
+
+
+def test_failed_sends_are_retried_then_given_up(client, db, users, monkeypatch):
+    from lattice.kernel.services import mail
+
+    def refuse(*args):
+        raise OSError("connection refused")
+    monkeypatch.setattr(mail, "send", refuse)
+    notifications.notify(db, [users["editor"].id], "desk.urgent", "Down", subject=TICKET)
+    notifications.send_due(db)
+    [email] = emails(db, users["editor"])
+    assert (email["status"], email["attempts"], email["last_error"]) == ("queued", 1, "connection refused")
+    assert notifications.send_due(db) == 0                     # not due again yet
+
+    sent = []
+    monkeypatch.setattr(mail, "send", lambda to, subject, body: sent.append(to))
+    notifications.notify(db, [users["viewer"].id], "desk.urgent", "Down", subject=TICKET)
+    assert notifications.send_due(db) == 1 and sent == ["viewer@test.io"]
+
+
+def test_a_daily_summary_lists_unread_ones_once_a_day(client, db, users):
+    from datetime import UTC, datetime
+    ed = users["editor"]
+    notifications.notify(db, [ed.id], "desk.daily", "Ticket 7 changed", subject=TICKET)
+    notifications.notify(db, [ed.id], "desk.daily", "Ticket 8 changed", subject=urn("desk.ticket", 8))
+    assert notifications.queue_digests(db, datetime(2026, 10, 20, 3, tzinfo=UTC)) == 0   # too early
+    assert notifications.queue_digests(db, datetime(2026, 10, 20, 9, tzinfo=UTC)) == 1
+    [digest] = emails(db, ed)
+    assert digest["kind"] == "digest" and "Ticket 7 changed" in digest["body"]
+    assert "Ticket 8 changed" in digest["body"] and len(digest["notification_ids"]) == 2
+    assert notifications.queue_digests(db, datetime(2026, 10, 20, 9, tzinfo=UTC)) == 0   # once a day
+
+
+def test_people_choose_how_they_are_told(as_user, users, db):
+    c = as_user("viewer")
+    page = c.get("/account/notifications/settings").text
+    assert "An urgent ticket" in page and 'name="kind:desk.urgent"' in page
+    res = c.post("/account/notifications/settings", headers={"X-CSRF-Token": csrf(c)},
+                 data={"kind:desk.urgent": "digest", "kind:desk.nope": "email", "kind:desk.daily": "fax"})
+    assert res.status_code == 200
+    chosen = notifications.choices(db, users["viewer"].id)
+    assert (chosen["desk.urgent"], chosen["desk.daily"]) == ("digest", "digest")    # fax ignored
+
+
+def test_administrators_read_sent_email_and_send_a_test(as_user, users, db):
+    assert as_user("editor").get("/admin/email").status_code == 403
+    c = as_user("admin")
+    assert "No mail server is set" in c.get("/admin/email").text
+    res = post_json(c, "/_grid/emails/action/test", {"ids": []}).json()
+    assert "Test email queued to admin@test.io" in res["message"]
+    assert emails(db, users["admin"])[0]["kind"] == "test"

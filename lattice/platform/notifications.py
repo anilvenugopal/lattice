@@ -21,11 +21,12 @@ from lattice.components.grid import (
 from lattice.components.references import resolve
 from lattice.components.tiles import HomeTile
 from lattice.kernel.auth.csrf import csrf_protect
-from lattice.kernel.auth.deps import current_user
+from lattice.kernel.auth.deps import current_user, require
+from lattice.kernel.config import settings
 from lattice.kernel.database import Db, get_db, transaction
 from lattice.kernel.queries import SQL
 from lattice.kernel.services import notifications
-from lattice.kernel.web import render, toast
+from lattice.kernel.web import render, render_page, toast
 
 log = logging.getLogger(__name__)
 router = APIRouter(dependencies=[Depends(csrf_protect)])
@@ -78,6 +79,24 @@ def badge(request: Request, db: Db = Depends(get_db), user=Depends(current_user)
     return render(request, "account/notification_badge.html", count=notifications.unread(db, user.id))
 
 
+@router.get("/notifications/settings")
+def settings_page(request: Request, db: Db = Depends(get_db), user=Depends(current_user)):
+    kinds = sorted(notifications.KINDS.values(), key=lambda k: k.label)
+    return render_page(request, "account/notification_settings.html", "account.notification_settings",
+                       kinds=kinds, choices=notifications.choices(db, user.id),
+                       channels=notifications.CHANNELS)
+
+
+@router.post("/notifications/settings")
+async def save_settings(request: Request, db: Db = Depends(get_db), user=Depends(current_user)):
+    form = await request.form()
+    for key, channel in form.items():
+        kind = key.removeprefix("kind:")
+        if key.startswith("kind:") and kind in notifications.KINDS and channel in dict(notifications.CHANNELS):
+            notifications.choose(db, user.id, kind, str(channel))
+    return Response(headers=toast("Notification settings saved."))
+
+
 @router.get("/notifications/{notification_id}")
 def open_notification(notification_id: int, db: Db = Depends(get_db), user=Depends(current_user)):
     """Mark it read and go to what it is about, if the user may still see it."""
@@ -104,13 +123,76 @@ def toggle_follow(request: Request, subject: str = Form(...), db: Db = Depends(g
 
 
 async def background() -> None:
-    """Started with the host: delete notifications past their retention, hourly."""
+    """Started with the host: every 30 seconds, queue daily summaries that are due and send
+    queued emails; hourly, delete notifications past their retention."""
+    def deliver() -> None:
+        with transaction() as db:
+            notifications.queue_digests(db)
+        with transaction() as db:
+            notifications.send_due(db)
+
     def expire() -> None:
         with transaction() as db:
             notifications.expire(db)
+
+    ticks = 0
     while True:
         try:
-            await run_in_threadpool(expire)
+            await run_in_threadpool(deliver)
+            if ticks % 120 == 0:
+                await run_in_threadpool(expire)
         except Exception:
-            log.exception("Expiring notifications failed")
-        await asyncio.sleep(3600)
+            log.exception("Notification delivery failed")
+        ticks += 1
+        await asyncio.sleep(30)
+
+
+# ── Administration › Email: every email queued, sent or logged ───────────────
+
+EMAIL_VIEW = "lattice.email.view"
+STATUSES = [("queued", "Queued"), ("sent", "Sent"), ("logged", "Logged"), ("failed", "Failed")]
+
+
+def send_test(ctx: ActionContext) -> str:
+    base = settings.public_url.rstrip("/")
+    ctx.db.value(SQL.notifications.queue_test, user_id=ctx.user.id, to_address=ctx.user.email,
+                 subject=f"Test email from {settings.app_name}",
+                 body=f"This is a test of {settings.app_name}'s email.\n\n{base}")
+    where = settings.smtp_host or "nowhere: no mail server is set, so it will be logged here"
+    return f"Test email queued to {ctx.user.email}; it goes out within 30 seconds, to {where}."
+
+
+def retry(ctx: ActionContext) -> str:
+    ctx.db.run(SQL.notifications.retry_emails, ids=ctx.ids)
+    return f"Queued {ctx.count} again."
+
+
+EMAILS = GridSpec(
+    key="emails", title="Email", path="/admin/email", query=SQL.notifications.emails,
+    permission=EMAIL_VIEW,
+    columns=[Column("subject", "Subject", kind="strong", secondary="to_address", required=True),
+             Column("recipient", "To", kind="user", width="160px"),
+             Column("kind", "Kind", labels={"notification": "Notification", "digest": "Daily summary",
+                                            "test": "Test"}, width="120px"),
+             Column("status", "Status", kind="badge", labels=dict(STATUSES), width="100px",
+                    tones={"queued": "info", "sent": "success", "logged": "neutral", "failed": "danger"}),
+             Column("attempts", "Tries", kind="number", align="right", width="70px"),
+             Column("created_at", "Queued", kind="ago", width="110px"),
+             Column("sent_at", "Sent", kind="ago", width="110px")],
+    search=["subject", "to_address", "recipient"],
+    views=[View("all", "All"), View("failed", "Failed", where={"status": "failed"})],
+    actions=[Action("test", "Send me a test email", scope="none", handler=send_test, icon="mail",
+                    tone="primary"),
+             Action("retry", "Retry", handler=retry, icon="retry", when={"status": ["failed"]})],
+    panel=lambda db, user, row: {"template": "account/email_panel.html"},
+    panel_title="{subject}", default_sort="-created_at", export=False,
+    empty_title="No email yet", empty_text="Emails appear here as notifications go out.",
+)
+admin_router = APIRouter(dependencies=[Depends(csrf_protect)])
+
+
+@admin_router.get("/email", dependencies=[Depends(require(EMAIL_VIEW))])
+def email_page(request: Request, db: Db = Depends(get_db)):
+    note = (f"Sent through {settings.smtp_host}." if settings.smtp_host else
+            "No mail server is set (LATTICE_SMTP_HOST): emails are logged here, not sent.")
+    return render_grid_page(request, db, EMAILS, "admin.email", subtitle=note)

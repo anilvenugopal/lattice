@@ -74,6 +74,21 @@ answer "who changed this?".
 
 Each record's own page also shows its history, under **Activity**.
 
+## Email
+
+**Email** lists every email the site has queued, sent or logged: notifications
+sent right away, daily summaries and tests. Select one to read it as it went
+out, with any error from the mail server.
+
+- **Send me a test email** checks the mail server: it goes to your own address
+  within 30 seconds.
+- **Failed** emails are tried five times, waiting longer each time; **Retry**
+  queues them again.
+- With **no mail server set** (`LATTICE_SMTP_HOST` empty), nothing is sent:
+  emails are kept here as **Logged**, which is how development sites work.
+
+Reading it needs the **Read sent email** permission.
+
 ## System
 
 **System** shows how this site is set up:

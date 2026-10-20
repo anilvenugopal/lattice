@@ -6,6 +6,8 @@
 "account.profile" = "user-guide/your-account#profile"
 "account.security" = "user-guide/your-account#security"
 "account.notifications" = "user-guide/notifications"
+"account.notification_settings" = "user-guide/notifications#by-email"
+"admin.email" = "user-guide/administration#email"
 "admin" = "user-guide/administration"
 "admin.users" = "user-guide/administration#users"
 "admin.user" = "user-guide/administration#users"

@@ -1,0 +1,5 @@
+{# Administration › Email: one email as it was (or will be) sent. #}
+{% from "components/macros.html" import prop_list %}
+{{ prop_list([("To", row.to_address), ("Queued", time_tag(row.created_at)), ("Sent", time_tag(row.sent_at)),
+              ("Last error", row.last_error or "—")]) }}
+<pre class="code-block">{{ row.body }}</pre>
