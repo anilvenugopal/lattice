@@ -83,3 +83,23 @@ def test_a_missing_column_is_a_clear_error(as_user, events):
 def test_chart_rules_stop_the_host(chart, message):
     with pytest.raises(AppError, match=message):
         create_app(apps=[AppManifest(key="stats", label="Stats", charts=[chart])])
+
+
+def test_histogram_and_exceedance(as_user, events, client):
+    from lattice.api import ChartSpec
+    hist = ChartSpec("stats.hist", "Ids", AUDIT, "histogram", x="id", bins=4)
+    curve = ChartSpec("stats.curve", "Ids", AUDIT, "exceedance", x="id")
+    chart_router.register(hist)
+    chart_router.register(curve)
+    c = as_user("admin")
+    bins = c.get("/_chart/stats.hist/data?q=doc.").json()["points"]
+    assert len(bins) == 4 and sum(b[2] for b in bins) == 6 and bins[0][0] < bins[-1][1]
+    points = c.get("/_chart/stats.curve/data?q=doc.").json()["points"]
+    assert points[0][2] == 100 and points[-1][2] == 0             # every value exceeds the minimum
+    assert points[0][0] <= points[-1][0]
+
+
+def test_distribution_charts_need_a_plain_numeric_x():
+    with pytest.raises(AppError, match="needs a numeric column"):
+        create_app(apps=[AppManifest(key="stats", label="Stats", charts=[
+            ChartSpec("stats.h", "H", AUDIT, "histogram", x=Time("at"))])])

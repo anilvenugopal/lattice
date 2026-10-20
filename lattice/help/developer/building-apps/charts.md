@@ -2,7 +2,7 @@
 title: Charts
 summary: Draw a grid's rows as a bar, line, area, pie, calendar, treemap, sankey or map chart, counted in the database and following the grid's filters.
 order: 22
-keywords: chart chartspec chart.js bar line area pie doughnut calendar heatmap matrix treemap sankey map choropleth geo time series zoom threshold aggregate count sum average dashboard
+keywords: chart chartspec chart.js bar line area pie doughnut calendar heatmap histogram exceedance probability matrix treemap sankey map choropleth geo time series zoom threshold aggregate count sum average dashboard
 ---
 
 A chart draws the rows of a grid you already have. It reads the grid's query,
@@ -72,7 +72,9 @@ one and list it in `grids=` without placing it on a page.
 | `bar` | a column or `Time` | optional: one bar colour per value | Bars; `stacked=True`, `horizontal=True` |
 | `line`, `area` | a column or `Time` | optional: one line per value | Lines, or filled areas; `stacked=True` for areas |
 | `pie`, `doughnut` | a column | none | Slices |
-| `calendar` | `Time(column, "day")` | none | A heatmap of days, one column per week |
+| `calendar` | `Time(column, "day")` | none | One month as a calendar, each day shaded and labelled with its value. It opens on the month of the busiest day; ‹ › step through the months that have data |
+| `histogram` | a numeric column | none | How many rows fall in each of `bins` (20) equal ranges |
+| `exceedance` | a numeric column | none | The chance a value is exceeded, from 100% at the smallest to 0% at the largest; `thresholds` mark probabilities, such as `Threshold(1, "1 in 100")` |
 | `treemap` | a column | optional: boxes grouped by it | Nested boxes sized by the measure |
 | `sankey` | the "from" column | the "to" column (required) | Flows between the values of two columns |
 | `choropleth` | a column of country names or ISO 3166 numeric codes | none | A world map shaded by the measure |
