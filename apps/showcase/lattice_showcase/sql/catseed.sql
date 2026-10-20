@@ -90,3 +90,7 @@ RETURNING id, event_id, footprint_id;
 UPDATE showcase.claim c SET handler_id = u.ids[1 + c.id % cardinality(u.ids)]
 FROM (SELECT array_agg(id ORDER BY id) AS ids FROM lattice.app_user) u
 WHERE c.status IN ('assigned', 'inspected') AND cardinality(u.ids) > 0;
+
+-- name: handled
+-- Claims with a desk handler, for their follows.
+SELECT id, handler_id FROM showcase.claim WHERE handler_id IS NOT NULL;

@@ -62,11 +62,6 @@ WHERE id = ANY(:ids);
 UPDATE showcase.claim SET handler_id = :user_id, updated_at = lattice.utc_now()
 WHERE id = ANY(:ids);
 
--- name: handler
--- A claim's desk handler and its name, for telling the handler about a comment.
-SELECT c.claim_number, c.handler_id, l.insured
-FROM showcase.claim c JOIN showcase.location l ON l.id = c.location_id
-WHERE c.id = :id;
 
 -- name: mark_inspected
 -- Record that claims were inspected.

@@ -15,7 +15,7 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import geoengine
-from lattice.api import Db, sql_queries
+from lattice.api import Db, notifications, sql_queries, urn
 
 SQL = sql_queries(Path(__file__).parent / "sql").catseed
 STATIC_MAPS = Path(__file__).parents[3] / "lattice" / "static" / "maps"
@@ -342,5 +342,7 @@ def seed(db: Db) -> None:
     counties = seed_locations(db, rng)
     seed_events(db, rng, counties)
     db.run(SQL.assign_handlers)
+    for claim in db.all(SQL.handled):           # handlers follow their claims (ADR 0016)
+        notifications.follow(db, claim["handler_id"], urn("showcase.claim", claim["id"]))
     seed_estimates(db)
 

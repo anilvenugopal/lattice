@@ -1,7 +1,7 @@
 """The showcase: a carrier responding to catastrophes, built with every Lattice component.
 
 Events and their footprints, exposure, a Monte Carlo loss estimate, claims with their
-assessments and field reports, live intake, deployment, notices and the location map.
+assessments and field reports, live intake, deployment and the location map.
 The systems of record (policies, claims, forecasts) are simulated, and say so on screen.
 """
 
@@ -20,7 +20,6 @@ from lattice_showcase import (
     links,
     locations,
     losses,
-    notices,
     overview,
 )
 
@@ -44,10 +43,10 @@ APP = AppManifest(
     static=HERE / "static",
     stylesheets=["showcase.css"],
     routers=[overview.router, events.router, exposure.router, locations.router, claims.router,
-             deployment.router, losses.router, notices.router],
+             deployment.router, losses.router],
     grids=[events.GRID, exposure.GRID, exposure.RUNS, locations.GRID, claims.GRID, claims.REPORTS,
            claims.INTAKE, claims.PROGRESS, deployment.ZONES, events.STAGES_GRID, losses.SAMPLES,
-           losses.RUNS, notices.GRID],
+           losses.RUNS],
     timelines=[events.TIMELINE, claims.TIMELINE, deployment.WORKLOAD],
     charts=[*exposure.CHARTS, *locations.CHARTS, *claims.CHARTS, *claims.EVENT_CHARTS,
             claims.INTAKE_CHART, *losses.CHARTS],
@@ -55,9 +54,8 @@ APP = AppManifest(
     documents=[claims.ASSESSMENT, claims.REPORT],
     forms=[events.DECLARE, exposure.FOOTPRINT_FORM, claims.REPORT_FORM],
     references=links.REFERENCES,
-    subscribes={"comments.added": links.notify_handler},
     permissions=[*events.PERMISSIONS, *claims.PERMISSIONS],
-    tiles=[*claims.TILES, *notices.TILES],
+    tiles=claims.TILES,
     background=background,
     seed=cat_seed.seed,
     templates=HERE / "templates",
@@ -90,8 +88,6 @@ APP = AppManifest(
                 keywords="surveyors zones teams graph"),
         NavNode("claims.reports", "Field reports", "/showcase/field-reports", parent="claims",
                 keywords="surveyor notes inspection"),
-        NavNode("claims.notices", "Notices", "/showcase/notices", parent="claims",
-                keywords="notifications comments messages"),
         NavNode("locations", "Locations", "/showcase/locations", icon="showcase:map",
                 keywords="exposure portfolio map draw search",
                 description="The exposure snapshot, searched on the map"),

@@ -12,7 +12,7 @@ def test_overview_links_every_page(as_user):
     html = as_user("viewer").get("/showcase").text
     for href in ("/showcase/events", "/showcase/events/new", "/showcase/claims",
                  "/showcase/intake", "/showcase/deployment", "/showcase/field-reports",
-                 "/showcase/notices", "/showcase/locations"):
+                 "/showcase/locations"):
         assert f'href="{href}' in html
     assert "Showcase and production" in html
 

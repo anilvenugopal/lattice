@@ -44,12 +44,7 @@ def test_previews_for_record_page_and_command(as_user, claims):
     assert "End this session" in command
 
 
-def test_search_respects_roles_and_row_scoping(as_user, users, db):
-    theirs = db.value(CHECK.add_notice, owner_id=users["viewer"].id, subject="Hello viewer")
-    c = as_user("editor")
-    assert "Hello viewer" not in c.get("/_search?q=hello").text
-    assert c.get(f"/_search/preview/grid.showcase.notices/{theirs}").status_code == 404
-    assert "Hello viewer" in as_user("viewer").get("/_search?q=hello").text
+def test_search_respects_roles(as_user):
     viewer = as_user("viewer")
     assert viewer.get("/_search/preview/pages/admin.users").status_code == 404
     assert viewer.get("/_search/preview/nope/1").status_code == 404

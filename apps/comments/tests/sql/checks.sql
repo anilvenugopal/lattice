@@ -16,9 +16,9 @@ SELECT :claim_number, id, DATE '2026-10-02', TIMESTAMP '2026-10-03 09:00', 'phon
 FROM showcase.location WHERE ref = 'LOC-T1'
 RETURNING id;
 
--- name: notices_of
--- A user's showcase notices, newest first.
-SELECT subject, body FROM showcase.notice WHERE owner_id = :owner_id ORDER BY id DESC;
+-- name: notifications_of
+-- A user's notifications, newest first.
+SELECT kind, title, body, subject FROM lattice.notification WHERE user_id = :owner_id ORDER BY id DESC;
 
 -- name: comments_on
 -- The comments on one record.

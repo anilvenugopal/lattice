@@ -6,7 +6,7 @@ from lattice.kernel.nav import NODES
 from lattice.testing import post_json
 
 PAGES = ["/", "/showcase", "/showcase/events", "/showcase/claims", "/showcase/claims/1",
-         "/showcase/notices", "/showcase/intake", "/showcase/field-reports"]
+         "/showcase/intake", "/showcase/field-reports", "/account/notifications"]
 ADMIN_PAGES = ["/admin/users"]
 
 
@@ -30,6 +30,11 @@ def test_every_visible_nav_route_resolves(as_user, claims):
 def test_editor_only_pages(as_user, claims):
     assert as_user("viewer").get("/showcase/events/new").status_code == 403
     assert as_user("editor").get("/showcase/events/new").status_code == 200
+
+
+def test_a_claim_page_offers_follow(as_user, claims):
+    page = as_user("viewer").get(f"/showcase/claims/{claims[0].id}").text
+    assert 'id="follow-button"' in page and "urn:lattice:showcase.claim:" in page
 
 
 def test_claim_history_shows_actor_and_action(as_user, claims):
