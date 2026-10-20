@@ -72,6 +72,25 @@ class Threshold:
     tone: Tone = "danger"
 
 
+@dataclass(frozen=True)
+class Highlight:
+    """Draws matching bars, slices or boxes in a tone and every other one in muted grey.
+
+    Highlight(values=["total"], tone="danger")       categories (or series) by key
+    Highlight(above=1_000_000, tone="warning")       values over a limit
+    """
+
+    values: tuple[str, ...] | list[str] = ()
+    above: float | None = None
+    below: float | None = None
+    tone: Tone = "danger"
+
+
+# brand: shades of the theme colour (the default); neutral: greys; tones: each value's
+# Column.tones colour; categorical: the eight distinct series colours (ADR 0015).
+ColorMode = Literal["", "brand", "neutral", "tones", "categorical"]
+
+
 @dataclass
 class ChartSpec:
     """One chart over a grid's rows.
@@ -101,6 +120,8 @@ class ChartSpec:
     limit: int = 12                 # category charts: the largest n categories; the rest is "Other"
     bins: int = 20                  # histogram: how many equal ranges
     thresholds: list[Threshold] = field(default_factory=list)  # bar, line, area
+    colors: ColorMode = ""          # "" follows the host's LATTICE_CHART_COLORS (ADR 0015)
+    highlight: list[Highlight] = field(default_factory=list)   # bar, pie, doughnut, treemap
     format: ValueFormat = "number"  # how values show in tooltips and the axis
     height: int = 280               # pixels
     permission: str = ""            # who may see it, in addition to the grid's permission

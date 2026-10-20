@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -28,6 +30,7 @@ class Settings(BaseSettings):
     session_idle_minutes: int = Field(480, description="A session ends after this many minutes without a request.")
     session_max_hours: int = Field(24, description="A session ends this many hours after sign-in, whatever the activity.")
     cookie_secure: bool | None = Field(None, description="Secure flag on cookies. Unset: on in production or when the request is HTTPS.")
+    chart_colors: Literal["brand", "neutral"] = Field("brand", description="How charts that name no colour mode are coloured: `brand`, shades of the theme colour, or `neutral`, greys (ADR 0015).")
     grid_query_timeout_seconds: float = Field(15, description="A grid query (rows, count, export, Ctrl+J results) running longer than this is cancelled, and the user is asked to narrow the search or filters.")
     bcrypt_rounds: int = Field(12, description="bcrypt cost for password hashes.")
 

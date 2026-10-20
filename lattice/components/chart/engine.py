@@ -18,6 +18,7 @@ from sqlalchemy.dialects.postgresql import array
 
 from lattice.components.chart.spec import Avg, ChartSpec, Count, Max, Min, Sum, Time
 from lattice.components.grid import engine as grid_engine
+from lattice.kernel.config import settings
 from lattice.kernel.database import Db
 
 MAX_GROUPS = 5000
@@ -120,10 +121,17 @@ def _drill(chart: ChartSpec, x_col, s_col) -> dict:
             "seriesLabel": s_col.label if s_col else chart.series}
 
 
+def _colors(chart: ChartSpec) -> dict:
+    """The colour mode and highlight rules for charts.js (ADR 0015)."""
+    return {"colors": chart.colors or settings.chart_colors,
+            "highlight": [{"values": [str(v) for v in h.values], "above": h.above,
+                           "below": h.below, "tone": h.tone} for h in chart.highlight]}
+
+
 def data(chart: ChartSpec, db: Db, user, gq: grid_engine.GridQuery) -> dict:
     """The chart's points and how to draw them, as JSON for static/js/charts.js."""
     if chart.kind in ("histogram", "exceedance"):
-        return {"kind": chart.kind, "x": {"type": "number", "unit": ""}, "categories": [],
+        return {**_colors(chart), "kind": chart.kind, "x": {"type": "number", "unit": ""}, "categories": [],
                 "xLabels": {}, "xTones": {}, "points": _distribution(chart, db, user, gq),
                 "series": [{"key": "", "label": chart.measure_label, "tone": ""}],
                 "measure": chart.measure_label, "format": chart.format, "stacked": False,
@@ -152,6 +160,7 @@ def data(chart: ChartSpec, db: Db, user, gq: grid_engine.GridQuery) -> dict:
     if not chart.series:
         series[0]["label"] = chart.measure_label
     return {
+        **_colors(chart),
         "drill": _drill(chart, x_col, s_col),
         "kind": chart.kind,
         "x": {"type": "time" if time else "category",

@@ -6,6 +6,7 @@ from lattice.components.chart.spec import (
     Avg,
     ChartSpec,
     Count,
+    Highlight,
     Max,
     Min,
     Sum,
@@ -13,5 +14,5 @@ from lattice.components.chart.spec import (
     Time,
 )
 
-__all__ = ["REGISTRY", "Avg", "ChartSpec", "Count", "Max", "Min", "Sum", "Threshold", "Time",
+__all__ = ["REGISTRY", "Avg", "ChartSpec", "Count", "Highlight", "Max", "Min", "Sum", "Threshold", "Time",
            "build_chart", "register"]

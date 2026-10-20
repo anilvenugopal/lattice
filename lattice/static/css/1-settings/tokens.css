@@ -114,6 +114,9 @@
   --chart-neutral: var(--p-gray-400); --chart-info: var(--p-navy-400); --chart-success: var(--p-green-500);
   --chart-warning: var(--p-amber-500); --chart-danger: var(--p-red-500); --chart-accent: var(--p-violet-500);
   --chart-grid: var(--p-gray-150);
+  /* Colour modes (ADR 0015): brand shades from --chart-base, neutral from --chart-calm,
+     and --chart-muted for what a highlight leaves out */
+  --chart-base: var(--brand); --chart-calm: var(--p-gray-600); --chart-muted: var(--p-gray-200);
   /* Maps without a basemap: land, water and boundary lines (static/js/maps.js) */
   --map-land: var(--p-gray-050); --map-water: var(--p-navy-050); --map-line: var(--p-gray-300);
 
@@ -194,6 +197,7 @@
   --chart-neutral: var(--p-gray-500); --chart-info: var(--p-navy-300); --chart-success: var(--p-green-300);
   --chart-warning: var(--p-amber-300); --chart-danger: var(--p-red-400); --chart-accent: var(--p-violet-300);
   --chart-grid: var(--p-gray-800);
+  --chart-base: var(--brand); --chart-calm: var(--p-gray-400); --chart-muted: var(--p-gray-700);
   --map-land: var(--p-gray-900); --map-water: var(--p-gray-1000); --map-line: var(--p-gray-700);
 
   --focus-ring: 0 0 0 3px rgba(143, 170, 220, 0.35);
