@@ -75,3 +75,12 @@ INSERT INTO showcase.claim (claim_number, event_id, location_id, loss_date, repo
 VALUES (:claim_number, :event_id, :location_id, :loss_date, :reported_at, :channel, :cause,
         :severity, :status, :priority, :estimate, :paid, :zone_id, :surveyor_id, :adjuster_id,
         :closed_at, :updated_at);
+
+-- name: delta_estimate
+-- Queue and start a loss estimate of one of Hurricane Delta's footprint versions.
+INSERT INTO showcase.loss_run (event_id, footprint_id, simulations, assumptions, status,
+                               progress, started_at, created_at)
+SELECT e.id, f.id, :simulations, :assumptions, 'running', 1, f.created_at, f.created_at
+FROM showcase.event e JOIN showcase.footprint f ON f.event_id = e.id
+WHERE e.code = 'CAT-2610' AND f.version = :version
+RETURNING id, event_id, footprint_id;

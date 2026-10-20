@@ -157,3 +157,34 @@ def test_claims_pages_render(as_user, book, db):
                  "/showcase/field-reports", "/showcase/claims-system/CLM-26-000001"):
         assert c.get(path).status_code == 200, path
     assert c.get("/showcase/claims/1/assessment").status_code == 403    # viewers read only
+
+
+def test_the_loss_model():
+    import numpy as np
+
+    from lattice_showcase import losses
+    homes = [{"lon": -95.0, "lat": 29.5 + i * 0.5, "tiv": 300_000, "deductible": 2_000,
+              "construction": "frame"} for i in range(4)]
+    track = np.array([[-95.0, 28.0], [-95.0, 32.0]])
+    near = losses.simulate(homes, track, 130, 200, seed=1)
+    far = losses.simulate(homes, track + [0.5, 0], 130, 200, seed=1)    # about 50 km away
+    assert near.mean() > far.mean() > 0
+    assert losses.simulate(homes, track, 30, 50, seed=1).max() == 0      # too weak to damage
+    figures = losses.summary(near)
+    assert figures["mean_loss"] <= figures["p99_loss"] <= figures["p996_loss"]
+
+
+def test_run_an_estimate(as_user, book, db):
+    from lattice_showcase import losses
+    c = as_user("editor")
+    event_id = int(declare(c).headers["location"].rsplit("/", 1)[1])
+    exposure.process_next()
+    assert "Run one" in c.get(f"/showcase/events/{event_id}/loss").text
+    res = post_json(c, "/_grid/showcase.loss_runs/action/run",
+                    {"ids": [], "params": f"x_event_id={event_id}", "values": {"simulations": "500"}})
+    assert "queued" in res.json()["message"]
+    assert losses.process_next() is True
+    page = c.get(f"/showcase/events/{event_id}/loss").text
+    assert "1 in 100" in page and "Illustrative" in page
+    curve = c.get(f"/_chart/showcase.loss_exceedance/data?x_event_id={event_id}").json()
+    assert curve["points"][0][2] == 100 and len(curve["points"]) == 201

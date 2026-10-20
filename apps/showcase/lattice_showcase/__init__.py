@@ -22,6 +22,7 @@ from lattice_showcase import (
     jobs,
     links,
     locations,
+    losses,
     overview,
     specs,
 )
@@ -32,7 +33,8 @@ HERE = Path(__file__).parent
 
 async def background() -> None:
     """The showcase's development simulators: jobs moving along, exposure runs running."""
-    await asyncio.gather(jobs.background(), exposure.background(), claims.background())
+    await asyncio.gather(jobs.background(), exposure.background(), claims.background(),
+                         losses.background())
 
 APP = AppManifest(
     key="showcase",
@@ -51,13 +53,13 @@ APP = AppManifest(
     static=HERE / "static",
     stylesheets=["showcase.css"],
     routers=[overview.router, events.router, exposure.router, locations.router, claims.router,
-             deployment.router,
+             deployment.router, losses.router,
              items.router, jobs.router, inbox.router, charts.router, specs.router, flows.router],
     grids=[events.GRID, exposure.GRID, exposure.RUNS, locations.GRID, claims.GRID, claims.REPORTS,
-           claims.INTAKE, deployment.ZONES,
+           claims.INTAKE, deployment.ZONES, losses.SAMPLES, losses.RUNS,
            items.GRID, jobs.GRID, inbox.GRID, specs.GRID],
     charts=[*exposure.CHARTS, *locations.CHARTS, *claims.CHARTS, *claims.EVENT_CHARTS,
-            claims.INTAKE_CHART, *charts.CHARTS],
+            claims.INTAKE_CHART, *losses.CHARTS, *charts.CHARTS],
     maps=[exposure.MAP, locations.MAP, claims.MAP],
     documents=[specs.SPEC, specs.NOTE, claims.ASSESSMENT, claims.REPORT],
     forms=[specs.FREEFORM, events.DECLARE, exposure.FOOTPRINT_FORM, claims.REPORT_FORM],
@@ -84,6 +86,8 @@ APP = AppManifest(
                 permission=events.MANAGE, keywords="new catastrophe"),
         NavNode("events.event", "Event", "/showcase/events", parent="events.list", hidden=True),
         NavNode("events.exposure", "Exposure", "/showcase/events", parent="events.event",
+                hidden=True),
+        NavNode("events.loss", "Loss estimate", "/showcase/events", parent="events.event",
                 hidden=True),
         NavNode("claims", "Claims", "/showcase/claims", icon="queue", keywords="fnol losses",
                 description="Claims across events, from the claims system"),

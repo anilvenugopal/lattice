@@ -7,7 +7,7 @@ name = "lattice-showcase"
 version = "0.1.0"
 description = "Lattice showcase: every component on sample data, one page per capability."
 requires-python = ">=3.14"
-dependencies = ["lattice", "geoengine"]
+dependencies = ["lattice", "geoengine", "numpy>=2.3"]
 
 [tool.uv.sources]
 lattice = { workspace = true }

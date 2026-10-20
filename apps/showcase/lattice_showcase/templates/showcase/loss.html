@@ -1,0 +1,36 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, stat, alert %}
+{% from "components/grid.html" import data_grid %}
+{% from "components/chart.html" import chart %}
+{% block main %}
+<div class="page stack-lg">
+  {% call page_header("Loss estimate: " ~ event.name, event.code ~ " · a Monte Carlo simulation of what the event could cost") %}
+    <a class="btn btn--ghost" href="/showcase/events/{{ event.id }}">{{ icon('chevron-left', 14) }}Back to the event</a>
+  {% endcall %}
+  {{ alert("warning", "Illustrative, not a catastrophe model. The showcase simulates storms with the simple, stated assumptions below, to show how such an analysis looks and runs. Real estimates come from licensed models.") }}
+  {% if latest %}
+  <div class="stats">
+    {{ stat("Average loss, over " ~ (latest.simulations | number(0)) ~ " simulated storms", latest.mean_loss | money) }}
+    {{ stat("1 in 100: a 1% chance of more", latest.p99_loss | money) }}
+    {{ stat("1 in 250: a 0.4% chance of more", latest.p996_loss | money) }}
+  </div>
+  <div class="chart-row">{% for c in charts %}{{ chart(c) }}{% endfor %}</div>
+  {% endif %}
+  <div class="grid-2 grid-2--wide-left">
+    {% call card("Estimates", "Each runs against the event's current footprint, in the background", flush=True) %}{{ data_grid(runs) }}{% endcall %}
+    {% call card("How it works") %}
+      <ol class="prose">
+        <li><strong>Track:</strong> the forecast track, shifted sideways at random (spread {{ assumptions.track_shift_sd_km }} km). Perils without a track use the footprint's centre.</li>
+        <li><strong>Strength:</strong> the event's peak wind, scaled up or down at random (spread {{ (assumptions.wind_scale_sd * 100) | round | int }}%).</li>
+        <li><strong>Wind at each location:</strong> falls to 37% of peak {{ assumptions.decay_radius_km }} km from the track.</li>
+        <li><strong>Damage:</strong> by construction, from nothing at the first wind speed to total at the second; squared, then varied at random per location.</li>
+        <li><strong>Loss:</strong> damage × insured value, less the deductible, added up.</li>
+      </ol>
+      <table class="table u-mt-3">
+        <thead><tr><th>Construction</th><th class="u-text-right">Damage starts (mph)</th><th class="u-text-right">Total (mph)</th></tr></thead>
+        <tbody>{% for kind, (lo, hi) in assumptions.vulnerability.items() %}<tr><td>{{ kind | capitalize }}</td><td class="u-text-right">{{ lo }}</td><td class="u-text-right">{{ hi }}</td></tr>{% endfor %}</tbody>
+      </table>
+    {% endcall %}
+  </div>
+</div>
+{% endblock %}

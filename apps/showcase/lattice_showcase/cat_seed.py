@@ -160,9 +160,9 @@ def _cone(track: list[tuple[float, float]], start: float, grow: float) -> list:
     return ring + ring[:1]
 
 
-def _area(polygon: list, name: str) -> dict:
+def _area(polygon: list, name: str, **props) -> dict:
     return {"type": "FeatureCollection", "features": [
-        {"type": "Feature", "id": "area", "properties": {"name": name},
+        {"type": "Feature", "id": "area", "properties": {"name": name, **props},
          "geometry": {"type": "Polygon", "coordinates": [polygon]}}]}
 
 
@@ -251,7 +251,8 @@ def seed_events(db: Db, rng: random.Random, counties: dict) -> None:
                              _area(_ring(-122.53, 38.50, 0.18, 0.12, fire_rng, 0.2), "Fire perimeter, 28 Aug"), "upload"))
         else:
             for label, at, track, start, grow in DELTA_TRACKS:
-                versions.append((label, at, _area(_cone(track, start, grow), f"Forecast cone, {label}"), "advisory"))
+                versions.append((label, at, _area(_cone(track, start, grow), f"Forecast cone, {label}",
+                                                  track=[list(p) for p in track]), "advisory"))
         run_id = None
         for version, (label, at, shapes, source) in enumerate(versions, start=1):
             key = f"{spec['code'].lower()}-v{version}"
@@ -307,8 +308,18 @@ def seed_events(db: Db, rng: random.Random, counties: dict) -> None:
         db.run_many(SQL.add_claim, claims)
 
 
+def seed_estimates(db: Db) -> None:
+    """Hurricane Delta's loss estimates at advisories 12 and 17, as they were run."""
+    from lattice_showcase import losses
+    for version in (2, 3):
+        run = db.first(SQL.delta_estimate, version=version, simulations=1000,
+                       assumptions=losses.ASSUMPTIONS)
+        losses.estimate(db, {**run, "simulations": 1000})
+
+
 def seed(db: Db) -> None:
     rng = random.Random(2610)
     counties = seed_locations(db, rng)
     seed_events(db, rng, counties)
+    seed_estimates(db)
 
