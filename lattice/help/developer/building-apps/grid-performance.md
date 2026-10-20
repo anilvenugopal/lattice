@@ -16,8 +16,9 @@ For every load of a grid page, and every change (search, filter, view, sort,
 page), the grid runs two statements:
 
 1. **The page:** your query wrapped as a subquery `g`, with the view, filters,
-   search, sort and `LIMIT`/`OFFSET` added around it. At most one page of rows
-   comes back.
+   search, sort and `LIMIT` added around it. **Next** and **Previous** start
+   after the last (or before the first) row seen, a keyset cursor, so no rows are
+   skipped however deep the page. At most one page of rows comes back.
 2. **The total**, for "1–50 of 240": `SELECT count(*)` over the same filtered
    query.
 
@@ -72,7 +73,7 @@ primary-key lookup: 0.1 ms.
 | Sorting by a column without an index | Grows with the matching rows | They are sorted before the page is cut |
 | The total count | Grows with the matching rows | Every matching row is counted |
 | Search (`contains`) | **Expensive**, unless the searched columns have trigram indexes (below) | `ILIKE '%word%'` cannot use a normal index, so every row is checked: 100 ms on 300,000 rows |
-| Deep pages (page 400) | Grows with the page number | `OFFSET 20000` skips 20,000 rows each time |
+| Deep pages (page 400) | Cheap when reached by Next or Previous | They start after a cursor (keyset); only an old link with a page number and no cursor skips rows with `OFFSET` |
 | A grouped or summary query (`GROUP BY` inside) | Grows with the rows grouped | The grouping finishes before the outer filters apply |
 | "Select all N matching" and CSV export | Up to 10,000 / 50,000 rows | They are read in one go |
 | A grid with `poll_seconds` | The page and count, again and again | Once per interval for every open browser |
@@ -160,6 +161,5 @@ These are planned, and listed in
 
 | Problem | Planned fix | Step |
 |---|---|---|
-| Deep pages | Keyset paging: the next page starts after the last row seen, so no rows are skipped | 5 |
 | The count on large lists | An option to show an estimate, or "more than 10,000", instead of an exact count | 5 |
 | Large exports | Streaming the CSV from the database, instead of reading 50,000 rows at once | 5 |

@@ -110,7 +110,7 @@ Taken while planning step 2, on 18 October 2026:
 | 0005 | Graphs with Svelte Flow compiled to a web component | Accepted |
 | 0006 | The taskline UI is a Lattice app, bundled or as an Ops console | Accepted; partly superseded by 0012 |
 | 0007 | Forms rendered from JSON Schema, JSON in and JSON out | Accepted |
-| 0008 | Grid rows come from data sources with keyset paging | Proposed |
+| 0008 | Grid rows come from data sources with keyset paging | Accepted in part (keyset paging) |
 | 0009 | Permissions declared by apps, grouped into roles | Accepted |
 | 0010 | Theming and overrides: the host owns the brand, apps style only their own pages | Proposed |
 | 0011 | Integration standards: URN references, CloudEvents, published views, OpenAPI between processes | Accepted |

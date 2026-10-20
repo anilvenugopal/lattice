@@ -526,7 +526,7 @@ Steps 1 to 8 are done. What remains:
 | Apps | `AppManifest` and `create_app(apps=[…])` with namespace checks | + settings, bindings, permissions, references, panels, events per manifest |
 | Database | Postgres 18; one database, a schema and SQL migrations per app; named SQL queries, no ORM | Unchanged; bindings to separate databases when an app needs one |
 | Permissions | Declared by apps, grouped into roles that administrators edit | + per-binding scopes |
-| Grid | Named SQL query, offset paging, a time limit, sync | Data sources, keyset paging, async sources |
+| Grid | Named SQL query, keyset paging, a time limit, sync | Data sources, async sources |
 | Cross-app | URN references with resolvers, record panels, CloudEvents on an in-process bus ([ADR 0011](adr/0011-integration-standards.md)) | CloudEvents over HTTP, with API tokens |
 | Components | Grid with saved views, charts, record page with other apps' panels, JSON Schema forms and the document store, stepper, tree, graph; Ctrl+J, help, tiles, macros, timeline | Unchanged |
 | CSS | Five ITCSS layers; app stylesheets scoped by `data-app`; host theme limited to brand tokens; all checked | Unchanged; `--app-accent` read by core when an app needs an accent |

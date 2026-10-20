@@ -16,6 +16,7 @@ boundary: a row the query does not return cannot be shown, exported or acted on.
 
 from __future__ import annotations
 
+import base64
 import json
 import re
 import uuid
@@ -23,6 +24,7 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date, datetime
+from decimal import Decimal
 from math import ceil
 
 from psycopg.errors import QueryCanceled
@@ -40,6 +42,7 @@ from sqlalchemy import (
     or_,
     select,
     text,
+    tuple_,
 )
 from sqlalchemy.exc import DBAPIError
 
@@ -71,6 +74,10 @@ class GridQuery:
     shape: str = ""                 # a drawn GeoJSON polygon (GridSpec.spatial grids)
     near: str = ""                  # "lon,lat,metres": rows within that distance of a point
     near_label: str = ""            # what the point is ("Lake Charles, LA"), for its chip
+    # Keyset paging (ADR 0008): the page after or before a boundary row, as a cursor token.
+    # Without one, page N is read by offset (page 1, and old links).
+    after: str = ""
+    before: str = ""
 
     @classmethod
     def from_params(cls, params, spec: GridSpec, default_size: int = DEFAULT_PAGE_SIZE):
@@ -101,6 +108,8 @@ class GridQuery:
             q=(params.get("q") or "").strip(),
             sort=params.get("sort", ""),
             page=max(1, as_int("page", 1)),
+            after=params.get("after", "")[:512],
+            before="" if params.get("after") else params.get("before", "")[:512],
             size=size if size in PAGE_SIZES else default_size,
             view=view,
             filters=filters,
@@ -119,6 +128,8 @@ class GridPage:
     total: int
     page: int
     size: int
+    next: str = ""                  # cursor for the page after this one
+    previous: str = ""              # cursor for the page before it
 
     @property
     def pages(self) -> int:
@@ -281,17 +292,53 @@ def check_near(near: str) -> tuple[float, float, float]:
     return x, y, metres
 
 
-def _ordered(stmt, g: _Wrapped, spec: GridSpec, gq: GridQuery):
+def _sort_key(g: _Wrapped, spec: GridSpec, gq: GridQuery) -> tuple[str, bool]:
+    """The sort column and whether it ascends; an unknown column sorts by id, newest first."""
     sort = gq.effective_sort(spec)
-    desc = sort.startswith("-")
     key = sort.lstrip("-")
-    if key not in g.c:
-        key, desc = "id", True
-    col = g.c[key]
-    stmt = stmt.order_by(col.desc() if desc else col.asc())
-    if key != "id":
-        stmt = stmt.order_by(g.c.id.desc() if desc else g.c.id.asc())
+    return (key, not sort.startswith("-")) if key in g.c else ("id", False)
+
+
+def _ordered(stmt, g: _Wrapped, spec: GridSpec, gq: GridQuery, reverse: bool = False):
+    """Sort by the grid's sort column, then id. Nulls go last ascending and first
+    descending (Postgres's own default), which keyset paging relies on."""
+    key, ascending = _sort_key(g, spec, gq)
+    ascending ^= reverse
+    for col in ([g.c[key], g.c.id] if key != "id" else [g.c.id]):
+        stmt = stmt.order_by(col.asc().nulls_last() if ascending else col.desc().nulls_first())
     return stmt
+
+
+def cursor(row: dict, key: str) -> str:
+    """A boundary row as an opaque token: its sort value and id."""
+    raw = json.dumps([row.get(key), row["id"]], default=str, separators=(",", ":"))
+    return base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")
+
+
+def _uncursor(token: str, g: _Wrapped, key: str) -> tuple:
+    try:
+        value, row_id = json.loads(base64.urlsafe_b64decode(token + "=" * (-len(token) % 4)))
+        if value is not None:
+            py = g.shape.types.get(key)
+            value = Decimal(str(value)) if py is float else coerce(py, value)
+        return value, coerce(g.shape.types.get("id"), row_id)
+    except (ValueError, TypeError, ArithmeticError):
+        raise ValueError("The page link is out of date: go back to the first page") from None
+
+
+def _beyond(g: _Wrapped, key: str, ascending: bool, value, row_id) -> list:
+    """Conditions for the rows after the boundary (value, id) in the order (key, id), in
+    the order they come: nulls last ascending, first descending. Each is a row comparison
+    or a null test, so an index on (key, id) serves it; they are read in turn."""
+    if key == "id":
+        return [g.c.id > row_id if ascending else g.c.id < row_id]
+    col = g.c[key]
+    pair = tuple_(col, g.c.id)
+    if ascending:
+        return ([pair > tuple_(value, row_id), col.is_(None)] if value is not None
+                else [and_(col.is_(None), g.c.id > row_id)])
+    return ([pair < tuple_(value, row_id)] if value is not None
+            else [and_(col.is_(None), g.c.id < row_id), col.is_not(None)])
 
 
 class GridTimeout(Exception):
@@ -346,11 +393,31 @@ def count(spec: GridSpec, db: Db, user, gq: GridQuery) -> int:
 
 
 def fetch_page(spec: GridSpec, db: Db, user, gq: GridQuery) -> GridPage:
+    """One page of rows. With a cursor, the rows past it (keyset: as fast at page 1,000 as
+    at page 1); without, page N by offset."""
     stmt, g = filtered(spec, db, user, gq)
-    page = GridPage(rows=[], total=_count(db, stmt, binds(spec, user)), page=gq.page, size=gq.size)
+    values = binds(spec, user)
+    page = GridPage(rows=[], total=_count(db, stmt, values), page=gq.page, size=gq.size)
     page.page = gq.page = min(gq.page, page.pages)
-    stmt = _ordered(stmt, g, spec, gq).limit(gq.size).offset((gq.page - 1) * gq.size)
-    page.rows = read(db, stmt, binds(spec, user))
+    key, ascending = _sort_key(g, spec, gq)
+    token = gq.after or gq.before
+    if token and page.page > 1:
+        forward = bool(gq.after)
+        value, row_id = _uncursor(token, g, key)
+        for cond in _beyond(g, key, ascending == forward, value, row_id):
+            wanted = gq.size - len(page.rows)
+            if wanted <= 0:
+                break
+            ordered = _ordered(stmt.where(cond), g, spec, gq, reverse=not forward)
+            page.rows += read(db, ordered.limit(wanted), values)
+        if not forward:
+            page.rows.reverse()
+    if not page.rows:
+        offset = (page.page - 1) * gq.size
+        page.rows = read(db, _ordered(stmt, g, spec, gq).limit(gq.size).offset(offset), values)
+    if page.rows:
+        page.next = cursor(page.rows[-1], key) if page.page < page.pages else ""
+        page.previous = cursor(page.rows[0], key) if page.page > 1 else ""
     return page
 
 

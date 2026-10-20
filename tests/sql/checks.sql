@@ -89,3 +89,12 @@ SELECT * FROM (VALUES
   (CAST('0199aaaa-0000-7000-8000-000000000002' AS uuid), 'two',   'b', now() - interval '2 days'),
   (CAST('0199aaaa-0000-7000-8000-000000000003' AS uuid), 'three', 'a', now() - interval '1 day')
 ) AS t (id, name, kind, made_at);
+
+-- name: keyset_rows
+-- 23 rows with ties and nulls in every sort column, for tests/test_grid_keyset.py.
+SELECT i AS id, 'row ' || lpad(CAST(i % 7 AS text), 2, '0') AS name,
+       CASE WHEN i % 5 = 0 THEN NULL ELSE i % 4 END AS rank,
+       CAST(CASE WHEN i % 6 = 0 THEN NULL ELSE 10.5 * (i % 3) END AS numeric(10, 2)) AS amount,
+       CASE WHEN i % 4 = 0 THEN NULL
+            ELSE TIMESTAMP '2026-10-01 09:00' + make_interval(hours => i % 9) END AS made_at
+FROM generate_series(1, 23) AS i;

@@ -15,7 +15,7 @@ is a new record that names the one it replaces.
 | [0005](0005-graphs-xyflow-web-component.md) | Graphs with Svelte Flow compiled to a web component | Accepted |
 | [0006](0006-taskline-as-lattice-app.md) | The taskline UI is a Lattice app, bundled or as an Ops console | Accepted; partly superseded by 0012 |
 | [0007](0007-json-schema-forms.md) | Forms rendered from JSON Schema, JSON in and JSON out | Accepted |
-| [0008](0008-grid-data-sources.md) | Grid rows come from data sources with keyset paging | Proposed |
+| [0008](0008-grid-data-sources.md) | Grid rows come from data sources with keyset paging | Accepted in part (keyset paging) |
 | [0009](0009-permissions.md) | Permissions declared by apps, grouped into roles | Accepted |
 | [0010](0010-theming-and-overrides.md) | Theming and overrides: the host owns the brand, apps style only their own pages | Proposed |
 | [0011](0011-integration-standards.md) | Integration standards: URN references, CloudEvents, published views, OpenAPI between processes | Accepted |
