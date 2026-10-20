@@ -35,7 +35,7 @@ from lattice.api import (
     render_page,
     sql_queries,
 )
-from lattice_showcase import events
+from lattice_showcase import events, places
 from lattice_showcase.exposure import CONSTRUCTION, LINES, TIERS, location_columns
 
 QUERIES = sql_queries(Path(__file__).parent / "sql")
@@ -71,7 +71,8 @@ GRID = GridSpec(
                                   placeholder="Evacuation zone 3")])],
     default_sort="-tiv",
 )
-MAP = MapSpec("showcase.locations_map", "Insured value", GRID, format="money", height=540, layers=[
+MAP = MapSpec("showcase.locations_map", "Insured value", GRID, format="money", height=540, search=places.find,
+              layers=[
     Hexagons("h3_7", Sum("tiv", "Insured value"), title="Concentration"),
     Points("lon", "lat", color="quality", label="{ref}", title="Locations", limit=50_000),
 ])

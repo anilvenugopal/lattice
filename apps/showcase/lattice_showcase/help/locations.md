@@ -18,6 +18,14 @@ The map shows the insured value **as hexagons**, so concentrations stand out
 whatever the county lines. Zoom in to see each location, coloured by its
 location quality.
 
+## Find a place
+
+Type a town, county or zip code in the map's search box and pick it. The map
+drops a pin and the list narrows to locations **within 5 miles**; change the
+distance beside the box (1 to 50 miles). The chip **Within 5 mi of Lake
+Charles, LA** clears it. A claim's page links here with the pin on the claim:
+**Locations within 5 miles**.
+
 ## Save as area
 
 **Save as area** keeps the shape under a name, such as "Evacuation zone 3".

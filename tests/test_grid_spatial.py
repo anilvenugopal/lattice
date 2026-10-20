@@ -63,3 +63,23 @@ def test_grids_without_spatial_ignore_shapes():
 def test_saved_views_keep_the_shape():
     state = views.clean_state(GRID, "shape=" + json.dumps(BOX) + "&page=2")
     assert "shape=" in state and "page" not in state
+
+
+def test_near_narrows_to_a_radius_and_shows_a_chip(as_user, db, users, events):
+    me = current(users["admin"])
+    # Events 1-3 sit about 1 km apart, from lon -94.99 eastward, at lat 29.5.
+    assert engine.count(GRID, db, me, engine.GridQuery(near="-94.99,29.5,500")) == 1
+    assert engine.count(GRID, db, me, engine.GridQuery(near="-94.99,29.5,1500")) == 2
+    c = as_user("admin")
+    page = c.get("/_grid/atlas.events/rows", params={"near": "-94.99,29.5,1500"}).text
+    assert page.count("<tr data-id") == 2
+
+
+@pytest.mark.parametrize("bad", ["x", "1,2", "-94,29,0", "-94,29,900000", "200,29,100"])
+def test_bad_near_is_refused(as_user, events, bad):
+    assert as_user("admin").get("/_grid/atlas.events/rows", params={"near": bad}).status_code == 400
+
+
+def test_saved_views_keep_the_pin():
+    kept = views.clean_state(GRID, "near=-94.99,29.5,8047&near_label=Lake+Charles&bogus=1")
+    assert kept == "near=-94.99%2C29.5%2C8047&near_label=Lake+Charles"

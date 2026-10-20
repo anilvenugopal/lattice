@@ -82,6 +82,9 @@ class MapSpec:
     height: int = 440               # pixels
     format: Literal["number", "money", "percent"] = "number"   # values in legends and popups
     permission: str = ""            # on top of the grid's own
+    # Finds places by typed text for the map's search box: (db, user, text) -> a list of
+    # {"label", "lon", "lat"}. The pin and a radius then narrow the linked grid ("near").
+    search: Callable[[Any, Any, str], list[dict]] | None = None
 
     @property
     def app_key(self) -> str:

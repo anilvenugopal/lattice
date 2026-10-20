@@ -69,6 +69,8 @@ class GridQuery:
     # It travels as x_{key} parameters and narrows the query; it is not access control.
     fixed: dict[str, list[str]] = field(default_factory=dict)
     shape: str = ""                 # a drawn GeoJSON polygon (GridSpec.spatial grids)
+    near: str = ""                  # "lon,lat,metres": rows within that distance of a point
+    near_label: str = ""            # what the point is ("Lake Charles, LA"), for its chip
 
     @classmethod
     def from_params(cls, params, spec: GridSpec, default_size: int = DEFAULT_PAGE_SIZE):
@@ -91,8 +93,11 @@ class GridQuery:
         if not view and spec.views:
             view = spec.views[0].key
         shape = params.get("shape", "") if spec.spatial else ""
+        near = params.get("near", "") if spec.spatial else ""
         return cls(
             shape=shape,
+            near=near,
+            near_label=(params.get("near_label", "") if near else "")[:120],
             q=(params.get("q") or "").strip(),
             sort=params.get("sort", ""),
             page=max(1, as_int("page", 1)),
@@ -229,6 +234,12 @@ def filtered(spec: GridSpec, db: Db, user, gq: GridQuery):
         area = func.ST_SetSRID(func.ST_GeomFromGeoJSON(bindparam("shape", check_shape(gq.shape))),
                                4326)
         conds.append(func.ST_Intersects(point, area))
+    if gq.near:
+        lon, lat = spec.spatial
+        x, y, metres = check_near(gq.near)
+        here = func.ST_SetSRID(func.ST_MakePoint(g.c[lon], g.c[lat]), 4326)
+        centre = func.ST_SetSRID(func.ST_MakePoint(x, y), 4326)
+        conds.append(func.ST_DWithin(func.geography(here), func.geography(centre), metres))
     for term in gq.q.split():
         pattern = f"%{_escape_like(term)}%"
         conds.append(or_(*(
@@ -254,6 +265,20 @@ def check_shape(shape: str) -> str:
     except (ValueError, KeyError, TypeError):
         raise ValueError("The drawn shape must be a polygon of at most 2,000 points") from None
     return json.dumps(geometry)
+
+
+MAX_NEAR_METRES = 500_000
+
+
+def check_near(near: str) -> tuple[float, float, float]:
+    """A point and radius, validated: "lon,lat,metres" with a radius up to 500 km."""
+    try:
+        x, y, metres = (float(v) for v in near.split(","))
+        if not (-180 <= x <= 180 and -90 <= y <= 90 and 0 < metres <= MAX_NEAR_METRES):
+            raise ValueError
+    except ValueError:
+        raise ValueError("near must be longitude,latitude,metres with a radius up to 500 km") from None
+    return x, y, metres
 
 
 def _ordered(stmt, g: _Wrapped, spec: GridSpec, gq: GridQuery):

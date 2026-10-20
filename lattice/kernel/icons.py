@@ -59,6 +59,7 @@ PATHS: dict[str, str] = {
     "assign": '<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6 1.5 0 3 .3 4 1"/><path d="M16 19h6M19 16v6"/>',
     "flag": '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
     "bookmark": '<path d="M6 3h12v18l-6-4-6 4z"/>',
+    "pin": '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
 }
 
 

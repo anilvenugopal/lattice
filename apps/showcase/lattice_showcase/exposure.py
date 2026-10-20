@@ -46,7 +46,7 @@ from lattice.api import (
     sql_queries,
     transaction,
 )
-from lattice_showcase import events
+from lattice_showcase import events, places
 
 SQL = sql_queries(Path(__file__).parent / "sql").exposure
 EVENTS = sql_queries(Path(__file__).parent / "sql").events
@@ -100,7 +100,8 @@ def footprint(db: Db, user, fixed: dict) -> dict:
     return geoengine.as_geojson(db.conn, found["layer"]) if found else {"type": "FeatureCollection", "features": []}
 
 
-MAP = MapSpec("showcase.exposure_map", "Exposed value", GRID, format="money", height=520, layers=[
+MAP = MapSpec("showcase.exposure_map", "Exposed value", GRID, format="money", height=520, search=places.find,
+              layers=[
     Regions("county_fips", Sum("tiv", "Exposed value"), map="us-counties", title="By county"),
     Hexagons("h3_7", Sum("tiv", "Exposed value"), title="Concentration"),
     Points("lon", "lat", color="quality", label="{ref}", title="Locations"),

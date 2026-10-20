@@ -14,6 +14,23 @@
       <button type="button" class="btn btn--sm" :class="mode === 'circle' && 'is-on'" @click="drawMode('circle')">Circle</button>
       <button type="button" class="btn btn--sm btn--ghost" x-show="shaped" @click="clearShape()">Clear shape</button>
     </span>
+    <span class="map__search menu-wrap" x-show="config.search" x-cloak @click.outside="places = []">
+      <input type="search" class="input input--sm" placeholder="Find a town, county or zip" aria-label="Find a place"
+             x-model="query" @input.debounce.250ms="findPlaces()" @keydown.enter.prevent="places.length && pickPlace(places[0])"
+             @keydown.escape.stop="places = []">
+      <span class="menu" x-show="places.length" x-cloak role="listbox">
+        <template x-for="p in places" :key="p.label">
+          <button type="button" class="menu__item" role="option" @click="pickPlace(p)">{{ icon('pin', 13) }}<span x-text="p.label"></span></button>
+        </template>
+      </span>
+    </span>
+    <span class="map__radius" x-show="pin" x-cloak>
+      <select class="input input--sm input--auto" x-model.number="radius" @change="applyNear()" aria-label="Distance from the pin">
+        <option value="1">Within 1 mi</option><option value="5">Within 5 mi</option>
+        <option value="10">Within 10 mi</option><option value="25">Within 25 mi</option><option value="50">Within 50 mi</option>
+      </select>
+      <button type="button" class="btn btn--sm btn--ghost" @click="clearNear()">Clear pin</button>
+    </span>
     <span class="dg__spacer"></span>
     <template x-for="l in legend" :key="l.id">
       <label class="map__toggle"><input type="checkbox" :checked="l.visible" @change="toggle(l.id, $event.target.checked)">

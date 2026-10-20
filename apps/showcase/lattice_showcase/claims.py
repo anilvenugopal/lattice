@@ -68,7 +68,7 @@ from lattice.api import (
 from lattice.api import (
     Field as InputField,
 )
-from lattice_showcase import cat_seed
+from lattice_showcase import cat_seed, places
 
 SQL = sql_queries(Path(__file__).parent / "sql").claims
 EVENTS = sql_queries(Path(__file__).parent / "sql").events
@@ -196,7 +196,8 @@ def event_footprint(db: Db, user, fixed: dict) -> dict:
     return geoengine.as_geojson(db.conn, found["layer"]) if found else {"type": "FeatureCollection", "features": []}
 
 
-MAP = MapSpec("showcase.claims_map", "Where claims are", GRID, height=460, layers=[
+MAP = MapSpec("showcase.claims_map", "Where claims are", GRID, height=460, search=places.find,
+              layers=[
     Regions("county_fips", Count("Claims"), map="us-counties", title="By county"),
     Points("lon", "lat", color="severity", label="{claim_number}", title="Claims"),
     Areas("footprint", "Footprint", load=event_footprint, tone="danger"),
@@ -389,7 +390,11 @@ DETAIL = RecordPage(
     reference_kind="showcase.claim",
     properties=["event_code", "cause", "severity", "priority", "estimate", "zone", "surveyor",
                 "handler", "line", "location_ref", "reported_at"],
-    links=[Link("Open in claims system", "/showcase/claims-system/{claim_number}", icon="external")],
+    links=[Link("Open in claims system", "/showcase/claims-system/{claim_number}", icon="external"),
+           Link("Claims within 1 mile", "/showcase/claims?view=all&near={lon},{lat},1609&near_label={claim_number}",
+                icon="pin"),
+           Link("Locations within 5 miles",
+                "/showcase/locations?near={lon},{lat},8047&near_label={claim_number}", icon="pin")],
     panels=[Panel("lifecycle", "Status", "showcase/event_lifecycle.html", load=_lifecycle),
             Panel("progress", "How long each stage took", "showcase/claim_progress.html",
                   load=_progress, flush=True),
