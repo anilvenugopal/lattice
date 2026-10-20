@@ -72,7 +72,7 @@ The route still decides what happens: `parse_form` never saves.
 |---|---|
 | `object` | A group of fields; nested objects are framed groups |
 | `array` | A list with **Add**, move up, move down and remove on each item |
-| `string` | A text box; `format` `date`, `date-time`, `time`, `email` or `uri` picks the input; `"x-widget": "textarea"` a text area; `"x-widget": "file"` a file picker whose file's text becomes the value (`"x-accept": ".geojson"` limits the choice) |
+| `string` | A text box; `format` `date`, `date-time`, `time`, `email` or `uri` picks the input; `"x-widget": "textarea"` a text area; `"x-widget": "file"` a file picker whose file's text becomes the value (`"x-accept": ".geojson"` limits the choice); `"x-widget": "folder"` the [folder picker](attachments.md#the-folder-picker), whose value is `{store}:{path}` on a mounted share |
 | `number`, `integer` | A number box with `minimum` and `maximum` |
 | `boolean` | A checkbox |
 | `enum` | A dropdown |

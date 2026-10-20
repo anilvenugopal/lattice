@@ -161,3 +161,11 @@ Audit timeline. events: rows from audit.history().
 ```jinja
 user_chip(name, sub="")
 ```
+
+## folder_picker
+
+```jinja
+folder_picker(name, value="", text="", required=False)
+```
+
+A folder on a mounted share (ADR 0017): the value is "{store}:{path}", chosen with Browse… in a dialog that lists one folder at a time (static/js/folders.js). `text` is how the value reads (folder_label(value)).

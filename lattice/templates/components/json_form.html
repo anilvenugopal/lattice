@@ -6,6 +6,7 @@
   Edits that change the form's shape (add or remove an item, choose a variant, add a field,
   switch tabs) post to /_form/{key}/render and swap the body; plain typing never leaves the page.
 #}
+{% from "components/macros.html" import folder_picker %}
 {% macro json_form(form, action="", submit="Save", cancel="") -%}
 <form class="jf" method="post" action="{{ action }}" autocomplete="off" novalidate>
   {{ csrf_field() }}
@@ -193,6 +194,8 @@ hx-swap="innerHTML" hx-trigger="{{ trigger }}"
       <textarea name="{{ n.name }}" x-ref="value" hidden>{{ n.value }}</textarea>
       <span class="field__hint" x-text="chosen ? 'Loaded: ' + chosen : '{{ ('A file is loaded (%d characters). Choose another to replace it.' % (n.value | length)) if n.value else 'No file chosen.' }}'"></span>
     </span>
+    {% elif n.widget == "folder" %}
+    {{ folder_picker(n.name, n.value, folder_label(n.value) if n.value else "", n.required) }}
     {% elif n.widget == "textarea" %}
     <textarea class="input" name="{{ n.name }}" rows="4" placeholder="{{ n.placeholder }}"
               {% for a, v in n.attrs.items() %}{{ a }}="{{ v }}" {% endfor %}{% if n.readonly %}readonly{% endif %}>{{ n.value }}</textarea>

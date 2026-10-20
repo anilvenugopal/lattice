@@ -50,14 +50,15 @@ from lattice.kernel.dev_seed import DEV_USERS
 from lattice.kernel.events import CloudEvent
 from lattice.kernel.migrate import Library
 from lattice.kernel.nav import NavNode
-from lattice.kernel.services import audit, notifications, users
+from lattice.kernel.services import attachments, audit, notifications, users
+from lattice.kernel.services.files import BadPath, check_folder, folder_label
 from lattice.kernel.services.notifications import NotificationKind
 from lattice.kernel.sql import Query, sql_queries
 from lattice.kernel.web import flash, render, render_page, toast
 
 __all__ = [
     # Apps and navigation
-    "AppManifest", "Library", "NavNode", "NotificationKind", "notifications", "HomeTile", "SearchProvider", "SearchResult",
+    "AppManifest", "Library", "NavNode", "NotificationKind", "notifications", "attachments", "check_folder", "folder_label", "BadPath", "HomeTile", "SearchProvider", "SearchResult",
     # Grid
     "Action", "ActionContext", "ActionResult", "Column", "Field", "Filter", "GridSpec",
     "Palette", "View", "build_grid", "render_grid_page",

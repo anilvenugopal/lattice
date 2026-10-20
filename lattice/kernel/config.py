@@ -36,6 +36,11 @@ class Settings(BaseSettings):
     notification_digest_hour: int = Field(7, description="Hour of the day (UTC) after which the daily notification summary is emailed.")
     public_url: str = Field("http://localhost:8000", description="The site's address as people reach it, for links in emails.")
     mail_from: str = Field("Lattice <noreply@localhost>", description="Sender of the emails Lattice sends.")
+    files_dir: str = Field("var/files", description="Folder where attachment files are kept (ADR 0017). Back it up with the database.")
+    attachment_max_mb: int = Field(25, description="Largest attachment, in megabytes.")
+    attachment_types: str = Field("pdf,png,jpg,jpeg,gif,webp,heic,txt,csv,doc,docx,xls,xlsx,ppt,pptx,odt,ods,eml,msg,zip",
+                                  description="File types attachments may have, as extensions separated by commas.")
+    folder_stores: dict[str, str] = Field(default_factory=dict, description='Mounted shares people may browse with the folder picker, as JSON: {"Claims share": "/mnt/claims"}.')
     smtp_host: str = Field("", description="Mail server. Empty: emails are not sent but kept as logged, readable in Administration › Email.")
     smtp_port: int = Field(587, description="Mail server port.")
     smtp_username: str = Field("", description="Mail server user, if it needs one.")

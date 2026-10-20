@@ -21,6 +21,7 @@ from lattice.kernel.display import initials
 from lattice.kernel.icons import icon
 from lattice.kernel.nav import nav_context
 from lattice.kernel.services import preferences
+from lattice.kernel.services.files import folder_label
 from lattice.kernel.slots import render_slot
 
 CORE_TEMPLATES = Path(__file__).parent.parent / "templates"
@@ -113,6 +114,7 @@ CURRENT_REQUEST: ContextVar[Request | None] = ContextVar("lattice_request", defa
 
 env.globals.update(
     settings=settings,
+    folder_label=folder_label,
     icon=icon,
     time_tag=time_tag,
     fmt=fmt,
@@ -127,7 +129,17 @@ env.globals.update(
     prefs=preferences,
     pick=lambda row, keys: {k: row.get(k) for k in keys},
 )
-env.filters.update(number=number, money=money)
+def filesize(value) -> str:
+    """A size in bytes as people read it: 812 bytes, 14 KB, 3.2 MB."""
+    size = float(value or 0)
+    if size < 1024:
+        return f"{int(size)} bytes"
+    if size < 1024 * 1024:
+        return f"{size / 1024:.0f} KB"
+    return f"{size / 1024 / 1024:.1f} MB"
+
+
+env.filters.update(number=number, money=money, filesize=filesize)
 
 
 def js(value) -> Markup:

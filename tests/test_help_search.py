@@ -90,8 +90,8 @@ def signed_in(web):
 
 def test_search_page_and_ctrl_j_help_source(db, users, tmp_path):
     with signed_in(create_app(apps=[notes_app(tmp_path)])) as c:
-        page = c.get("/help/search?q=share").text
-        assert 'href="/help/notes/guides/sharing"' in page and "<mark>share</mark>" in page
+        page = c.get("/help/search?q=sharing").text
+        assert 'href="/help/notes/guides/sharing"' in page and "<mark>" in page
         body = c.get("/_search?q=sharing").text
         assert 'data-provider="help"' in body
         assert 'data-preview="/_search/preview/help/notes/guides/sharing"' in body

@@ -89,6 +89,16 @@ out, with any error from the mail server.
 
 Reading it needs the **Read sent email** permission.
 
+## Attachments
+
+**Attachments** lists every file attached to a record, in every app: its name,
+the record it belongs to, its size, who added it and when. Select a name to
+download it; **Remove** deletes files for good. Needs the **Manage attachments**
+permission, which also lets you delete anyone's files from a record's page.
+
+The files are kept on the server in the folder `LATTICE_FILES_DIR`; back it up
+with the database.
+
 ## Webhooks
 
 **Webhooks** sends this site's events to other places as they happen: a Slack

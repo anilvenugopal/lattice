@@ -48,7 +48,9 @@ def test_edit_a_roles_permissions_is_audited(as_user, db):
     assert resp.status_code == 303
     assert granted(db, "editor") == ["lattice.audit.view"]
     detail = db.one(CHECK.audit_detail, action="role.updated")["detail"]
-    assert detail == {"added": ["lattice.audit.view"], "removed": ["lattice.views.share"]}
+    assert detail == {"added": ["lattice.audit.view"],
+                      "removed": ["lattice.attachments.add", "lattice.folders.browse",
+                                  "lattice.views.share"]}
 
 
 def test_the_admin_role_is_not_edited(as_user):

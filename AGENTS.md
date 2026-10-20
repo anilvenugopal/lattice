@@ -139,6 +139,9 @@ the layers below it. Apps import only `lattice.api`.
 - Libraries: a folder of SQL is `library_schemas=` (geoengine); a library that
   migrates itself is `libraries=[Library(name, schemas, migrate)]` (Taskline),
   run after Lattice's migrations and before the apps'.
+- Attachments (ADR 0017): every record page with a reference kind has the panel; call
+  `attachments.remove_all(db, urn)` when deleting a record. Folders on mounted shares:
+  `x-widget: folder` or the `folder_picker` macro, checked with `check_folder(value)`.
 - Notifications (ADR 0016): declare kinds in `notifications=[NotificationKind(…)]`
   (optionally tied to an event your app publishes), call
   `notifications.notify(db, user_ids, kind, title, subject=urn)`, and

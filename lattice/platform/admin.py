@@ -38,6 +38,7 @@ from lattice.kernel.nav import NODES, NavNode
 from lattice.kernel.queries import SQL
 from lattice.kernel.services import audit, users
 from lattice.kernel.web import flash, render_page
+from lattice.platform import attachments as attachment_pages
 from lattice.platform import notifications as notification_pages
 from lattice.platform import webhooks as webhook_pages
 
@@ -454,9 +455,11 @@ PERMISSIONS = [
 ]
 
 APP = AppManifest(
-    key="admin", label="Administration", routers=[router, notification_pages.admin_router, webhook_pages.router],
+    key="admin", label="Administration", routers=[router, notification_pages.admin_router, webhook_pages.router,
+             attachment_pages.admin_router],
     permissions=PERMISSIONS, grids=[USERS, ROLES, SESSIONS, AUDIT, notification_pages.EMAILS,
-                                    webhook_pages.WEBHOOKS, webhook_pages.DELIVERIES],
+                                    webhook_pages.WEBHOOKS, webhook_pages.DELIVERIES,
+                                    attachment_pages.GRID],
     nav=[
         NavNode("admin", "Administration", "/admin/users", icon="shield",
                 description="Users, roles, sessions, audit log and system settings"),
@@ -474,6 +477,8 @@ APP = AppManifest(
                 keywords="history events"),
         NavNode("admin.email", "Email", "/admin/email", parent="admin",
                 permission=notification_pages.EMAIL_VIEW, keywords="mail smtp notifications sent"),
+        NavNode("admin.attachments", "Attachments", "/admin/attachments", parent="admin",
+                permission=attachment_pages.MANAGE, keywords="files uploads documents"),
         NavNode("admin.webhooks", "Webhooks", "/admin/webhooks", parent="admin",
                 permission=webhook_pages.MANAGE, keywords="slack teams http events integrations"),
         NavNode("admin.system", "System", "/admin/system", parent="admin", permission=SYSTEM_VIEW,

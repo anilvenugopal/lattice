@@ -122,3 +122,8 @@ FROM lattice.webhook_delivery d JOIN lattice.webhook w ON w.id = d.webhook_id OR
 -- name: deliveries_due
 -- Make every queued webhook post due now, for the retry test.
 UPDATE lattice.webhook_delivery SET next_attempt_at = lattice.utc_now() - interval '1 hour';
+
+-- name: attachments_on
+-- A record's attachments, for tests/test_attachments.py.
+SELECT id, name, content_type, size, sha256, store_key, added_by FROM lattice.attachment
+WHERE subject = :subject ORDER BY id;

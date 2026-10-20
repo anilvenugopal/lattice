@@ -515,7 +515,9 @@ Not yet placed in the order of work. Each will get its own plan when it is start
 1. **Notifications**: in Lattice's core, not a service app (ADR 0016). Phase 1, the
    in-app inbox, `notify()`, kinds tied to events and following records, is built;
    email with preferences, then webhooks, follow.
-2. **Attachments** on any record, keyed by reference (comments exist, step 8).
+2. **Attachments** on any record, keyed by reference: built in Lattice's core, with a
+   file store interface and a folder picker for mounted shares (ADR 0017); S3 and
+   SharePoint stores later.
 3. **API tokens and per-app JSON APIs** (OpenAPI, ADR 0011), for incident
    ingestion and calls between services.
 4. **Lattice's own background work on Taskline**, when the host includes it:
