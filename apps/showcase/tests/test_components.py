@@ -20,7 +20,7 @@ def test_overview_links_every_page(as_user):
 def test_charts_follow_the_grid_filters(as_user, claims):
     c = as_user("viewer")
     html = c.get("/showcase/claims").text
-    assert html.count("x-data='ltChart(") == 3
+    assert html.count("x-data='ltChart(") == 4
     data = c.get("/_chart/showcase.claims_estimate/data?view=all").json()
     assert sorted(data["categories"]) == ["major", "minor", "moderate", "total"]
     filtered = c.get("/_chart/showcase.claims_estimate/data?view=all&f_severity=minor").json()

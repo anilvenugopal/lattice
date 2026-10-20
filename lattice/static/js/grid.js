@@ -56,12 +56,22 @@ function dataGrid(config) {
 
     narrow(items) {
       const names = items.map(i => i.name);
-      this.narrowed = [...this.narrowed.filter(n => !names.includes(n.name)), ...items];
-      this.$nextTick(() => this.reload({ page: 1, reset: true }));
+      this.setNarrowed([...this.narrowed.filter(n => !names.includes(n.name)), ...items]);
     },
     unnarrow(name) {
-      this.narrowed = this.narrowed.filter(n => n.name !== name);
-      this.$nextTick(() => this.reload({ page: 1, reset: true }));
+      this.setNarrowed(this.narrowed.filter(n => n.name !== name));
+    },
+    // The narrowing's hidden inputs are plain elements, kept in step here, so the reload
+    // reads them at once (the chip that was clicked may already be gone).
+    setNarrowed(list, reload = true) {
+      this.narrowed = list;
+      this.$refs.state.querySelectorAll('input[data-narrow]').forEach(i => i.remove());
+      list.forEach(n => {
+        const input = Object.assign(document.createElement('input'), { type: 'hidden', name: n.name, value: n.value });
+        input.dataset.narrow = '';
+        this.$refs.state.prepend(input);
+      });
+      if (reload) this.reload({ page: 1, reset: true });
     },
 
     setShape(shape) {
@@ -150,8 +160,8 @@ function dataGrid(config) {
     clearAll() {
       this.$refs.search.value = '';
       this.filterInputs().forEach(i => (i.checked = false));
-      this.narrowed = [];
-      this.$nextTick(() => this.reload({ page: 1, reset: true }));
+      this.setNarrowed([], false);
+      this.reload({ page: 1, reset: true });
     },
     updateFilterState() {
       let any = !!this.$refs.search.value;
@@ -379,6 +389,7 @@ function dataGrid(config) {
       this.showPlaceholder();
     },
     showPlaceholder() {
+      if (!this.$refs.panel) return;            // a grid whose rows open a page has no panel
       this.$refs.panel.replaceChildren(this.$refs.placeholder.content.cloneNode(true));
     },
 

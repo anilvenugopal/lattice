@@ -171,6 +171,6 @@ def test_a_narrowing_in_the_url_shows_as_a_removable_chip(as_user, claims):
     # The event page's claims calendar, clicked on 3 October, opens this.
     page = as_user("viewer").get("/showcase/claims?x_event_code=CAT-T02&x_reported_at=2026-10-03").text
     assert '"label": "Event: CAT-T02"' in page and '"label": "Reported: 3 Oct 2026"' in page
-    assert '<input type="hidden" name="x_event_code"' not in page        # Alpine draws it
+    assert '<input type="hidden" name="x_event_code" value="CAT-T02" data-narrow>' in page
     rows = as_user("viewer").get("/_grid/showcase.claims/rows?view=all&x_reported_at=2026-10-03").text
     assert rows.count("<tr data-id") == 6

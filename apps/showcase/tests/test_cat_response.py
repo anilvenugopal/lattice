@@ -125,6 +125,12 @@ def test_intake_claims_handling_assessment_and_reports(as_user, book, db):
     graph = c.get("/showcase/deployment").text
     assert "Pat Field" in graph and "Houston" in graph
     assert deployment.ZONES.key in graph or "/_grid/showcase.zones" in graph
+    # A surveyor's node opens Claims narrowed to their claims in the zone.
+    assert "x_zone=Houston" in graph and "x_surveyor=Pat+Field" in graph
+    rows = c.get("/_grid/showcase.claims/rows", params={"view": "all", "x_zone": "Houston",
+                                                        "x_surveyor": "Pat Field"}).text
+    assert rows.count("<tr data-id") == len(ids)
+    assert c.get("/_grid/showcase.claims/rows?view=all&q=Field").text.count("<tr data-id") == len(ids)
 
 
 def test_claims_pages_render(as_user, book, db):

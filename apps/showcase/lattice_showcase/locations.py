@@ -75,8 +75,9 @@ MAP = MapSpec("showcase.locations_map", "Insured value", GRID, format="money", h
     Points("lon", "lat", color="quality", label="{ref}", title="Locations", limit=50_000),
 ])
 CHARTS = [
-    ChartSpec("showcase.locations_by_line", "Insured value by line", GRID, "doughnut", x="line",
-              y=Sum("tiv", "Insured value"), format="money", height=260),
+    ChartSpec("showcase.locations_by_line", "Insured value by line and construction", GRID,
+              "treemap", x="construction", series="line", y=Sum("tiv", "Insured value"),
+              format="money", height=260),
     ChartSpec("showcase.locations_by_state", "Insured value by state", GRID, "bar", x="state",
               y=Sum("tiv", "Insured value"), format="money", height=260),
     ChartSpec("showcase.locations_quality", "Location quality", GRID, "doughnut", x="quality",

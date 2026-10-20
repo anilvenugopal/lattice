@@ -146,7 +146,8 @@ GRID = GridSpec(
                                        "commercial_property": "Commercial property"}, hidden=True),
         Column("location_ref", "Location", kind="mono", hidden=True),
     ],
-    search=["claim_number", "insured", "policy_number", "city", "county", "zone"],
+    search=["claim_number", "insured", "policy_number", "city", "county", "zone", "surveyor",
+            "handler"],
     filters=[Filter("status", "Status", STATUSES), Filter("severity", "Severity", SEVERITIES),
              Filter("event_code", "Event", lambda db, u: [(r["code"], f"{r['code']} · {r['name']}")
                                                            for r in db.all(EVENTS.grid)]),
@@ -203,6 +204,8 @@ CHARTS = [
     ChartSpec("showcase.claims_by_cause", "By cause", GRID, "doughnut", x="cause", height=280),
     ChartSpec("showcase.claims_estimate", "Estimated loss by severity", GRID, "bar", x="severity",
               y=Sum("estimate", "Estimated loss"), format="money", height=280),
+    ChartSpec("showcase.claims_by_day", "Claims by day reported", GRID, "calendar",
+              x=Time("reported_at", "day"), height=280),
 ]
 EVENT_CHARTS = [
     ChartSpec("showcase.claims_per_day", "Claims per day", GRID, "bar",
