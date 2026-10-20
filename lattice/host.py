@@ -46,13 +46,15 @@ from lattice.kernel.web import render, set_host_assets
 from lattice.platform import account, admin, home
 
 APP_KEY = re.compile(r"^[a-z][a-z0-9_]*$")
+ACCENT_TONES = ("", "info", "success", "warning", "danger", "accent", "neutral")
 # Paths the kernel and components own; no app may use them as its key.
 RESERVED_KEYS = {"home", "admin", "account", "auth", "static", "health", "docs", "host",
                  "help", "lattice"}
 # Lattice's own help (user guide and developer documentation), registered as "lattice".
 CORE_HELP = Path(__file__).parent / "help"
 # Core pages a host may replace by placing a template of the same name in its templates/.
-HOST_OVERRIDABLE = {"auth/login.html", "base/error.html", "pages/home.html"}
+HOST_OVERRIDABLE = {"auth/login.html", "base/error.html", "pages/home.html",
+                    "email/notification.txt", "email/digest.txt", "email/test.txt"}
 
 
 class AppError(Exception):
@@ -83,6 +85,8 @@ def _check(app: AppManifest) -> None:
             spec.check()
         except ValueError as exc:
             fail(str(exc))
+    if app.accent not in ACCENT_TONES:
+        fail(f"accent {app.accent!r} must be one of {', '.join(t for t in ACCENT_TONES if t)}")
     for spec in app.timelines:
         if not spec.key.startswith(app.key + "."):
             fail(f"timeline key {spec.key!r} must start with {app.key + '.'!r}")
@@ -136,7 +140,7 @@ def _check(app: AppManifest) -> None:
 def _check_host(host_dir: Path) -> None:
     templates = host_dir / "templates"
     if templates.is_dir():
-        for path in templates.rglob("*.html"):
+        for path in [*templates.rglob("*.html"), *templates.rglob("*.txt")]:
             name = path.relative_to(templates).as_posix()
             if name not in HOST_OVERRIDABLE and not name.startswith("host/"):
                 raise AppError(f"Host template {name!r}: a host may override only "
@@ -155,6 +159,8 @@ def _register(app: AppManifest, platform: bool) -> None:
         raise AppError(f"App {app.key!r}: {exc}") from exc
     nav.add(app.nav, "" if platform else app.key)
     icons.add_app_icons(app.key, app.icons)
+    if app.accent:
+        nav.ACCENTS[app.key] = app.accent
     for slot_name, template in app.slots.items():
         slots.add(slot_name, template)
     for grid in app.grids:

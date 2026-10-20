@@ -160,3 +160,47 @@ def test_host_theme_loads_after_core_css(db, users, tmp_path):
 def test_host_theme_rules(theme, message):
     assert any(message in e for e in css_rules.host_theme_errors(theme)), \
         css_rules.host_theme_errors(theme)
+
+
+# ── App accent, favicon, host fonts and email templates (ADR 0010, as built) ──
+
+def test_an_app_accent_marks_its_rail_entry_and_pages(db, users, tmp_path):
+    with signed_in(create_app(apps=[notes_app(tmp_path, accent="warning")])) as c:
+        page = c.get("/notes/page").text
+        assert 'class="rail__btn is-active accent-warning"' in page
+        assert 'class="main accent-warning"' in page
+    with pytest.raises(AppError, match="accent 'teal'"):
+        create_app(apps=[notes_app(tmp_path / "b", accent="teal")])
+
+
+def test_the_favicon_setting_replaces_the_logos(db, users, monkeypatch):
+    from lattice.kernel.config import settings
+    monkeypatch.setattr(settings, "brand_favicon", "/static/host/favicon.ico")
+    with signed_in(create_app(apps=[])) as c:
+        head = c.get("/").text.split("</head>")[0]
+        assert '<link rel="icon" href="/static/host/favicon.ico">' in head
+        assert "prefers-color-scheme: light" not in head
+
+
+@pytest.mark.parametrize("font_face, message", [
+    ('@font-face { font-family: "Brand"; src: url("fonts/brand.woff2"); font-display: swap; }', None),
+    ('@font-face { font-family: "Brand"; src: url(/static/host/brand.woff2); }', None),
+    ('@font-face { font-family: "Brand"; src: url(https://fonts.example.com/b.woff2); }', "host folder"),
+    ('@font-face { font-family: "Brand"; color: red; src: url(b.woff2); }', "only font descriptors"),
+])
+def test_a_host_theme_may_load_its_own_fonts(font_face, message):
+    theme = font_face + ' @layer settings { :root { --font-ui: "Brand", sans-serif; } ' \
+                        '[data-mode="dark"] { --font-ui: "Brand", sans-serif; } }'
+    errors = css_rules.host_theme_errors(theme)
+    assert (errors == []) if message is None else any(message in e for e in errors), errors
+
+
+def test_a_host_rewords_the_notification_emails(db, users, tmp_path):
+    from lattice.kernel.services import notifications
+    host = tmp_path / "host"
+    (host / "templates" / "email").mkdir(parents=True)
+    (host / "templates" / "email" / "test.txt").write_text("Greetings from Acme. {{ base }}")
+    create_app(apps=[], host_dir=host)
+    assert notifications.render_email("test") == "Greetings from Acme. http://localhost:8000\n"
+    assert "Open it:" in notifications.render_email("notification", title="T", notification_id=1,
+                                                    kind_label="K")

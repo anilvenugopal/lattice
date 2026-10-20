@@ -257,12 +257,15 @@ a row in `templates/account/preferences.html`, and read it with
 
 ### Branding and host customisation
 
-- Name and logos: `LATTICE_APP_NAME`, `LATTICE_BRAND_LOGO_LIGHT`,
-  `LATTICE_BRAND_LOGO_DARK`, `LATTICE_BRAND_SHOW_NAME`.
+- Name, logos and favicon: `LATTICE_APP_NAME`, `LATTICE_BRAND_LOGO_LIGHT`,
+  `LATTICE_BRAND_LOGO_DARK`, `LATTICE_BRAND_SHOW_NAME`, `LATTICE_BRAND_FAVICON`.
 - Colours and fonts: `static/theme.css` in the host folder (`create_app(host_dir=…)`),
-  brand tokens only.
+  brand tokens only, plus `@font-face` for font files in the host folder.
 - Whole pages: `templates/auth/login.html`, `templates/base/error.html` or
-  `templates/pages/home.html` in the host folder.
+  `templates/pages/home.html` in the host folder; notification emails:
+  `templates/email/notification.txt`, `digest.txt`, `test.txt`.
+- An app's accent: `AppManifest(accent="warning")`, a tone, marks its rail entry and
+  page titles (ADR 0010).
 - Small additions: slots (`topbar.end`, `statusbar.start`, `statusbar.end`,
   `signin.footer`, `home.sections`, `help.menu`) through `slot_templates=` or an
   app's `slots=`.

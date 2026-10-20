@@ -4,8 +4,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+{% if settings.brand_favicon %}
+<link rel="icon" href="{{ settings.brand_favicon }}">
+{% else %}
 <link rel="icon" href="{{ settings.brand_logo_light }}" media="(prefers-color-scheme: light)">
 <link rel="icon" href="{{ settings.brand_logo_dark }}" media="(prefers-color-scheme: dark)">
+{% endif %}
 <link rel="stylesheet" href="/static/css/app.css">
 {# App stylesheets, then the host theme (create_app, ADR 0010). #}
 {% for href in extra_stylesheets %}<link rel="stylesheet" href="{{ href }}">

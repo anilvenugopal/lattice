@@ -256,13 +256,16 @@ The host owns the brand. Apps style only their own pages.
 - **What the host sets:**
   - the name, logos and favicon (settings);
   - brand colours and fonts, in a `theme.css` that may redefine only an allowed
-    list of semantic tokens, for both light and dark;
+    list of semantic tokens, for both light and dark, and load font files from
+    the host folder;
+  - the favicon;
   - the icon set;
-  - whole sign-in, error and home pages.
+  - whole sign-in, error and home pages, and the notification email templates.
 - **What an app sets:**
   - an app icon (light and dark) for its rail entry, Ctrl+J source and tiles;
-  - an `--app-accent` and its own component tokens, scoped under
-    `[data-app="{key}"]`, which the shell puts on the app's pages;
+  - an accent, named as a tone in its manifest, which marks its rail entry and
+    page titles (`--app-accent` on its pages), and its own component tokens,
+    scoped under `[data-app="{key}"]`, which the shell puts on the app's pages;
   - icons in its own namespace (`icon("taskline:dag")`);
   - templates in its own folder.
 
@@ -531,7 +534,7 @@ Steps 1 to 8 are done. What remains:
 | Grid | Named SQL query, keyset paging, a time limit, sync | Data sources, async sources |
 | Cross-app | URN references with resolvers, record panels, CloudEvents on an in-process bus ([ADR 0011](adr/0011-integration-standards.md)) | CloudEvents over HTTP, with API tokens |
 | Components | Grid with saved views, charts, record page with other apps' panels, JSON Schema forms and the document store, stepper, tree, graph; Ctrl+J, help, tiles, macros, timeline | Unchanged |
-| CSS | Five ITCSS layers; app stylesheets scoped by `data-app`; host theme limited to brand tokens; all checked | Unchanged; `--app-accent` read by core when an app needs an accent |
+| CSS | Five ITCSS layers; app stylesheets scoped by `data-app`; host theme limited to brand tokens and its own fonts; an app accent named as a tone; all checked (ADR 0010) | Unchanged |
 | Branding | Settings for name and logos; host folder (`theme.css`, page overrides); icon registry; named slots | Unchanged |
 | Settings | `LATTICE_` prefix | + per-app prefixes (`LATTICE_{KEY}_`) |
 

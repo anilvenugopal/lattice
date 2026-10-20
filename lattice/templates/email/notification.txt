@@ -1,0 +1,10 @@
+{#- One notification by email (ADR 0016). Plain text: the title and links only, never the
+    record's content. A host overrides it with templates/email/notification.txt. -#}
+{% autoescape false -%}
+{{ title }}
+
+Open it: {{ base }}/account/notifications/{{ notification_id }}
+
+You get these emails for "{{ kind_label }}". Choose how you are told:
+{{ base }}/account/notifications/settings
+{%- endautoescape %}

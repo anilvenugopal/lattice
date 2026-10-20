@@ -156,10 +156,8 @@ STATUSES = [("queued", "Queued"), ("sent", "Sent"), ("logged", "Logged"), ("fail
 
 
 def send_test(ctx: ActionContext) -> str:
-    base = settings.public_url.rstrip("/")
-    ctx.db.value(SQL.notifications.queue_test, user_id=ctx.user.id, to_address=ctx.user.email,
-                 subject=f"Test email from {settings.app_name}",
-                 body=f"This is a test of {settings.app_name}'s email.\n\n{base}")
+    notifications.queue_email(ctx.db, ctx.user.id, ctx.user.email,
+                              f"Test email from {settings.app_name}", "test", [])
     where = settings.smtp_host or "nowhere: no mail server is set, so it will be logged here"
     return f"Test email queued to {ctx.user.email}; it goes out within 30 seconds, to {where}."
 

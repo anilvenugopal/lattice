@@ -39,6 +39,7 @@ What an app adds to a host. Listed once per app package.
 | `templates` | `Path \| None` | `None` | Folder holding templates/{key}/…; searched before core templates. |
 | `static` | `Path \| None` | `None` | Folder served at /static/{key}/, and stylesheets in it loaded on every page. Each stylesheet declares @layer components and scopes every selector to [data-app="{key}"] (ADR 0010). |
 | `stylesheets` | `list[str]` | `[]` | file names inside `static` |
+| `accent` | `Literal['', 'info', 'success', 'warning', 'danger', 'accent', 'neutral']` | `''` | The app's accent (ADR 0010): a tone, never a colour, marking its rail entry and page headers so it stays recognisable inside the host's one theme. |
 | `icons` | `dict[str, str]` | `{}` | Icons the app adds, used as icon("{key}:name"). Values are SVG path markup. |
 | `permissions` | `list[Permission]` | `[]` | What the app's users may do: checked with require(), permission=, can(). |
 | `library_schemas` | `list[tuple[str, Path]]` | `[]` | Schemas of libraries the app uses, as (schema, migrations folder), e.g. geoengine.SCHEMA. `lattice migrate` applies them before the app's own, once even if several apps list them. |

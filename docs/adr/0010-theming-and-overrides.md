@@ -1,6 +1,7 @@
 # 0010. Theming and overrides: the host owns the brand, apps style only their own pages
 
-Status: Proposed
+Status: Accepted (20 October 2026), as built below; rail groups and app keyboard shortcuts
+are deferred until an app needs them.
 
 ## Context
 
@@ -46,8 +47,9 @@ registries, or a template override at a defined place.
   are unchanged because they read only tokens.
 - **The allowed host tokens** are the brand set: `--brand`, `--brand-hover`,
   `--brand-alt`, `--accent`, `--text-on-accent`, `--link`, the `--surface-*`
-  tokens, the `--text*` tokens, `--font-ui` and `--font-mono`. The list lives in one place in core and is shown in
-  `docs/UI_STANDARDS.md`.
+  tokens, the `--text*` tokens, `--font-ui` and `--font-mono`. The list lives in one place in core
+  (`lattice/kernel/css_rules.py`) and is shown in the developer help, Running ›
+  Branding a host, and in Reference › Design tokens.
 - **An app accent, scoped to its pages.** The shell marks each app's pages with
   `data-app="{key}"` on `<main>`. An app may define `--app-accent` and its own
   component tokens under `[data-app="{key}"]`, in `@layer components`. Core
@@ -123,3 +125,28 @@ The app loader rejects:
   every core upgrade could break an app.
 - **Each app ships its own complete theme.** Several colour schemes in one host.
 - **Branding as code changes in core.** Every host would carry a fork of Lattice.
+
+## As built (20 October 2026)
+
+Built and enforced at startup (`create_app` refuses a violation):
+
+- **Host theme** (`static/theme.css`): only the allowed brand tokens, in `:root` and
+  `[data-mode="dark"]` alike, inside `@layer settings`; and `@font-face` for font files
+  from the host folder only, with font descriptors and nothing else.
+- **App stylesheets**: `@layer components`, every selector under `[data-app="{key}"]`, no
+  colour literals, `--p-*` tokens or `!important`.
+- **Logos, name and favicon**: `LATTICE_BRAND_LOGO_LIGHT`, `_DARK`, `_SHOW_NAME`, and
+  `LATTICE_BRAND_FAVICON` (empty: the logos).
+- **An app's accent** is a tone named in its manifest (`accent="warning"`), not a colour:
+  the shell marks the app's rail entry and its page titles, and `--app-accent` is set on
+  its pages. A token in the app's stylesheet could not reach the rail, which is outside
+  the app's pages, so the manifest names it.
+- **Icons**: one registry, app icons namespaced, a host may replace the core set.
+- **Templates**: a host may override the sign-in, error and home pages and the three
+  notification email templates (`email/notification.txt`, `digest.txt`, `test.txt`, ADR
+  0016); apps cannot override core templates. Named slots, with unknown names refused.
+- **Colours by meaning**: columns and charts name tones (ADR 0015 adds colour modes that
+  follow `--brand`).
+
+Deferred until an app needs them: **rail groups** chosen by the host, and **keyboard
+shortcuts registered by apps** with clash checks.

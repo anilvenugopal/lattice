@@ -77,21 +77,21 @@ SELECT EXISTS (SELECT 1 FROM lattice.follow WHERE user_id = :user_id AND subject
 SELECT f.user_id FROM lattice.follow f JOIN lattice.app_user u ON u.id = f.user_id
 WHERE f.subject = :subject AND u.is_active;
 
--- name: queue_emails
--- Queue an email for each of these notifications whose recipient chose email for its kind
--- (else the kind's default), unless one is already waiting to go.
-INSERT INTO lattice.email (user_id, to_address, subject, body, kind, notification_ids)
-SELECT n.user_id, u.email, n.title,
-       n.title || E'\n\nOpen it: ' || :base || '/account/notifications/' || n.id
-       || E'\n\nYou get these emails for "' || :label || E'". Choose how you are told:\n'
-       || :base || '/account/notifications/settings',
-       'notification', ARRAY[n.id]
+-- name: email_recipients
+-- Of these notifications, those whose recipient chose email for its kind (else the kind's
+-- default) and have none already waiting to go.
+SELECT n.id, n.user_id, u.email, n.title
 FROM lattice.notification n
 JOIN lattice.app_user u ON u.id = n.user_id AND u.is_active
 LEFT JOIN lattice.notification_choice c ON c.user_id = n.user_id AND c.kind = n.kind
 WHERE n.id = ANY(:ids) AND coalesce(c.channel, :default_channel) = 'email'
   AND NOT EXISTS (SELECT 1 FROM lattice.email e
                   WHERE e.status = 'queued' AND n.id = ANY(e.notification_ids));
+
+-- name: queue_email
+-- Queue one email.
+INSERT INTO lattice.email (user_id, to_address, subject, body, kind, notification_ids)
+VALUES (:user_id, :to_address, :subject, :body, :kind, CAST(:ids AS bigint[]));
 
 -- name: digest_due
 -- Unread notifications not yet emailed, of kinds their recipient takes as a daily summary,
@@ -106,16 +106,7 @@ WHERE n.read_at IS NULL AND n.resolved_at IS NULL AND n.emailed_at IS NULL
                   AND e.created_at > lattice.utc_now() - interval '20 hours')
 ORDER BY n.user_id, n.created_at DESC;
 
--- name: queue_digest
--- Queue one person's daily summary.
-INSERT INTO lattice.email (user_id, to_address, subject, body, kind, notification_ids)
-VALUES (:user_id, :to_address, :subject, :body, 'digest', CAST(:ids AS bigint[]));
 
--- name: queue_test
--- Queue a test email to one person.
-INSERT INTO lattice.email (user_id, to_address, subject, body, kind)
-VALUES (:user_id, :to_address, :subject, :body, 'test')
-RETURNING id;
 
 -- name: due_emails
 -- Queued emails due now, taken by this sender alone.

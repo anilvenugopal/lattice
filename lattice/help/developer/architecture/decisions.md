@@ -112,7 +112,7 @@ Taken while planning step 2, on 18 October 2026:
 | 0007 | Forms rendered from JSON Schema, JSON in and JSON out | Accepted |
 | 0008 | Grid rows come from data sources with keyset paging | Accepted in part (keyset paging) |
 | 0009 | Permissions declared by apps, grouped into roles | Accepted |
-| 0010 | Theming and overrides: the host owns the brand, apps style only their own pages | Proposed |
+| 0010 | Theming and overrides: the host owns the brand, apps style only their own pages | Accepted |
 | 0011 | Integration standards: URN references, CloudEvents, published views, OpenAPI between processes | Accepted |
 | 0012 | Taskline UI on Taskline's published contract: views, async commands, no events | Accepted |
 | 0013 | Geospatial: a separate geoengine package, PostGIS, and a Lattice map component | Accepted |

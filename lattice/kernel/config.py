@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     app_env: str = Field("development", description="`development`, `test` or `production`. Production turns off the API docs page, seed data and the showcase job loop, and turns on secure cookies.")
     brand_logo_light: str = Field("/static/brand/logo-light.svg", description="Logo for light mode, shown in the top bar and on the sign-in page.")
     brand_logo_dark: str = Field("/static/brand/logo-dark.svg", description="Logo for dark mode.")
+    brand_favicon: str = Field("", description="The browser tab icon. Empty: the light and dark logos, by the browser's colour scheme.")
     brand_show_name: bool = Field(True, description="Show the app name next to the logo. Set false when the logo images already contain the name.")
     secret_key: str = Field("dev-secret-change-me", description="Signs the flash and OIDC cookies. Set a long random value in production.")
     database_url: str = Field("postgresql+psycopg://lattice:lattice@127.0.0.1:5436/lattice",

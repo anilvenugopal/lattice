@@ -17,6 +17,7 @@ Values are read from the environment, then from a `.env` file in the working fol
 | `LATTICE_APP_ENV` | `development` | `development`, `test` or `production`. Production turns off the API docs page, seed data and the showcase job loop, and turns on secure cookies. |
 | `LATTICE_BRAND_LOGO_LIGHT` | `/static/brand/logo-light.svg` | Logo for light mode, shown in the top bar and on the sign-in page. |
 | `LATTICE_BRAND_LOGO_DARK` | `/static/brand/logo-dark.svg` | Logo for dark mode. |
+| `LATTICE_BRAND_FAVICON` | `` | The browser tab icon. Empty: the light and dark logos, by the browser's colour scheme. |
 | `LATTICE_BRAND_SHOW_NAME` | `true` | Show the app name next to the logo. Set false when the logo images already contain the name. |
 | `LATTICE_SECRET_KEY` | `dev-secret-change-me` | Signs the flash and OIDC cookies. Set a long random value in production. |
 | `LATTICE_DATABASE_URL` | `postgresql+psycopg://lattice:lattice@127.0.0.1:5436/lattice` | The Postgres database, as a SQLAlchemy URL with the psycopg driver. |

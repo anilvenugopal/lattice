@@ -17,7 +17,7 @@ is a new record that names the one it replaces.
 | [0007](0007-json-schema-forms.md) | Forms rendered from JSON Schema, JSON in and JSON out | Accepted |
 | [0008](0008-grid-data-sources.md) | Grid rows come from data sources with keyset paging | Accepted in part (keyset paging) |
 | [0009](0009-permissions.md) | Permissions declared by apps, grouped into roles | Accepted |
-| [0010](0010-theming-and-overrides.md) | Theming and overrides: the host owns the brand, apps style only their own pages | Proposed |
+| [0010](0010-theming-and-overrides.md) | Theming and overrides: the host owns the brand, apps style only their own pages | Accepted |
 | [0011](0011-integration-standards.md) | Integration standards: URN references, CloudEvents, published views, OpenAPI between processes | Accepted |
 | [0012](0012-taskline-ui-and-contract.md) | Taskline UI on Taskline's published contract: views, async commands, no events | Accepted |
 | [0013](0013-geoengine-and-maps.md) | Geospatial: a separate geoengine package, PostGIS, and a Lattice map component | Accepted |
