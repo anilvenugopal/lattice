@@ -7,6 +7,7 @@ Select a zone to act on its waiting claims; select a surveyor to open their clai
 from __future__ import annotations
 
 from pathlib import Path
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Request
 
@@ -47,6 +48,12 @@ ZONES = GridSpec(
 router = APIRouter()
 
 
+def _claims(event: dict, zone: str, **params) -> str:
+    """The Claims list narrowed to the event and zone (and a surveyor, or a view)."""
+    narrow = {"x_event_code": event["code"], "x_zone": zone} | params
+    return "/showcase/claims?" + urlencode(narrow)
+
+
 def _graph(db: Db, event: dict) -> Graph:
     rows = db.all(SQL.deployment, event_id=event["id"])
     nodes = [GraphNode(f"event-{event['id']}", event["name"], event["code"], "danger",
@@ -60,14 +67,14 @@ def _graph(db: Db, event: dict) -> Graph:
             waiting = sum(x["waiting"] for x in rows if x["zone_id"] == r["zone_id"])
             nodes.append(GraphNode(zone, r["zone"], f"Lead {r['lead']} · {total} claims, {waiting} waiting",
                                    "warning" if waiting else "success",
-                                   f"/showcase/claims?x_zone_id={r['zone_id']}"))
+                                   _claims(event, r["zone"])))
             edges.append(GraphEdge(f"event-{event['id']}", zone))
         if r["claims"]:
             person = f"s-{r['zone_id']}-{r['surveyor_id'] or 'none'}"
             label = r["surveyor"] or "Not yet assigned"
             tone = "danger" if not r["surveyor"] else "info"
-            href = (f"/showcase/claims?x_zone_id={r['zone_id']}&view=waiting" if not r["surveyor"]
-                    else f"/showcase/claims?x_zone_id={r['zone_id']}&q={r['surveyor'].split()[-1]}")
+            href = (_claims(event, r["zone"], view="waiting") if not r["surveyor"]
+                    else _claims(event, r["zone"], x_surveyor=r["surveyor"]))
             note = f"{r['claims']} claims" + (f", {r['priority']} priority" if r["priority"] else "")
             nodes.append(GraphNode(person, label, note, tone, href))
             edges.append(GraphEdge(zone, person, animated=not r["surveyor"]))

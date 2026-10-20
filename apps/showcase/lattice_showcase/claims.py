@@ -203,6 +203,8 @@ CHARTS = [
     ChartSpec("showcase.claims_by_cause", "By cause", GRID, "doughnut", x="cause", height=280),
     ChartSpec("showcase.claims_estimate", "Estimated loss by severity", GRID, "bar", x="severity",
               y=Sum("estimate", "Estimated loss"), format="money", height=280),
+    ChartSpec("showcase.claims_by_day", "Claims by day reported", GRID, "calendar",
+              x=Time("reported_at", "day"), height=280),
 ]
 EVENT_CHARTS = [
     ChartSpec("showcase.claims_per_day", "Claims per day", GRID, "bar",
