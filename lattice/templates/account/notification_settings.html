@@ -1,0 +1,29 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, select_input %}
+{% block main %}
+<div class="page page--narrow">
+  {{ page_header("Notification settings", "Choose how you are told about each kind of notification. Everything also appears under the bell.") }}
+  {% call card() %}
+  <form hx-post="/account/notifications/settings" class="stack">
+    {% if kinds %}
+    <table class="table">
+      <thead><tr><th>Notification</th><th>How you are told</th></tr></thead>
+      <tbody>
+      {% for kind in kinds %}
+      <tr>
+        <td><strong>{{ kind.label }}</strong>{% if kind.description %}<div class="u-muted">{{ kind.description }}</div>{% endif %}</td>
+        <td>{{ select_input("kind:" ~ kind.key, channels, choices[kind.key]) }}</td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <div class="form-actions"><button class="btn btn--primary" type="submit">Save</button></div>
+    {% else %}
+    <p class="u-muted">No app on this site sends notifications yet.</p>
+    {% endif %}
+  </form>
+  {% endcall %}
+  <p class="u-muted u-mt-3">Emails carry the notification's title and a link, never the record's content.
+    A daily summary goes out once a day, listing what you have not read.</p>
+</div>
+{% endblock %}

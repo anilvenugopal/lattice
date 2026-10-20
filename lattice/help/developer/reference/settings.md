@@ -26,6 +26,14 @@ Values are read from the environment, then from a `.env` file in the working fol
 | `LATTICE_COOKIE_SECURE` | unset | Secure flag on cookies. Unset: on in production or when the request is HTTPS. |
 | `LATTICE_CHART_COLORS` | `brand` | How charts that name no colour mode are coloured: `brand`, shades of the theme colour, or `neutral`, greys (ADR 0015). |
 | `LATTICE_NOTIFICATION_DAYS` | `90` | Notifications older than this many days are deleted (ADR 0016). |
+| `LATTICE_NOTIFICATION_DIGEST_HOUR` | `7` | Hour of the day (UTC) after which the daily notification summary is emailed. |
+| `LATTICE_PUBLIC_URL` | `http://localhost:8000` | The site's address as people reach it, for links in emails. |
+| `LATTICE_MAIL_FROM` | `Lattice <noreply@localhost>` | Sender of the emails Lattice sends. |
+| `LATTICE_SMTP_HOST` | `` | Mail server. Empty: emails are not sent but kept as logged, readable in Administration › Email. |
+| `LATTICE_SMTP_PORT` | `587` | Mail server port. |
+| `LATTICE_SMTP_USERNAME` | `` | Mail server user, if it needs one. |
+| `LATTICE_SMTP_PASSWORD` | `` | Mail server password. |
+| `LATTICE_SMTP_STARTTLS` | `true` | Use STARTTLS on the mail server connection. |
 | `LATTICE_GRID_QUERY_TIMEOUT_SECONDS` | `15` | A grid query (rows, count, export, Ctrl+J results) running longer than this is cancelled, and the user is asked to narrow the search or filters. |
 | `LATTICE_BCRYPT_ROUNDS` | `12` | bcrypt cost for password hashes. |
 | `LATTICE_PASSWORD_LOGIN_ENABLED` | `true` | Show the email and password form on the sign-in page. |

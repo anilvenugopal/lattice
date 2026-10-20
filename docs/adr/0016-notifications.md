@@ -1,7 +1,7 @@
 # 0016. Notifications: an inbox in Lattice's core, fed by apps and by following records
 
-Status: Accepted (20 October 2026). Phase 1 (in-app) built; phases 2 (email and
-preferences) and 3 (webhooks) follow. Changes the plan in ARCHITECTURE.md section 9,
+Status: Accepted (20 October 2026). Phases 1 (in-app) and 2 (email and each person's
+choices) built; phase 3 (webhooks) follows. Changes the plan in ARCHITECTURE.md section 9,
 which had Notifications as a separate service app.
 
 ## Context
@@ -64,3 +64,14 @@ failures into something a person must act on.
 - The showcase's Notices table goes: a claim's handler follows the claim, and the Comments
   app's kind tells followers of new comments.
 - Apps that want people told declare kinds and call `notify()` or publish events.
+
+## Phase 2, as built (20 October 2026)
+
+- **Choices**: each person picks, per kind, in the app only, email right away, or a daily
+  summary (Account › Notification settings); a kind's `email=` is the default.
+- **A queue**, `lattice.email`, sent by the notifications background loop every 30 seconds,
+  five tries with growing waits; nothing is sent inside the notifying request.
+- **Content**: the title and a link (`LATTICE_PUBLIC_URL`), never the body or the record.
+- **No mail server** (`LATTICE_SMTP_HOST` empty): emails are kept as logged, readable with
+  the new permission `lattice.email.view` in Administration › Email, which also sends a
+  test email.

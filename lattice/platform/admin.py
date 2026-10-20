@@ -38,6 +38,7 @@ from lattice.kernel.nav import NODES, NavNode
 from lattice.kernel.queries import SQL
 from lattice.kernel.services import audit, users
 from lattice.kernel.web import flash, render_page
+from lattice.platform import notifications as notification_pages
 
 router = APIRouter(dependencies=[Depends(csrf_protect)])
 USERS_MANAGE, ROLES_MANAGE = "lattice.users.manage", "lattice.roles.manage"
@@ -444,11 +445,13 @@ PERMISSIONS = [
                "Administration › Audit log: every change, by anyone."),
     Permission(SYSTEM_VIEW, "See system information",
                "Administration › System and UI kit."),
+    Permission(notification_pages.EMAIL_VIEW, "Read sent email",
+               "Administration › Email: every email Lattice sent or logged, and test sending."),
 ]
 
 APP = AppManifest(
-    key="admin", label="Administration", routers=[router], permissions=PERMISSIONS,
-    grids=[USERS, ROLES, SESSIONS, AUDIT],
+    key="admin", label="Administration", routers=[router, notification_pages.admin_router],
+    permissions=PERMISSIONS, grids=[USERS, ROLES, SESSIONS, AUDIT, notification_pages.EMAILS],
     nav=[
         NavNode("admin", "Administration", "/admin/users", icon="shield",
                 description="Users, roles, sessions, audit log and system settings"),
@@ -464,6 +467,8 @@ APP = AppManifest(
                 permission=SESSIONS_MANAGE),
         NavNode("admin.audit", "Audit log", "/admin/audit", parent="admin", permission=AUDIT_VIEW,
                 keywords="history events"),
+        NavNode("admin.email", "Email", "/admin/email", parent="admin",
+                permission=notification_pages.EMAIL_VIEW, keywords="mail smtp notifications sent"),
         NavNode("admin.system", "System", "/admin/system", parent="admin", permission=SYSTEM_VIEW,
                 keywords="configuration settings health"),
         NavNode("admin.uikit", "UI kit", "/admin/ui-kit", parent="admin", permission=SYSTEM_VIEW,

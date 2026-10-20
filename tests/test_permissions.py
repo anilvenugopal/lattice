@@ -51,7 +51,7 @@ def test_a_permission_is_declared_once():
 def test_lattice_declares_its_permissions():
     create_app(apps=[])
     assert sorted(permissions.CATALOGUE) == [
-        "lattice.audit.view", "lattice.roles.manage", "lattice.sessions.manage",
+        "lattice.audit.view", "lattice.email.view", "lattice.roles.manage", "lattice.sessions.manage",
         "lattice.system.view", "lattice.users.manage", "lattice.views.share"]
 
 

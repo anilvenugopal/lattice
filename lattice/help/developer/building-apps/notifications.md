@@ -38,6 +38,7 @@ APP = AppManifest(
 | `event` | When your app publishes this event, the people following its subject are told |
 | `title`, `body` | Formatted with the event's `data`; a missing key is empty |
 | `clears` | Events that resolve open notifications of this kind about the same record, such as `["incidents.resolved"]` |
+| `email` | How people are told unless they choose otherwise: `"app"` (the default), `"email"` right away, or `"digest"`, a daily summary |
 
 The person who caused the event (`data["actor_id"]` or `data["author_id"]`) is
 not told about their own action. `create_app` refuses a kind outside your
@@ -83,9 +84,26 @@ them reach you through the Comments app's kind above.
 - A `clears` event, or `notifications.resolve(db, subject, ["incidents.assigned"])`.
 - After `LATTICE_NOTIFICATION_DAYS` (90) days they are deleted.
 
-## Channels
+## Email
 
-Today notifications are in the app. Email (immediate, or a daily digest) with
-per-person choices per kind, and signed webhooks for chat tools and other
-systems, are the next phases of ADR 0016; the kinds you declare now are what
-people will choose from.
+Every notification appears under the bell. Each person also chooses, per kind,
+in **Account › Notification settings**: in the app only, an email right away,
+or a daily summary. Your kind's `email=` is the choice for people who have not
+made one; keep it `"app"` unless the kind is urgent for everyone.
+
+- **Queued, then sent in the background** every 30 seconds, with up to five
+  tries, waiting longer each time. A mail server that is down never fails the
+  request that notified.
+- **Title and link only.** An email carries the notification's title and a link
+  to it (`LATTICE_PUBLIC_URL`), never its body or the record's content.
+- **One at a time.** While an email for a notification waits to go, more
+  notifications folded into it do not queue another.
+- **The daily summary** goes out once a day after
+  `LATTICE_NOTIFICATION_DIGEST_HOUR` (UTC), listing what the person has not read
+  or had emailed.
+- **The mail server** is `LATTICE_SMTP_HOST`, `_PORT`, `_USERNAME`,
+  `_PASSWORD` and `_STARTTLS`, with `LATTICE_MAIL_FROM`. Without a host nothing
+  is sent: emails are kept as **logged**, readable in **Administration › Email**
+  (permission `lattice.email.view`), which also sends a test email.
+
+Signed webhooks for chat tools and other systems are the next phase of ADR 0016.

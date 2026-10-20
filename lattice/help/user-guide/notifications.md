@@ -2,7 +2,7 @@
 title: Notifications
 summary: The bell in the top bar: what you are told about, following records, and clearing notifications.
 order: 35
-keywords: notifications bell inbox follow unfollow alerts unread mark read dismiss
+keywords: notifications bell inbox follow unfollow alerts unread mark read dismiss email digest summary settings
 ---
 
 The **bell** in the top bar shows how many notifications you have not read.
@@ -20,6 +20,20 @@ only if you still may: one you can no longer open shows as unavailable.
 
 Several notifications of the same kind about the same record are folded into
 one, with a count, until you read it.
+
+## By email
+
+**Account › Notification settings** lists every kind of notification the apps
+on this site send. For each, choose:
+
+- **In the app only**: under the bell, nothing more.
+- **Email right away**: an email as soon as it happens.
+- **Daily email summary**: one email a day listing what you have not read.
+
+Every notification still appears under the bell, whatever you choose. Emails
+carry the notification's title and a link, never the record's content, so
+signing in is always needed to read more. An email ends with a link back to
+these settings.
 
 ## Clearing them
 
