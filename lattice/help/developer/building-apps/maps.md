@@ -54,6 +54,28 @@ Drawn bottom to top. The legend in the map's header turns each on and off.
 
 Hover any shape or dot for its value or label.
 
+## Draw to search
+
+On a map linked to a grid that declares its coordinates, users draw a **polygon**,
+**rectangle** or **circle**, and the grid narrows to the rows inside. Its count,
+totals, charts and the map's own layers follow, because they all read the grid's
+state:
+
+```python
+LOCATIONS_GRID = GridSpec(key="showcase.locations", …, spatial=("lon", "lat"))
+```
+
+- **The shape is a filter.** It travels in the page address as `shape` (GeoJSON),
+  so a link or a [saved view](grids.md#shared-endpoints) reopens it. The grid's
+  toolbar shows **Inside drawn shape ×** to clear it.
+- **In the database:** the grid's query gains one PostGIS condition, the point
+  `(lon, lat)` inside the shape. The host's database therefore needs PostGIS.
+- **Limits:** one shape at a time; at most 2,000 points (a circle is a polygon of
+  64). Drawing uses Terra Draw (MIT), loaded the first time someone draws.
+
+Keeping a drawn shape (as a named area, say) is the app's job: the map sends it
+to the grid; an app action can store it with geoengine.
+
 ## Spatial work: geoengine
 
 The map only draws. Matching points to areas, distances, H3 cells and location

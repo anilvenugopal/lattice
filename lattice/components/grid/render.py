@@ -66,6 +66,7 @@ def build_grid(request: Request, db: Db, spec: GridSpec, *, views_in_nav: bool =
         "rowHref": spec.row_href,
         "poll": spec.poll_seconds,
         "syncUrl": sync_url,
+        "spatial": spec.spatial is not None,
         "viewsInNav": views_in_nav,
         "total": page.total,
         "view": gq.view,

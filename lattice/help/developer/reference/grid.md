@@ -45,6 +45,7 @@ with a selection.
 | `empty_title` | `str` | `'Nothing here yet'` | shown when no rows match |
 | `empty_text` | `str` | `''` | second line under empty_title |
 | `palette` | `Palette \| None` | `None` | make rows findable from Ctrl+J |
+| `spatial` | `tuple[str, str] \| None` | `None` | (lon, lat) columns: rows can then be narrowed to a shape drawn on a linked map. The shape travels in the URL like a filter. Needs PostGIS (ADR 0013). |
 
 ## Column
 

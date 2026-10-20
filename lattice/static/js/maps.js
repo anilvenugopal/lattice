@@ -103,15 +103,19 @@ function colorAlpha(hex, a) {
 function ltMap(config) {
   let map = null;                 // outside Alpine's reactivity: MapLibre mutates it
   let popup = null;
+  let draw = null;                // Terra Draw, made on the first drawing
   return {
-    loading: true, error: '', note: '', legend: [],
-    params: config.params, data: null,
+    config, loading: true, error: '', note: '', legend: [],
+    params: config.params, data: null, mode: '', shaped: new URLSearchParams(config.params).has('shape'),
 
     init() {
       this.$refs.canvas.style.height = this.$el.dataset.height + 'px';
       this.onGrid = e => {
         if (config.grid && e.detail.key === config.grid) {
           this.params = [e.detail.params, config.fixed].filter(Boolean).join('&');
+          this.shaped = new URLSearchParams(this.params).has('shape');
+          if (!this.shaped && draw) draw.clear();          // cleared from the grid's chip
+          if (!this.shaped && map && map.getLayer('lt-shape')) { map.removeLayer('lt-shape'); map.removeSource('lt-shape'); }
           this.fetchData();
         }
       };
@@ -145,7 +149,7 @@ function ltMap(config) {
     async redraw(rebuild) {
       if (!this.data) return;
       const maplibre = await load(!!config.basemap);
-      if (map && rebuild) { map.remove(); map = null; }
+      if (map && rebuild) { if (draw) { draw.stop(); draw = null; } map.remove(); map = null; }
       if (!map) {
         map = new maplibre.Map({ container: this.$refs.canvas, style: style(config.basemap), bounds: US,
                                  attributionControl: config.basemap ? { compact: true } : false });
@@ -156,6 +160,46 @@ function ltMap(config) {
         this.fitted = false;
       }
       await this.fill(maplibre);
+      this.showShape();
+    },
+
+    // ── Drawing a shape to filter the linked grid ───────────────────────────
+    async drawMode(mode) {
+      const maplibre = await load(!!config.basemap);
+      await script('terra-draw.js');
+      await script('terra-draw-maplibre.js');
+      if (!draw) {
+        const color = token('--accent');
+        const styles = { fillColor: color, outlineColor: color, fillOpacity: 0.15, outlineWidth: 2 };
+        draw = new terraDraw.TerraDraw({
+          adapter: new terraDrawMaplibreGlAdapter.TerraDrawMapLibreGLAdapter({ map, lib: maplibre }),
+          modes: [new terraDraw.TerraDrawPolygonMode({ styles }), new terraDraw.TerraDrawRectangleMode({ styles }),
+                  new terraDraw.TerraDrawCircleMode({ styles })],
+        });
+        draw.start();
+        draw.on('finish', id => {
+          const shape = draw.getSnapshot().find(f => f.id === id);
+          for (const f of draw.getSnapshot()) if (f.id !== id) draw.removeFeatures([f.id]);
+          this.mode = '';
+          draw.setMode('static');
+          window.dispatchEvent(new CustomEvent('mapshape', { detail: { key: config.grid, shape: shape.geometry } }));
+        });
+      }
+      if (map.getLayer('lt-shape')) { map.removeLayer('lt-shape'); map.removeSource('lt-shape'); }
+      this.mode = this.mode === mode ? '' : mode;
+      draw.setMode(this.mode || 'static');
+    },
+    clearShape() {
+      if (draw) draw.clear();
+      if (map && map.getLayer('lt-shape')) { map.removeLayer('lt-shape'); map.removeSource('lt-shape'); }
+      window.dispatchEvent(new CustomEvent('mapshape', { detail: { key: config.grid, shape: null } }));
+    },
+    // A shape already in the page address (a saved view, a shared link): outline it.
+    showShape() {
+      const raw = new URLSearchParams(this.params).get('shape');
+      if (!raw || (draw && draw.getSnapshot().length) || map.getLayer('lt-shape')) return;
+      map.addSource('lt-shape', { type: 'geojson', data: { type: 'Feature', properties: {}, geometry: JSON.parse(raw) } });
+      map.addLayer({ id: 'lt-shape', type: 'line', source: 'lt-shape', paint: { 'line-color': token('--accent'), 'line-width': 2, 'line-dasharray': [2, 2] } });
     },
 
     async outlines() {

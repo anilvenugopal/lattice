@@ -10,3 +10,5 @@
 .map .maplibregl-popup-content { padding: var(--sp-2) var(--sp-3); font-family: var(--font-ui); font-size: var(--fs-md); color: var(--text); background: var(--surface-panel); border-radius: var(--r-md); box-shadow: var(--shadow-md); }
 .map .maplibregl-popup-tip { border-top-color: var(--surface-panel); border-bottom-color: var(--surface-panel); }
 .map .maplibregl-ctrl-attrib { font-size: var(--fs-xs); }
+.map__draw { display: inline-flex; gap: var(--sp-1); }
+.map__draw .btn.is-on { color: var(--text-on-accent); background: var(--accent); border-color: var(--accent); }

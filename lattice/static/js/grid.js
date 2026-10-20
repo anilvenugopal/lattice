@@ -28,15 +28,32 @@ function dataGrid(config) {
     saved: { open: false, loaded: false, list: [], canShare: false, current: null, state: '' },
     savedDialog: { open: false, id: null, name: '', shared: false, busy: false, deleting: false },
 
+    hasShape: false,
+
     init() {
       this.updateFilterState();
+      // A shape drawn on a map linked to this grid narrows its rows (static/js/maps.js).
+      if (config.spatial) {
+        this.hasShape = !!this.$refs.shape.value;
+        this.onShape = e => { if (e.detail.key === config.key) this.setShape(e.detail.shape ? JSON.stringify(e.detail.shape) : ''); };
+        window.addEventListener('mapshape', this.onShape);
+      }
       if (config.poll) {
         this.timer = setInterval(() => {
           if (!document.hidden && !this.dialog.open && !this.rowMenu.open && !this.loading) this.reload({ quiet: true });
         }, config.poll * 1000);
       }
     },
-    destroy() { clearInterval(this.timer); },
+    destroy() {
+      clearInterval(this.timer);
+      if (this.onShape) window.removeEventListener('mapshape', this.onShape);
+    },
+
+    setShape(shape) {
+      this.$refs.shape.value = shape;
+      this.hasShape = !!shape;
+      this.reload({ page: 1, reset: true });
+    },
 
     get count() { return Object.keys(this.selected).length; },
 

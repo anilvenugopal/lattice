@@ -7,6 +7,8 @@ pmtiles.js                               pmtiles 4.5.0 (BSD-3-Clause)         di
 basemaps.js                              @protomaps/basemaps 5.7.2 (BSD-3)    dist/basemaps.js
 h3.js                                    h3-js 4.5.0 (Apache-2.0)             dist/h3-js.umd.js
 topojson.js                              topojson-client 3.1.0 (ISC)          dist/topojson-client.min.js
+terra-draw.js                            terra-draw 1.36.0 (MIT)              dist/terra-draw.umd.js
+terra-draw-maplibre.js                   terra-draw-maplibre-gl-adapter 1.4.1 (MIT)  dist/…umd.js
 
 static/maps/states-10m.json, counties-10m.json   us-atlas 3.0.1 (ISC), from the US Census Bureau's
                                                  cartographic boundary files, 1:10,000,000

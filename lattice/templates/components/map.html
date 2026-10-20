@@ -8,6 +8,12 @@
          data-height="{{ m.spec.height }}">
   <header class="card__head map__head">
     <h3 class="card__title">{{ m.spec.title }}</h3>
+    <span class="map__draw" x-show="config.draw" x-cloak role="group" aria-label="Draw a shape to filter the list">
+      <button type="button" class="btn btn--sm" :class="mode === 'polygon' && 'is-on'" @click="drawMode('polygon')" data-tip="Click points; double-click to finish">Polygon</button>
+      <button type="button" class="btn btn--sm" :class="mode === 'rectangle' && 'is-on'" @click="drawMode('rectangle')">Rectangle</button>
+      <button type="button" class="btn btn--sm" :class="mode === 'circle' && 'is-on'" @click="drawMode('circle')">Circle</button>
+      <button type="button" class="btn btn--sm btn--ghost" x-show="shaped" @click="clearShape()">Clear shape</button>
+    </span>
     <span class="dg__spacer"></span>
     <template x-for="l in legend" :key="l.id">
       <label class="map__toggle"><input type="checkbox" :checked="l.visible" @change="toggle(l.id, $event.target.checked)">

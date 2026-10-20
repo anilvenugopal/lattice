@@ -23,7 +23,7 @@ def build_chart(request: Request, chart: ChartSpec, *, linked: bool = True,
         raise HTTPException(403)
     filters = {f"f_{f.key}" for f in chart.source.filters}
     params = [(k, v) for k, v in request.query_params.multi_items()
-              if linked and (k in ("q", "view") or k in filters)]
+              if linked and (k in ("q", "view", "shape") or k in filters)]
     for key, value in (fixed or {}).items():
         params += [(f"x_{key}", str(v)) for v in (value if isinstance(value, (list, tuple))
                                                   else [value])]

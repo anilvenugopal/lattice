@@ -24,6 +24,7 @@
     <input type="hidden" name="sort" x-ref="sort" value="{{ gq.sort }}">
     <input type="hidden" name="page" x-ref="page" value="{{ gq.page }}">
     <input type="hidden" name="size" x-ref="size" value="{{ gq.size }}">
+    {% if spec.spatial %}<input type="hidden" name="shape" x-ref="shape" value="{{ gq.shape }}">{% endif %}
     {% for key, values in gq.fixed.items() %}{% for v in values %}
     <input type="hidden" name="x_{{ key }}" value="{{ v }}">
     {% endfor %}{% endfor %}
@@ -55,6 +56,10 @@
       </div>
     </div>
     {% endfor %}
+    {% if spec.spatial %}
+    <button type="button" class="chip is-on" x-show="hasShape" x-cloak @click="setShape('')" data-tip="Draw on the map to change it">
+      {{ icon('layout', 13) }}Inside drawn shape{{ icon('x', 13) }}</button>
+    {% endif %}
     <button type="button" class="btn btn--link btn--sm" x-show="dirty" x-cloak @click="clearAll()">Clear all</button>
 
     <span class="dg__spacer"></span>
