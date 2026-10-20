@@ -30,6 +30,7 @@ from lattice.api import (
     Filter,
     FormSpec,
     GridSpec,
+    Highlight,
     HomeTile,
     Link,
     MapSpec,
@@ -202,17 +203,18 @@ MAP = MapSpec("showcase.claims_map", "Where claims are", GRID, height=460, layer
 ])
 CHARTS = [
     ChartSpec("showcase.claims_since_landfall", "Claims per day since landfall, by event", GRID,
-              "line", x="days_after", series="event_code", height=280),
+              "line", x="days_after", series="event_code", height=280, colors="categorical"),
     ChartSpec("showcase.claims_by_cause", "By cause", GRID, "doughnut", x="cause", height=280),
     ChartSpec("showcase.claims_estimate", "Estimated loss by severity", GRID, "bar", x="severity",
-              y=Sum("estimate", "Estimated loss"), format="money", height=280),
+              y=Sum("estimate", "Estimated loss"), format="money", height=280,
+              highlight=[Highlight(values=["total"], tone="danger")]),
     ChartSpec("showcase.claims_by_day", "Claims by day reported", GRID, "calendar",
               x=Time("reported_at", "day"), height=280),
 ]
 EVENT_CHARTS = [
     ChartSpec("showcase.claims_per_day", "Claims per day", GRID, "bar",
               x=Time("reported_at", "day"), series="severity", stacked=True, height=260,
-              drill="/showcase/claims"),
+              colors="tones", drill="/showcase/claims"),
     ChartSpec("showcase.claims_calendar", "Claims calendar", GRID, "calendar",
               x=Time("reported_at", "day"), height=300, drill="/showcase/claims"),
     ChartSpec("showcase.claims_flow", "How claims came in, and where they stand", GRID, "sankey",
@@ -498,7 +500,7 @@ INTAKE = GridSpec(
 )
 INTAKE_CHART = ChartSpec("showcase.intake_per_hour", "Claims per hour", INTAKE, "bar",
                          x=Time("reported_at", "hour"), series="severity", stacked=True,
-                         height=220)
+                         height=220, colors="tones")
 
 
 @router.get("/intake")
