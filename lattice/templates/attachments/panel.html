@@ -1,0 +1,45 @@
+{# The Attachments panel on any record page (platform/attachments.py PANEL), redrawn by its
+   routes: `subject` is the record's Ref, `values` comes from _panel(). #}
+<div class="attachments" x-data="{ over: false }">
+  {% if values.files %}
+  <ul class="attachments__list">
+    {% for f in values.files %}
+    <li class="attachments__item">
+      {% if f.content_type.startswith("image/") and f.content_type in values.inline %}
+      <a class="attachments__thumb" href="/attachments/{{ f.id }}?inline=1" target="_blank" rel="noopener">
+        <img src="/attachments/{{ f.id }}?inline=1" alt="" loading="lazy"></a>
+      {% else %}
+      <span class="attachments__icon">{{ icon('paperclip', 16) }}</span>
+      {% endif %}
+      <div class="attachments__text">
+        <a class="attachments__name" href="/attachments/{{ f.id }}" title="Download {{ f.name }}">{{ f.name }}</a>
+        <span class="attachments__meta">{{ f.size | filesize }} · {{ f.added_by_name or "Someone" }} · {{ time_tag(f.created_at) }}</span>
+      </div>
+      {% if f.content_type in values.inline %}
+      <a class="icon-btn icon-btn--sm" href="/attachments/{{ f.id }}?inline=1" target="_blank" rel="noopener"
+         aria-label="Open {{ f.name }}" data-tip="Open">{{ icon('external', 13) }}</a>
+      {% endif %}
+      {% if values.can_manage or (values.can_add and f.added_by == values.user_id) %}
+      <button type="button" class="icon-btn icon-btn--sm" aria-label="Remove {{ f.name }}" data-tip="Remove"
+              hx-post="/attachments/{{ f.id }}/delete" hx-target="closest .attachments" hx-swap="outerHTML"
+              hx-confirm="Remove {{ f.name }}?">{{ icon('trash', 13) }}</button>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="u-muted">No files yet.</p>
+  {% endif %}
+  {% if values.can_add %}
+  <form class="attachments__drop" :class="{ 'is-over': over }" hx-post="/attachments/add" hx-encoding="multipart/form-data"
+        hx-target="closest .attachments" hx-swap="outerHTML"
+        @dragover.prevent="over = true" @dragleave="over = false"
+        @drop.prevent="over = false; $refs.files.files = $event.dataTransfer.files; $refs.files.form.requestSubmit()">
+    <input type="hidden" name="subject" value="{{ subject.urn }}">
+    <input type="file" name="files" multiple x-ref="files" class="u-sr-only" id="files-{{ subject.urn | replace(':', '-') }}"
+           accept="{{ values.accept }}" @change="$el.form.requestSubmit()">
+    <label for="files-{{ subject.urn | replace(':', '-') }}">{{ icon('paperclip', 14) }} Drop files here, or <u>choose</u></label>
+    <span class="attachments__limit">Up to {{ values.max_mb }} MB each</span>
+  </form>
+  {% endif %}
+</div>

@@ -34,6 +34,7 @@
 @import url("4-components/chart.css") layer(components);
 @import url("4-components/map.css") layer(components);
 @import url("4-components/timeline.css") layer(components);
+@import url("4-components/attachments.css") layer(components);
 @import url("4-components/forms.css") layer(components);
 @import url("4-components/flows.css") layer(components);
 @import url("4-components/palette.css") layer(components);

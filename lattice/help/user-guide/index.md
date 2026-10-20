@@ -16,6 +16,7 @@ Each app has its own help for its own screens; find it in the
 | [Finding your way](finding-your-way.md) | Use the rail, sidebar, Ctrl+J search, F1 help and keyboard shortcuts |
 | [Working with lists](working-with-lists.md) | Search, filter, sort, select, act on and export records in any list |
 | [Notifications](notifications.md) | Follow records, read what you are told under the bell, and clear it |
+| [Attachments and folders](attachments.md) | Attach files to records, preview them, and choose folders on a shared drive |
 | [Your account](your-account.md) | Set your theme, density, start page and time format; manage your password and sessions |
 | [Administration](administration.md) | Manage users, roles and sessions, and read the audit log (administrators only) |
 

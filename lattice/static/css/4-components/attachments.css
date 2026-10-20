@@ -1,0 +1,29 @@
+/* Attachments panel (templates/attachments/panel.html, ADR 0017). */
+.attachments { display: flex; flex-direction: column; gap: var(--sp-3); }
+.attachments__list { display: flex; flex-direction: column; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+.attachments__item { display: flex; align-items: center; gap: var(--sp-2); min-width: 0; }
+.attachments__thumb img, .attachments__icon { display: flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; object-fit: cover; color: var(--text-3); background: var(--surface-recessed); border-radius: var(--r-sm); }
+.attachments__text { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.attachments__name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: var(--fw-semibold); }
+.attachments__meta, .attachments__limit { font-size: var(--fs-xs); color: var(--text-3); }
+.attachments__drop { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--sp-3);
+  font-size: var(--fs-sm); color: var(--text-2); text-align: center; border: 1px dashed var(--border-strong);
+  border-radius: var(--r-md); transition: background var(--dur), border-color var(--dur); }
+.attachments__drop label { cursor: pointer; }
+.attachments__drop.is-over { background: var(--surface-selected); border-color: var(--brand); }
+
+/* The folder picker (components/macros.html folder_picker, static/js/folders.js). */
+.folder-picker { display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.folder-picker__value { font-size: var(--fs-md); }
+.folder-picker__dialog { width: min(560px, 92vw); }
+.folder-picker__crumbs { display: flex; flex-wrap: wrap; align-items: center; font-size: var(--fs-sm); }
+.folder-picker__list { max-height: 320px; margin: 0; padding: 0; overflow-y: auto; list-style: none;
+  border: 1px solid var(--border); border-radius: var(--r-md); }
+.folder-picker__list li { border-bottom: 1px solid var(--border-faint); }
+.folder-picker__list li:last-child { border-bottom: 0; }
+.folder-picker__list > .u-muted { padding: var(--sp-3); }
+.folder-picker__folder { display: flex; align-items: center; gap: var(--sp-2); width: 100%; padding: var(--sp-2) var(--sp-3);
+  color: var(--text); text-align: left; background: none; border: 0; cursor: pointer; }
+.folder-picker__folder:hover { background: var(--surface-hover); }
+.folder-picker__new { display: flex; gap: var(--sp-2); }

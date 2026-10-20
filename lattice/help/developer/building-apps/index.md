@@ -58,6 +58,7 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 | [Grids](grids.md) | `GridSpec` in depth: columns, filters, views, actions, panels, layouts, embedding |
 | [Charts](charts.md) | `ChartSpec`: bar, line, area, pie, calendar, treemap, sankey and map charts on a grid's rows, linked to its filters |
 | [Maps](maps.md) | `MapSpec`: points, hexagons, shaded states and counties and areas over a self-hosted basemap; geoengine for spatial work |
+| [Attachments and folders](attachments.md) | Files on any record with no code; the folder picker for mounted shares |
 | [Notifications](notifications.md) | `notify()`, kinds tied to events, following records, how notifications clear |
 | [Timelines](timelines.md) | `TimelineSpec`: bars in lanes on a time axis, with markers, a "now" line, zoom and click to open |
 | [Record pages](record-pages.md) | `RecordPage`: the standard detail page for one grid row, with its actions, panels and history |

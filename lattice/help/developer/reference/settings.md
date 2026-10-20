@@ -30,6 +30,10 @@ Values are read from the environment, then from a `.env` file in the working fol
 | `LATTICE_NOTIFICATION_DIGEST_HOUR` | `7` | Hour of the day (UTC) after which the daily notification summary is emailed. |
 | `LATTICE_PUBLIC_URL` | `http://localhost:8000` | The site's address as people reach it, for links in emails. |
 | `LATTICE_MAIL_FROM` | `Lattice <noreply@localhost>` | Sender of the emails Lattice sends. |
+| `LATTICE_FILES_DIR` | `var/files` | Folder where attachment files are kept (ADR 0017). Back it up with the database. |
+| `LATTICE_ATTACHMENT_MAX_MB` | `25` | Largest attachment, in megabytes. |
+| `LATTICE_ATTACHMENT_TYPES` | `pdf,png,jpg,jpeg,gif,webp,heic,txt,csv,doc,docx,xls,xlsx,ppt,pptx,odt,ods,eml,msg,zip` | File types attachments may have, as extensions separated by commas. |
+| `LATTICE_FOLDER_STORES` | `PydanticUndefined` | Mounted shares people may browse with the folder picker, as JSON: {"Claims share": "/mnt/claims"}. |
 | `LATTICE_SMTP_HOST` | `` | Mail server. Empty: emails are not sent but kept as logged, readable in Administration › Email. |
 | `LATTICE_SMTP_PORT` | `587` | Mail server port. |
 | `LATTICE_SMTP_USERNAME` | `` | Mail server user, if it needs one. |

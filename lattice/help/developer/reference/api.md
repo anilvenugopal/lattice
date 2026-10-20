@@ -23,6 +23,10 @@ from lattice.api import AppManifest, GridSpec, render_page
 | [`NavNode`](app-manifest.md#navnode) | class | A page in the navigation. Top-level nodes are rail icons; their children are the sidebar. |
 | `NotificationKind` | class | What people may be told about, declared by an app (AppManifest.notifications). |
 | `notifications` | module | Notifications (ADR 0016): each person's inbox, fed by apps and by following records. |
+| `attachments` | module | Attachments (ADR 0017): files kept with any record, by its URN. |
+| `check_folder` `(value)` | function | A folder picker value that names an existing folder, normalised; raises BadPath. |
+| `folder_label` `(value)` | function | How a folder picker value reads: "Claims share / 2026 / CLM-26-004871". |
+| `BadPath` | class | A path outside the store's root, or one that does not exist. |
 | [`HomeTile`](app-manifest.md#hometile) | class | A count on the home page: the rows of a grid view, linking to that view. |
 | [`SearchProvider`](app-manifest.md#searchprovider) | class | A Ctrl+J source: answers a query and renders a preview of one result. |
 | [`SearchResult`](app-manifest.md#searchresult) | class | One Ctrl+J result. |

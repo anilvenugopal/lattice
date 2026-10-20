@@ -9,6 +9,7 @@
 "account.notification_settings" = "user-guide/notifications#by-email"
 "admin.email" = "user-guide/administration#email"
 "admin.webhooks" = "user-guide/administration#webhooks"
+"admin.attachments" = "user-guide/administration#attachments"
 "admin" = "user-guide/administration"
 "admin.users" = "user-guide/administration#users"
 "admin.user" = "user-guide/administration#users"

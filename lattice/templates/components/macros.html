@@ -188,3 +188,48 @@
   <span class="user-chip__text"><span>{{ name }}</span>{% if sub %}<span class="user-chip__sub">{{ sub }}</span>{% endif %}</span></span>
 {%- else -%}<span class="u-muted">—</span>{%- endif -%}
 {%- endmacro %}
+
+{# A folder on a mounted share (ADR 0017): the value is "{store}:{path}", chosen with Browse…
+   in a dialog that lists one folder at a time (static/js/folders.js). `text` is how the value
+   reads (folder_label(value)). #}
+{% macro folder_picker(name, value="", text="", required=False) -%}
+<span class="folder-picker" x-data='ltFolder({{ {"value": value, "text": text or value} | tojson }})'>
+  <input type="hidden" name="{{ name }}" :value="value" value="{{ value }}">
+  <span class="folder-picker__value" :class="!value && 'u-muted'" x-text="text || 'No folder chosen'">{{ text or value or "No folder chosen" }}</span>
+  <button type="button" class="btn btn--sm" @click="browse()">{{ icon('archive', 14) }}Browse…</button>
+  {% if not required %}<button type="button" class="btn btn--sm btn--ghost" x-show="value" x-cloak @click="clear()">Clear</button>{% endif %}
+  <div class="overlay" x-show="open" x-cloak @click.self="open = false" @keydown.escape.stop="open = false">
+    <div class="dialog folder-picker__dialog" role="dialog" aria-label="Choose a folder">
+      <div class="dialog__head"><h2>Choose a folder</h2>
+        <button type="button" class="icon-btn" @click="open = false" aria-label="Close">{{ icon('x') }}</button></div>
+      <div class="dialog__body stack">
+        <select class="input input--auto" x-show="stores.length > 1" x-model="store" @change="go(store, '')" aria-label="Share">
+          <template x-for="s in stores" :key="s.key"><option :value="s.key" x-text="s.label"></option></template>
+        </select>
+        <nav class="folder-picker__crumbs" aria-label="Where you are">
+          <template x-for="(c, i) in crumbs" :key="c.path">
+            <span><span x-show="i" class="u-muted"> / </span><button type="button" class="btn btn--link btn--sm" @click="go(store, c.path)" x-text="c.name"></button></span>
+          </template>
+        </nav>
+        <ul class="folder-picker__list">
+          <template x-for="f in folders" :key="f.path">
+            <li><button type="button" class="folder-picker__folder" @click="go(store, f.path)">{{ icon('archive', 14) }}<span x-text="f.name"></span></button></li>
+          </template>
+          <li x-show="!folders.length && !loading" class="u-muted">No folders inside.</li>
+        </ul>
+        {# Not a form: the picker usually sits inside one, and forms cannot nest. #}
+        <div class="folder-picker__new">
+          <input class="input" x-model="newName" placeholder="New folder name" aria-label="New folder name"
+                 @keydown.enter.prevent="newName.trim() && create()">
+          <button type="button" class="btn btn--sm" :disabled="!newName.trim()" @click="create()">Create</button>
+        </div>
+        <p class="field__error" x-show="error" x-text="error"></p>
+      </div>
+      <div class="dialog__foot">
+        <button type="button" class="btn btn--ghost" @click="open = false">Cancel</button>
+        <button type="button" class="btn btn--primary" @click="choose()" :disabled="!store">Choose this folder</button>
+      </div>
+    </div>
+  </div>
+</span>
+{%- endmacro %}

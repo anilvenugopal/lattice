@@ -41,9 +41,9 @@ from lattice.kernel.auth import routes as auth_routes
 from lattice.kernel.auth.middleware import AuthMiddleware, is_htmx
 from lattice.kernel.config import settings
 from lattice.kernel.database import NotFound
-from lattice.kernel.services import notifications
+from lattice.kernel.services import files, notifications
 from lattice.kernel.web import render, set_host_assets
-from lattice.platform import account, admin, home
+from lattice.platform import account, admin, attachments, home
 
 APP_KEY = re.compile(r"^[a-z][a-z0-9_]*$")
 ACCENT_TONES = ("", "info", "success", "warning", "danger", "accent", "neutral")
@@ -272,7 +272,8 @@ def _reset_registries() -> None:
 
 def create_app(apps: list[AppManifest], host_dir: Path | None = None,
                icons_override: dict[str, str] | None = None,
-               slot_templates: dict[str, str] | None = None) -> FastAPI:
+               slot_templates: dict[str, str] | None = None,
+               folder_stores: dict[str, str | Path] | None = None) -> FastAPI:
     """Build the web application for a host from its list of app manifests.
 
     host_dir: the host's folder. Optional `templates/` replaces the core pages in
@@ -280,11 +281,17 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
     served at /static/host/, and its `theme.css` (brand tokens only) loads after core CSS.
     icons_override: replacements for core icons, by name.
     slot_templates: slot name -> template under host/ in the host's templates.
+    folder_stores: label -> path of mounted shares the folder picker browses, added to
+    LATTICE_FOLDER_STORES (ADR 0017).
     """
     _reset_registries()
+    try:
+        files.register_folder_stores({**settings.folder_stores, **(folder_stores or {})})
+    except ValueError as exc:
+        raise AppError(str(exc)) from exc
     if host_dir:
         _check_host(host_dir)
-    platform_first, platform_last = [home.APP], [admin.APP, account.APP]
+    platform_first, platform_last = [home.APP], [attachments.APP, admin.APP, account.APP]
     keys = [a.key for a in apps]
     duplicates = {k for k in keys if keys.count(k) > 1}
     if duplicates:

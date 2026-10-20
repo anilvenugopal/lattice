@@ -1,0 +1,12 @@
+{# Claim page panel: the claim's folder on a shared drive, chosen with the folder picker. #}
+{% from "components/macros.html" import folder_picker %}
+{% if values.can_edit %}
+<form hx-post="/showcase/claims/{{ values.claim_id }}/folder" hx-trigger="change" hx-swap="none">
+  {{ folder_picker("folder", values.folder, values.text) }}
+</form>
+<p class="u-small u-muted u-mt-3">Where this claim's documents live on the shared drive.</p>
+{% elif values.folder %}
+<p>{{ values.text }}</p>
+{% else %}
+<p class="u-muted">No folder chosen.</p>
+{% endif %}

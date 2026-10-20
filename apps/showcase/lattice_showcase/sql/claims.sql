@@ -23,7 +23,7 @@ LEFT JOIN lattice.app_user h ON h.id = c.handler_id;
 
 -- name: by_id
 -- One claim with what its page needs beyond the grid row.
-SELECT c.id, c.claim_number, c.event_id, c.status, c.severity, c.estimate, c.paid, c.cause,
+SELECT c.id, c.claim_number, c.event_id, c.status, c.severity, c.estimate, c.paid, c.cause, c.file_folder,
        l.line, l.tiv, l.deductible, l.occupancy, l.construction, l.ref AS location_ref
 FROM showcase.claim c JOIN showcase.location l ON l.id = c.location_id
 WHERE c.id = :id;
@@ -152,3 +152,7 @@ SELECT -d.id, c.id, 'reports', 'report', 'Field report: ' || d.title, d.created_
 FROM showcase.claim c
 JOIN lattice.document d ON d.kind = 'showcase.field_report'
                        AND d.data ->> 'claim_number' = c.claim_number;
+
+-- name: set_folder
+-- Record where a claim's documents live on a shared drive.
+UPDATE showcase.claim SET file_folder = :folder, updated_at = lattice.utc_now() WHERE id = :id;
