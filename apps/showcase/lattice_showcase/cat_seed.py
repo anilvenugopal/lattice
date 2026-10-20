@@ -321,5 +321,6 @@ def seed(db: Db) -> None:
     rng = random.Random(2610)
     counties = seed_locations(db, rng)
     seed_events(db, rng, counties)
+    db.run(SQL.assign_handlers)
     seed_estimates(db)
 

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+import geoengine
 from lattice.api import sql_queries, urn
 from lattice.testing import csrf
 
@@ -11,8 +12,17 @@ CHECK = sql_queries(Path(__file__).parent / "sql").checks
 
 
 @pytest.fixture
-def item(db, users):
-    return db.value(CHECK.add_item, ref="IT-0901", name="Pump", owner_id=users["viewer"].id)
+def location(db):
+    layer = geoengine.create_layer(db.conn, "locations", "points")
+    geoengine.put_points(db.conn, layer, [{"id": "LOC-T1", "lon": -95.4, "lat": 29.7,
+                                           "quality": "rooftop"}])
+    db.run(CHECK.add_location, ref="LOC-T1")
+
+
+@pytest.fixture
+def claim(db, users, location):
+    """A claim the viewer handles."""
+    return db.value(CHECK.add_claim, claim_number="CLM-26-T00901", handler_id=users["viewer"].id)
 
 
 def comment(client, subject, body):
@@ -20,35 +30,35 @@ def comment(client, subject, body):
                        headers={"X-CSRF-Token": csrf(client)})
 
 
-def test_the_panel_appears_on_the_showcase_item_page(as_user, item):
-    html = as_user("viewer").get(f"/showcase/items/{item}").text
+def test_the_panel_appears_on_the_showcase_claim_page(as_user, claim):
+    html = as_user("viewer").get(f"/showcase/claims/{claim}").text
     assert 'class="comments"' in html and "No comments yet." in html
     assert 'name="body"' not in html                       # viewers read, editors write
-    assert 'name="body"' in as_user("editor").get(f"/showcase/items/{item}").text
+    assert 'name="body"' in as_user("editor").get(f"/showcase/claims/{claim}").text
 
 
-def test_a_comment_reaches_the_items_owner(as_user, users, item, db):
+def test_a_comment_reaches_the_claims_handler(as_user, users, claim, db):
     c = as_user("editor")
-    res = comment(c, urn("showcase.item", item), "Valve looks worn.")
-    assert res.status_code == 200 and "Valve looks worn." in res.text
-    [message, *_] = db.all(CHECK.messages_of, owner_id=users["viewer"].id)
-    assert message["subject"] == "Editor commented on IT-0901 · Pump"
-    assert "Valve looks worn." in message["body"]
+    res = comment(c, urn("showcase.claim", claim), "Roof photos attached.")
+    assert res.status_code == 200 and "Roof photos attached." in res.text
+    [notice, *_] = db.all(CHECK.notices_of, owner_id=users["viewer"].id)
+    assert notice["subject"] == "Editor commented on CLM-26-T00901 · Pat Pump"
+    assert "Roof photos attached." in notice["body"]
 
 
-def test_commenting_on_your_own_item_sends_no_message(as_user, users, db):
-    own = db.value(CHECK.add_item, ref="IT-0902", name="Mine", owner_id=users["editor"].id)
-    comment(as_user("editor"), urn("showcase.item", own), "Note to self")
-    assert db.all(CHECK.messages_of, owner_id=users["editor"].id) == []
+def test_commenting_on_your_own_claim_sends_no_notice(as_user, users, location, db):
+    own = db.value(CHECK.add_claim, claim_number="CLM-26-T00902", handler_id=users["editor"].id)
+    comment(as_user("editor"), urn("showcase.claim", own), "Note to self")
+    assert db.all(CHECK.notices_of, owner_id=users["editor"].id) == []
 
 
-def test_viewers_cannot_comment_and_unknown_records_are_refused(as_user, item):
-    assert comment(as_user("viewer"), urn("showcase.item", item), "Hi").status_code == 403
-    assert comment(as_user("editor"), urn("showcase.item", 999999), "Hi").status_code == 404
+def test_viewers_cannot_comment_and_unknown_records_are_refused(as_user, claim):
+    assert comment(as_user("viewer"), urn("showcase.claim", claim), "Hi").status_code == 403
+    assert comment(as_user("editor"), urn("showcase.claim", 999999), "Hi").status_code == 404
 
 
-def test_delete_own_or_moderate(as_user, users, item, db):
-    subject = urn("showcase.item", item)
+def test_delete_own_or_moderate(as_user, users, claim, db):
+    subject = urn("showcase.claim", claim)
     comment(as_user("editor"), subject, "First")
     [first] = db.all(CHECK.comments_on, subject=subject)
     c = as_user("editor")
@@ -62,8 +72,8 @@ def test_delete_own_or_moderate(as_user, users, item, db):
                   headers={"X-CSRF-Token": csrf(c)}).status_code == 403
 
 
-def test_the_comments_list_draws_each_subject_with_its_owners_resolver(as_user, item):
-    comment(as_user("editor"), urn("showcase.item", item), "Listed")
+def test_the_comments_list_draws_each_subject_with_its_owners_resolver(as_user, claim):
+    comment(as_user("editor"), urn("showcase.claim", claim), "Listed")
     html = as_user("viewer").get("/_grid/comments.all/rows").text
-    assert f'href="/showcase/items/{item}"' in html and "IT-0901 · Pump" in html
-    assert "tone-warning" in html                           # the item's status badge
+    assert f'href="/showcase/claims/{claim}"' in html and "CLM-26-T00901" in html
+    assert "tone-info" in html                              # the claim's status badge

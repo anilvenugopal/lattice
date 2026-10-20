@@ -70,17 +70,20 @@ collapsed). `badge` and `tone` draw a badge; take them from a status `Column`
 from lattice.api import Graph, GraphEdge, GraphNode, build_graph
 
 g = Graph(
-    grid=WORK_GRID,             # node ids are this grid's row ids
-    nodes=[GraphNode("1", "IT-0001 intake", "New", "info", "/showcase/items/1"),
-           GraphNode("2", "IT-0002 review", "Active", "warning", "/showcase/items/2")],
-    edges=[GraphEdge("1", "2", "next")],
+    grid=ZONES,                 # zone node ids are this grid's row ids
+    nodes=[GraphNode("event-4", "Hurricane Delta", "CAT-2610", "danger", "/showcase/events/4"),
+           GraphNode("12", "Lake Charles", "Lead Marcus Bell · 40 claims, 6 waiting", "warning",
+                     "/showcase/claims?x_zone_id=12")],
+    edges=[GraphEdge("event-4", "12")],
     direction="LR")
 
-return render_page(request, "showcase/flows.html", "flows", g=build_graph(request, db, g))
+return render_page(request, "showcase/deployment.html", "claims.deployment",
+                   graph=build_graph(request, db, g))
 ```
 
 ```jinja
-{% call card("Process", flush=True) %}{{ graph(g) }}{% endcall %}
+{% from "components/flows.html" import graph as graph_view %}
+{% call card(flush=True) %}{{ graph_view(graph) }}{% endcall %}
 ```
 
 The layout is automatic (dagre), left to right or top to bottom. Users pan by

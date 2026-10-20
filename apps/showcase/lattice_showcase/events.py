@@ -25,6 +25,7 @@ from lattice.api import (
     FormSpec,
     GridSpec,
     Link,
+    Palette,
     Panel,
     Permission,
     RecordPage,
@@ -95,6 +96,8 @@ GRID = GridSpec(
                     when={"status": ["watch", "landfall", "response", "recovery"]},
                     confirm="Move {count} event(s) to their next stage?")],
     default_sort="-starts_on", row_href="/showcase/events/{id}",
+    palette=Palette("{code} · {name}", "/showcase/events/{id}", subtitle="{region}",
+                    icon="showcase:storm"),
     empty_title="No events", empty_text="Declare one when a catastrophe threatens the book.",
 )
 
@@ -138,7 +141,7 @@ def _exposure_map(request: Request, db: Db, row: dict) -> dict:
 
 def _claims_charts(request: Request, db: Db, row: dict) -> dict:
     from lattice_showcase import claims
-    return {"charts": claims.event_charts(request, row["id"])}
+    return {"charts": claims.event_charts(request, row["code"])}
 
 
 DETAIL = RecordPage(
@@ -148,7 +151,7 @@ DETAIL = RecordPage(
                 "open_claims", "incurred"],
     details_title="At a glance",
     links=[Link("Exposure", "/showcase/events/{id}/exposure", icon="showcase:map"),
-           Link("Claims", "/showcase/claims?x_event_id={id}", icon="queue"),
+           Link("Claims", "/showcase/claims?x_event_code={code}", icon="queue"),
            Link("Loss estimate", "/showcase/events/{id}/loss", icon="showcase:chart")],
     panels=[Panel("lifecycle", "Stage", "showcase/event_lifecycle.html", load=_lifecycle),
             Panel("details", "The event", "showcase/event_details.html", load=_details),

@@ -6,8 +6,9 @@ description: Add a new list screen (records, queue, jobs, messages) to a Lattice
 # Add a grid page
 
 Read `lattice/help/developer/building-apps/grids.md` first. Copy the closest example in `apps/showcase/lattice_showcase/`:
-`items.py` (table, record page and forms), `jobs.py` (polling, row-state actions),
-`inbox.py` (split reader, per-user rows), each with its `sql/<area>.sql`. Import
+`claims.py` (table, row-state actions, record page and forms; `INTAKE` polls,
+`REPORTS` is a split reader), `notices.py` (per-user rows), `losses.py` (a polling
+grid of background runs), each with its `sql/<area>.sql`. Import
 only from `lattice.api`. Plain SQL, no ORM.
 
 1. **Table.** `make migration schema=<app> m="add <table>"`, write the `CREATE TABLE`

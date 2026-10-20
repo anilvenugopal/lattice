@@ -1,45 +1,31 @@
 -- Rows the showcase's tests create, and queries they use to check results.
 
--- name: add_item
--- An item for a test. Returns its id.
-INSERT INTO showcase.item (ref, name, category, status, owner_id, amount)
-VALUES (:ref, :name, :category, :status, :owner_id, :amount)
+-- name: add_event
+-- An event for a test; returns its id.
+INSERT INTO showcase.event (code, name, peril, status, starts_on, landfall_on)
+VALUES (:code, :name, 'hurricane', :status, DATE '2026-10-01', DATE '2026-10-02')
 RETURNING id;
 
--- name: add_job
--- A job for a test. Returns its id.
-INSERT INTO showcase.job (name, job_type, status) VALUES (:name, :job_type, :status)
+-- name: add_claim
+-- A claim on one of the test book's locations; returns its id.
+INSERT INTO showcase.claim (claim_number, event_id, location_id, loss_date, reported_at, channel,
+  cause, severity, status, estimate, handler_id)
+SELECT :claim_number, :event_id, l.id, DATE '2026-10-02', TIMESTAMP '2026-10-03 09:00',
+       'phone', 'wind', :severity, :status, :estimate, :handler_id
+FROM showcase.location l WHERE l.ref = :location_ref
 RETURNING id;
 
--- name: add_message
--- A message for a test. Returns its id.
-INSERT INTO showcase.message (owner_id, sender_name, sender_email, subject, body)
-VALUES (:owner_id, :sender_name, :sender_email, :subject, :body)
-RETURNING id;
+-- name: claim
+-- One claim.
+SELECT id, status, priority, zone_id, handler_id FROM showcase.claim WHERE id = :id;
 
--- name: job
--- One job.
-SELECT id, name, job_type, status, attempts FROM showcase.job WHERE id = :id;
+-- name: add_notice
+-- A notice for a user; returns its id.
+INSERT INTO showcase.notice (owner_id, subject) VALUES (:owner_id, :subject) RETURNING id;
 
--- name: job_by_name
--- The job with this name.
-SELECT id, job_type, status FROM showcase.job WHERE name = :name;
-
--- name: message
--- One message.
-SELECT id, folder, is_read, is_starred FROM showcase.message WHERE id = :id;
-
--- name: first_message_of
--- The id of a user's first message.
-SELECT id FROM showcase.message WHERE owner_id = :owner_id ORDER BY id LIMIT 1;
-
--- name: item
--- One item.
-SELECT id, status, owner_id, starred FROM showcase.item WHERE id = :id;
-
--- name: owners_with_status
--- The owner of every item in a status.
-SELECT owner_id FROM showcase.item WHERE status = :status;
+-- name: notice
+-- One notice.
+SELECT id, is_read FROM showcase.notice WHERE id = :id;
 
 -- name: audit_events
 -- Audit events with this action.
@@ -49,13 +35,9 @@ SELECT target_id, at FROM lattice.audit_event WHERE action = :action;
 -- One saved preference.
 SELECT value FROM lattice.user_preference WHERE user_id = :user_id AND key = :key;
 
--- name: count_items
--- How many items exist.
-SELECT count(*) FROM showcase.item;
-
--- name: count_links
--- How many item dependencies exist.
-SELECT count(*) FROM showcase.item_link;
+-- name: count_handled
+-- How many claims have a desk handler.
+SELECT count(*) FROM showcase.claim WHERE handler_id IS NOT NULL;
 
 -- name: event_summary
 -- Each event's status, footprint versions and claims, for the seed test.
@@ -89,3 +71,7 @@ RETURNING id;
 -- An event's claims.
 SELECT id, claim_number, status, surveyor_id, zone_id FROM showcase.claim
 WHERE event_id = :event_id ORDER BY id;
+
+-- name: claim_event
+-- A claim's event.
+SELECT event_id FROM showcase.claim WHERE id = :id;

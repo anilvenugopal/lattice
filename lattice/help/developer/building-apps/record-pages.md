@@ -23,15 +23,16 @@ grid and reuses it:
 from lattice.api import Link, Panel, RecordPage, render_record_page
 
 DETAIL = RecordPage(
-    grid=GRID, nav_key="grids.item", title="{ref} · {name}", status="status", crumb="{ref}",
-    properties=["ref", "status", "priority", "owner", "amount", "due_on"],
-    links=[Link("Edit", "/showcase/items/{id}/edit", icon="edit", tone="primary", permission=EDIT)],
-    panels=[Panel("notes", "Notes", "showcase/item_notes.html", load=_notes)],
+    grid=GRID, nav_key="claims.claim", title="{claim_number} · {insured}",
+    subtitle="{event} · {city}", status="status", crumb="{claim_number}",
+    properties=["event_code", "cause", "severity", "priority", "estimate", "zone", "surveyor"],
+    links=[Link("Open in claims system", "/showcase/claims-system/{claim_number}", icon="external")],
+    panels=[Panel("lifecycle", "Status", "showcase/event_lifecycle.html", load=_lifecycle)],
 )
 
-@router.get("/items/{item_id}")
-def detail(item_id: int, request: Request, db: Db = Depends(get_db)):
-    return render_record_page(request, db, DETAIL, item_id)
+@router.get("/claims/{claim_id}")
+def claim_page(claim_id: int, request: Request, db: Db = Depends(get_db)):
+    return render_record_page(request, db, DETAIL, claim_id)
 ```
 
 The page's `NavNode` is hidden, with the list's node as its parent, as for
@@ -69,18 +70,17 @@ user's rows), the browser returns to the list.
 A panel is a card drawn by the app's own template:
 
 ```python
-Panel("related", "Other items in this category", "showcase/item_related.html",
-      load=_related, place="full", flush=True)
+Panel("where", "Where", "showcase/event_map.html", load=_where, place="side", flush=True)
 
-def _related(request: Request, db: Db, row: dict) -> dict:
-    return {"grid": build_grid(request, db, GRID, sync_url=False,
-                               fixed={"category": row["category"]})}
+def _where(request: Request, db: Db, row: dict) -> dict:
+    return {"map": build_map(request, MAP, linked=False,
+                             fixed={"id": row["id"], "event_id": row["event_id"]})}
 ```
 
 ```jinja
-{# showcase/item_related.html #}
-{% from "components/grid.html" import data_grid %}
-{{ data_grid(values.grid) }}
+{# showcase/event_map.html #}
+{% from "components/map.html" import map_view %}
+{{ map_view(values.map) }}
 ```
 
 | Field | Use |

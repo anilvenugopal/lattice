@@ -159,7 +159,7 @@ class Palette:
     """
 
     title: str                      # result title, formatted with the row: "{ref} · {title}"
-    href: str                       # opened with Enter: "/showcase/items/{id}"
+    href: str                       # opened with Enter: "/showcase/claims/{id}"
     subtitle: str = ""              # muted second line
     icon: str = "link"              # result icon
 
@@ -177,7 +177,7 @@ class GridSpec:
     # It may use :user_id (the signed-in user) to scope rows.
     query: Query
     columns: list[Column]           # in display order
-    # Fixed values the query is run with, beside :user_id, e.g. {"kind": "showcase.spec"}.
+    # Fixed values the query is run with, beside :user_id, e.g. {"kind": "showcase.field_report"}.
     # Part of the access boundary: users cannot change them.
     params: dict[str, Any] = field(default_factory=dict)
     search: list[str] = field(default_factory=list)  # columns matched by the search box (ILIKE)
@@ -205,7 +205,7 @@ class GridSpec:
 
     @property
     def app_key(self) -> str:
-        """The owning app's key: the grid key's prefix ("showcase.jobs" -> "showcase"); "" for platform grids."""
+        """The owning app's key: the grid key's prefix ("showcase.claims" -> "showcase"); "" for platform grids."""
         return self.key.partition(".")[0] if "." in self.key else ""
 
     def column(self, key: str) -> Column | None:

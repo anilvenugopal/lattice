@@ -5,6 +5,7 @@
 SELECT c.id, c.claim_number, c.event_id, e.code AS event_code, e.name AS event,
        c.loss_date, c.reported_at, c.channel, c.cause, c.severity, c.status, c.priority,
        c.estimate, c.paid, c.zone_id, z.name AS zone, s.name AS surveyor, a.name AS adjuster,
+       c.handler_id, h.display_name AS handler,
        l.ref AS location_ref, l.insured, l.line, l.policy_number, l.county_fips, l.county,
        l.state, l.city, p.lon, p.lat, p.quality, p.h3_7,
        CAST(c.reported_at AS date) - e.landfall_on AS days_after,
@@ -15,7 +16,8 @@ JOIN geo.point p ON p.layer = 'locations' AND p.external_id = l.ref
 LEFT JOIN showcase.event e ON e.id = c.event_id
 LEFT JOIN showcase.zone z ON z.id = c.zone_id
 LEFT JOIN showcase.staff s ON s.id = c.surveyor_id
-LEFT JOIN showcase.staff a ON a.id = c.adjuster_id;
+LEFT JOIN showcase.staff a ON a.id = c.adjuster_id
+LEFT JOIN lattice.app_user h ON h.id = c.handler_id;
 
 -- name: by_id
 -- One claim with what its page needs beyond the grid row.
@@ -51,6 +53,17 @@ WHERE id = ANY(:ids);
 -- Flag claims as priority, or clear the flag.
 UPDATE showcase.claim SET priority = :priority, updated_at = lattice.utc_now()
 WHERE id = ANY(:ids);
+
+-- name: take
+-- Make the current user the desk handler of claims.
+UPDATE showcase.claim SET handler_id = :user_id, updated_at = lattice.utc_now()
+WHERE id = ANY(:ids);
+
+-- name: handler
+-- A claim's desk handler and its name, for telling the handler about a comment.
+SELECT c.claim_number, c.handler_id, l.insured
+FROM showcase.claim c JOIN showcase.location l ON l.id = c.location_id
+WHERE c.id = :id;
 
 -- name: mark_inspected
 -- Record that claims were inspected.

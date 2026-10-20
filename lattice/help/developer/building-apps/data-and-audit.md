@@ -237,13 +237,13 @@ def seed(db: Db) -> None:
                assignee_id=rng.choice(people))
 ```
 
-The showcase's `seed.py` and `sql/seed.sql` are a full example.
+The showcase's `cat_seed.py` and `sql/catseed.sql` are a full example.
 
 ## Background work
 
 `AppManifest.background` is an async function. The host starts it with the
 application and cancels it at shutdown. Use it for small periodic jobs in
-development and demonstrations, such as the showcase's job simulator:
+development and demonstrations, such as the showcase's claims intake simulator (`background()` in `claims.py`):
 
 ```python
 async def background() -> None:

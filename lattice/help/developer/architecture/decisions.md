@@ -76,11 +76,14 @@ before the next starts.
 7. **Integration framework.** Done: URN references, record panels and the
    CloudEvents bus.
 8. **The showcase uses the framework.** Done: the Comments app comments on any
-   record; the showcase reacts to new comments.
+   record; the showcase tells a claim's handler about new comments.
 9. **Taskline UI:** Taskline builds its public contract (views and async
    commands, release 0.2.0); Lattice adds async grid actions and moves to
    Postgres 18; then Taskline UI in its own repository.
-10. **Incidents** in its own repository.
+10. **Catastrophe response showcase.** Done: the sample pages give way to a
+    carrier responding to catastrophes; geoengine and the map component
+    (ADR 0013).
+11. **Incidents** in its own repository.
 
 ## Database decisions (step 2)
 
@@ -112,6 +115,7 @@ Taken while planning step 2, on 18 October 2026:
 | 0010 | Theming and overrides: the host owns the brand, apps style only their own pages | Proposed |
 | 0011 | Integration standards: URN references, CloudEvents, published views, OpenAPI between processes | Accepted |
 | 0012 | Taskline UI on Taskline's published contract: views, async commands, no events | Accepted |
+| 0013 | Geospatial: a separate geoengine package, PostGIS, and a Lattice map component | Accepted |
 
 A record is never rewritten once accepted. A later decision that changes it is
 a new record naming the one it replaces.

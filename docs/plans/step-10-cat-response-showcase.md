@@ -1,7 +1,8 @@
 # Step 10 plan: the catastrophe response showcase
 
-Status: **draft for approval** (19 October 2026). Builds on
-[ADR 0013](../adr/0013-geoengine-and-maps.md), also for approval.
+Status: **done** on the `cat-showcase` branch (19 October 2026), stages 1 to 8, each
+committed on its own. Builds on [ADR 0013](../adr/0013-geoengine-and-maps.md), accepted.
+What was built differs from the plan where the table at the end says.
 
 ## Why
 
@@ -107,3 +108,17 @@ version; location quality tiers and hexagons in this version.
 2. **New Python dependencies:** `shapely` and `h3` (geoengine), `numpy` (showcase).
 3. **Order:** stages 1 to 8 as listed, each committed on its own and reviewed at
    the end.
+
+## As built: differences from the plan
+
+| Plan | Built | Why |
+|---|---|---|
+| 40,000 locations | 42,659 | Spread across real metro areas by population; the number fell out of the weights |
+| Freeze with its own assessment form | Assessment by what was inspected: home, vehicle, commercial building | The property decides what a surveyor records, more than the peril |
+| Claims page: one-month calendar and sankey | On the event page, with claims per day; the Claims page has claims per day since landfall by event, cause and estimate by severity | They describe one event's arrivals |
+| Deployment: reassign or escalate from a node | **Prioritise waiting claims** from a zone node; reassignment is a bulk action on Claims | One node action shows the pattern; the grid already does assignment |
+| Comments: the zone lead is told | The claim's **desk handler** is told, on a new **Notices** page | Zone leads are staff, not users of the app; handlers are users. Notices also replace the old Inbox as the example of rows scoped to the user |
+| Monte Carlo with a separate assumptions page | The assumptions on the estimate page | One page reads better than two |
+| Declare event: draw the footprint on the map | Draw on the Locations map, **Save as area**, then pick the area | Draw-to-search already drew shapes; saving one serves both |
+| — | Claims gain a desk handler (`claim.handler_id`), a **Take** action, a **Mine** tab and home tiles | Needed for notices, tiles and `$me` views |
+| — | The old sample pages (Items, Live updates, Reading pane, Charts, Specs, Free-form, Flows) and their tables removed (migration 0005) | Every component they showed now has a job in the story; the one chart kind not shown is the world choropleth, replaced by the county map layer |

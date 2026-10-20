@@ -2,8 +2,8 @@
 
 An app that owns records declares each kind with a resolver:
 
-    def resolve_item(db, user, item_id) -> Resolved | None: …   # None: gone, or not for this user
-    APP = AppManifest(key="showcase", references=[ReferenceKind("showcase.item", "Item", resolve_item)])
+    def resolve_claim(db, user, claim_id) -> Resolved | None: …   # None: gone, or not for this user
+    APP = AppManifest(key="showcase", references=[ReferenceKind("showcase.claim", "Claim", resolve_claim)])
 
 Any template draws a reference with `{{ ref(urn) }}`: the record's title linked to its page,
 with a status badge, or "Unavailable" when the record is gone or the user may not see it.
@@ -36,7 +36,7 @@ class BadReference(ValueError):
 class Ref:
     """A parsed reference."""
 
-    kind: str                       # "showcase.item"
+    kind: str                       # "showcase.claim"
     id: str                         # the owning app's id, as text
 
     @property
@@ -49,7 +49,7 @@ class Ref:
 
 
 def urn(kind: str, record_id: Any) -> str:
-    """The reference to one record: urn("showcase.item", 42) -> "urn:lattice:showcase.item:42"."""
+    """The reference to one record: urn("showcase.claim", 42) -> "urn:lattice:showcase.claim:42"."""
     return Ref(kind, str(record_id)).urn
 
 

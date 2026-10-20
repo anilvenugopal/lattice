@@ -1,15 +1,11 @@
 """Catastrophe response pages: events, declaring one, exposure runs, locations and claims."""
 
 import json
-from datetime import date
 from pathlib import Path
 
-import pytest
-
-import geoengine
 from lattice.api import sql_queries
 from lattice.testing import csrf, post_json
-from lattice_showcase import cat_seed, exposure
+from lattice_showcase import exposure
 
 CHECK = sql_queries(Path(__file__).parent / "sql").checks
 
@@ -17,26 +13,6 @@ CHECK = sql_queries(Path(__file__).parent / "sql").checks
 def square(lon, lat, size=0.5):
     return {"type": "Polygon", "coordinates": [[[lon, lat], [lon + size, lat], [lon + size, lat + size],
                                                 [lon, lat + size], [lon, lat]]]}
-
-
-@pytest.fixture
-def book(db, users):
-    """Two counties (Harris and Galveston, as squares) and six locations."""
-    counties = geoengine.create_layer(db.conn, "us-counties", "areas")
-    geoengine.put_geojson(db.conn, counties, {"type": "FeatureCollection", "features": [
-        {"type": "Feature", "id": "48201", "properties": {"name": "Harris"}, "geometry": square(-96, 29.5)},
-        {"type": "Feature", "id": "48167", "properties": {"name": "Galveston"}, "geometry": square(-95, 29)}]})
-    places = geoengine.create_layer(db.conn, "locations", "points")
-    points = [(f"LOC-00000{i}", -95.8 + i * 0.05, 29.7, "48201", "Harris") for i in range(4)]
-    points += [(f"LOC-00000{i}", -94.8, 29.2 + (i - 4) * 0.05, "48167", "Galveston") for i in (4, 5)]
-    geoengine.put_points(db.conn, places, [{"id": ref, "lon": lon, "lat": lat, "quality": "rooftop"}
-                                           for ref, lon, lat, _, _ in points])
-    db.run_many(cat_seed.SQL.add_location, [
-        {"ref": ref, "policy_number": f"HO-{i}", "insured": f"Insured {i}", "line": "homeowners",
-         "occupancy": "single_family", "construction": "frame", "year_built": 2000,
-         "tiv": 100_000 * (i + 1), "deductible": 1000, "state": "TX", "county_fips": fips,
-         "county": county, "city": "Houston", "snapshot_on": date(2026, 10, 19)}
-        for i, (ref, _, _, fips, county) in enumerate(points)])
 
 
 def declare(client, counties="Harris", **extra):

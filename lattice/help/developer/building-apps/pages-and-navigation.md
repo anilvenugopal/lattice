@@ -101,10 +101,10 @@ same places on every page.
 
 | Type | How | Example |
 |---|---|---|
-| **List** | `render_grid_page(request, db, GRID, nav_key)`. See [Grids](grids.md) | `/showcase/items`, `/admin/users` |
-| **List and reader** | The same, with `layout="split"` on the grid | `/showcase/inbox` |
-| **Record (detail)** | `render_record_page(request, db, PAGE, id)`. See [Record pages](record-pages.md) | `/showcase/items/1` |
-| **Form** | `page page--narrow`, a `card` of `field`s, then `form-actions`. See [Forms and feedback](forms-and-feedback.md) | `/showcase/items/new` |
+| **List** | `render_grid_page(request, db, GRID, nav_key)`. See [Grids](grids.md) | `/showcase/claims`, `/admin/users` |
+| **List and reader** | The same, with `layout="split"` on the grid | `/showcase/field-reports` |
+| **Record (detail)** | `render_record_page(request, db, PAGE, id)`. See [Record pages](record-pages.md) | `/showcase/claims/1` |
+| **Form** | `page page--narrow`, a `card` of `field`s, then `form-actions`. See [Forms and feedback](forms-and-feedback.md) | `/account/profile` |
 | **Settings** | `card`s of `pref_row`s | `/account/preferences` |
 | **Dashboard** | `stat` tiles, then a `grid-2` of cards | `/` |
 

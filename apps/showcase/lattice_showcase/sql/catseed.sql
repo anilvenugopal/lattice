@@ -84,3 +84,9 @@ SELECT e.id, f.id, :simulations, :assumptions, 'running', 1, f.created_at, f.cre
 FROM showcase.event e JOIN showcase.footprint f ON f.event_id = e.id
 WHERE e.code = 'CAT-2610' AND f.version = :version
 RETURNING id, event_id, footprint_id;
+
+-- name: assign_handlers
+-- Share the open claims of active events among the app's users, as their desk handlers.
+UPDATE showcase.claim c SET handler_id = u.ids[1 + c.id % cardinality(u.ids)]
+FROM (SELECT array_agg(id ORDER BY id) AS ids FROM lattice.app_user) u
+WHERE c.status IN ('assigned', 'inspected') AND cardinality(u.ids) > 0;

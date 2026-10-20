@@ -56,7 +56,7 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `Ref` | class | A parsed reference. |
 | `ReferenceKind` | class |  |
 | `Resolved` | class | What a reference shows: its title, link and, optionally, a status badge. |
-| `urn` `(kind, record_id)` | function | The reference to one record: urn("showcase.item", 42) -> "urn:lattice:showcase.item:42". |
+| `urn` `(kind, record_id)` | function | The reference to one record: urn("showcase.claim", 42) -> "urn:lattice:showcase.claim:42". |
 | `parse` `(value)` | function |  |
 | `resolve_ref` `(db, user, value)` | function | The reference as this user may see it; None for an unknown kind, a missing record, or one the user may not see. |
 | `RecordPanel` | class | A panel an app adds to other apps' record pages, matched on reference kind (ADR 0011). |

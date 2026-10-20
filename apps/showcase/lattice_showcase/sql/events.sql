@@ -52,6 +52,12 @@ ORDER BY f.version DESC;
 SELECT id, version, label, layer FROM showcase.footprint
 WHERE event_id = :event_id ORDER BY version DESC LIMIT 1;
 
+-- name: latest_footprint_of
+-- The current footprint of the event with this code.
+SELECT f.id, f.version, f.label, f.layer FROM showcase.footprint f
+JOIN showcase.event e ON e.id = f.event_id
+WHERE e.code = :code ORDER BY f.version DESC LIMIT 1;
+
 -- name: add_footprint
 -- A new footprint version for an event; returns its id and version.
 INSERT INTO showcase.footprint (event_id, version, label, source, layer)

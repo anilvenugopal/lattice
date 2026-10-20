@@ -1,6 +1,6 @@
 # 0013. Geospatial: a separate geoengine package, PostGIS, and a Lattice map component
 
-Status: Proposed (19 October 2026)
+Status: Accepted (19 October 2026)
 
 ## Context
 

@@ -1,15 +1,15 @@
 """The document store (ADR 0007): JSON documents of kinds that apps declare.
 
-    SPEC = DocumentKind("showcase.spec", "Spec", schema=Spec,
-                        title="{name}", edit="showcase.specs.edit")
-    APP = AppManifest(…, documents=[SPEC])
+    ASSESSMENT = DocumentKind("showcase.assessment", "Damage assessment", schema=Assessment,
+                              title="{claim_number}", edit="showcase.claims.manage")
+    APP = AppManifest(…, documents=[ASSESSMENT])
 
-    doc_id = documents.create(db, user, SPEC, data)     # validated against the schema
-    data = documents.get(db, SPEC, doc_id)["data"]
+    doc_id = documents.create(db, user, ASSESSMENT, data)     # validated against the schema
+    data = documents.get(db, ASSESSMENT, doc_id)["data"]
 
 Each kind's schema is registered as a SchemaDef (id = the kind's key) and its form as a
-FormSpec with the same key, so `build_form(request, SPEC.form, data)` draws it. A grid
-of one kind runs `QUERY` with `params={"kind": SPEC.key}`; give it the kind's key, so its
+FormSpec with the same key, so `build_form(request, ASSESSMENT.form, data)` draws it. A grid
+of one kind runs `QUERY` with `params={"kind": ASSESSMENT.key}`; give it the kind's key, so its
 actions and the record page's history share the audit trail.
 
 Guide: lattice/help/developer/building-apps/json-forms.md#the-document-store.

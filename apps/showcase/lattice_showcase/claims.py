@@ -30,8 +30,10 @@ from lattice.api import (
     Filter,
     FormSpec,
     GridSpec,
+    HomeTile,
     Link,
     MapSpec,
+    Palette,
     Panel,
     Permission,
     Points,
@@ -103,6 +105,11 @@ def assign_surveyor(ctx: ActionContext) -> str:
     return f"Assigned {ctx.count} claim(s)."
 
 
+def take(ctx: ActionContext) -> str:
+    ctx.db.run(SQL.take, ids=ctx.ids, user_id=ctx.user.id)
+    return f"You now handle {ctx.count} claim(s)."
+
+
 def prioritise(ctx: ActionContext) -> str:
     ctx.db.run(SQL.prioritise, ids=ctx.ids, priority=True)
     return f"Flagged {ctx.count} claim(s) as priority."
@@ -120,7 +127,7 @@ GRID = GridSpec(
         Column("claim_number", "Claim", kind="mono", width="140px", required=True),
         Column("insured", "Insured", kind="strong", secondary="city", required=True),
         Column("event_code", "Event", kind="mono", width="100px"),
-        Column("cause", "Cause", labels=dict(CAUSES), width="120px"),
+        Column("cause", "Cause", labels=dict(CAUSES), secondary="channel", width="120px"),
         Column("severity", "Severity", kind="badge", labels=dict(SEVERITIES),
                tones=SEVERITY_TONES, width="110px"),
         Column("status", "Status", kind="badge", labels=dict(STATUSES), tones=STATUS_TONES,
@@ -128,6 +135,7 @@ GRID = GridSpec(
         Column("priority", "Priority", kind="bool", width="80px"),
         Column("zone", "Zone", width="170px"),
         Column("surveyor", "Surveyor", kind="user", width="150px"),
+        Column("handler", "Handler", kind="user", width="150px"),
         Column("estimate", "Estimate", kind="money", align="right", width="120px"),
         Column("reported_at", "Reported", kind="ago", width="120px"),
         Column("days_after", "Day", kind="number", align="right", hidden=True),
@@ -144,6 +152,7 @@ GRID = GridSpec(
                                                            for r in db.all(EVENTS.grid)]),
              Filter("cause", "Cause", CAUSES), Filter("channel", "Channel", CHANNELS)],
     views=[View("open", "Open", where={"status": OPEN}),
+           View("mine", "Mine", where={"handler_id": "$me", "status": OPEN}),
            View("waiting", "Waiting for a surveyor", where={"status": "new"}),
            View("priority", "Priority", where={"priority": True, "status": OPEN}),
            View("all", "All")],
@@ -157,20 +166,29 @@ GRID = GridSpec(
                permission=MANAGE, when={"status": OPEN},
                fields=[InputField("zone_id", "Zone", kind="select", required=True,
                                   options=_options(SQL.zone_options))]),
+        Action("take", "Take", handler=take, icon="user", permission=MANAGE,
+               when={"status": OPEN}),
         Action("prioritise", "Priority", handler=prioritise, icon="flag", permission=MANAGE,
                when={"priority": [False], "status": OPEN}),
         Action("inspected", "Inspected", handler=mark_inspected, icon="check", permission=MANAGE,
                when={"status": ["new", "assigned"]}, confirm="Record {count} inspection(s)?"),
     ],
     default_sort="-reported_at", row_href="/showcase/claims/{id}",
+    palette=Palette("{claim_number} · {insured}", "/showcase/claims/{id}",
+                    subtitle="{event_code} · {city}", icon="queue"),
     empty_title="No claims match", empty_text="Change the tab or clear the filters.",
 )
 
+TILES = [HomeTile("Claims waiting for a surveyor", GRID, view="waiting", tone="warning"),
+         HomeTile("My open claims", GRID, view="mine", tone="accent")]
+
 
 def event_footprint(db: Db, user, fixed: dict) -> dict:
-    """The current footprint of the event the map is fixed to, if any."""
+    """The current footprint of the event the map is narrowed to (by id or code), if any."""
     event_id = (fixed.get("event_id") or [None])[0]
-    found = db.first(EVENTS.latest_footprint, event_id=int(event_id)) if event_id else None
+    code = (fixed.get("event_code") or [None])[0]
+    found = (db.first(EVENTS.latest_footprint, event_id=int(event_id)) if str(event_id).isdigit()
+             else db.first(EVENTS.latest_footprint_of, code=code) if code else None)
     return geoengine.as_geojson(db.conn, found["layer"]) if found else {"type": "FeatureCollection", "features": []}
 
 
@@ -188,16 +206,17 @@ CHARTS = [
 ]
 EVENT_CHARTS = [
     ChartSpec("showcase.claims_per_day", "Claims per day", GRID, "bar",
-              x=Time("reported_at", "day"), series="severity", stacked=True, height=260),
+              x=Time("reported_at", "day"), series="severity", stacked=True, height=260,
+              drill="/showcase/claims"),
     ChartSpec("showcase.claims_calendar", "Claims calendar", GRID, "calendar",
-              x=Time("reported_at", "day"), height=300),
+              x=Time("reported_at", "day"), height=300, drill="/showcase/claims"),
     ChartSpec("showcase.claims_flow", "How claims came in, and where they stand", GRID, "sankey",
               x="channel", series="status", height=300),
 ]
 
 
-def event_charts(request: Request, event_id: int) -> list[dict]:
-    return [build_chart(request, c, linked=False, fixed={"event_id": event_id})
+def event_charts(request: Request, event_code: str) -> list[dict]:
+    return [build_chart(request, c, linked=False, fixed={"event_code": event_code})
             for c in EVENT_CHARTS]
 
 
@@ -206,11 +225,11 @@ router = APIRouter(dependencies=[Depends(csrf_protect)])
 
 @router.get("/claims")
 def claims_page(request: Request, db: Db = Depends(get_db)):
-    # ?x_event_id=4 (from an event page) fixes the list, map and charts to one event.
-    fixed = {k[2:]: v for k, v in request.query_params.items() if k.startswith("x_")}
+    # ?x_event_code=CAT-2610 (from an event page, or a chart clicked there) narrows the
+    # list, and the map and charts with it.
     return render_page(request, "showcase/claims.html", "claims.list",
-                       grid=build_grid(request, db, GRID), map=build_map(request, MAP, fixed=fixed),
-                       charts=[build_chart(request, c, fixed=fixed) for c in CHARTS])
+                       grid=build_grid(request, db, GRID), map=build_map(request, MAP),
+                       charts=[build_chart(request, c) for c in CHARTS])
 
 
 # ── Damage assessments and field reports ─────────────────────────────────────
@@ -341,7 +360,7 @@ DETAIL = RecordPage(
     subtitle="{event} · {city}", status="status", crumb="{claim_number}",
     reference_kind="showcase.claim",
     properties=["event_code", "cause", "severity", "priority", "estimate", "zone", "surveyor",
-                "line", "location_ref", "reported_at"],
+                "handler", "line", "location_ref", "reported_at"],
     links=[Link("Open in claims system", "/showcase/claims-system/{claim_number}", icon="external")],
     panels=[Panel("lifecycle", "Status", "showcase/event_lifecycle.html", load=_lifecycle),
             Panel("assessment", "Damage assessment", "showcase/claim_assessment.html",
