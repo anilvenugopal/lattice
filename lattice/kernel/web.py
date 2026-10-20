@@ -26,6 +26,8 @@ from lattice.kernel.slots import render_slot
 CORE_TEMPLATES = Path(__file__).parent.parent / "templates"
 templates = Jinja2Templates(directory=CORE_TEMPLATES)
 env = templates.env
+# tojson writes ids into pages; a UUID id (Taskline's views) is written as its text.
+env.policies["json.dumps_kwargs"] = {"sort_keys": True, "default": str}
 
 
 def set_host_assets(template_dirs: list[Path], stylesheets: list[str],
@@ -134,7 +136,7 @@ def js(value) -> Markup:
     Use `@click="run({{ key|js }})"`, never `'{{ key }}'`: the browser decodes HTML entities
     before Alpine evaluates the attribute, so plain autoescaping does not protect it.
     """
-    return Markup(escape(json.dumps(value)))
+    return Markup(escape(json.dumps(value, default=str)))
 
 
 env.filters["js"] = js

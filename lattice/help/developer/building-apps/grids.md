@@ -132,7 +132,10 @@ dot (`helpdesk.`), and the path starts with the app's prefix (`/helpdesk`).
 column it selects is a row key: `Column`, `search`, `Filter`, `View`, `when`,
 `Palette` and URL templates such as `{id}` all refer to these keys.
 
-- **It must select `id`.** Selection, actions, panels and links use it.
+- **It must select `id`.** Selection, actions, panels and links use it. It may be
+  an integer, text or a `uuid`; ids from the browser are converted to its type, and
+  one that does not convert matches nothing. Select a `uuid` as it is: casting it to
+  text stops Postgres using its index.
 - **Filter and view keys must be selected.** `View("mine", where={"assignee_id": "$me"})`
   needs `assignee_id` in the select. It does not need a `Column`; only keys in
   `columns` are shown.
