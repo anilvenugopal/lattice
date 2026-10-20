@@ -15,7 +15,8 @@ field reports. **Open in claims system** on a claim leads back to it.
   and All.
 - **Search** matches the claim number, insured, policy, city, county, zone,
   surveyor and handler.
-- **Draw** on the map to narrow the list to an area; the charts follow.
+- **Draw** on the map to narrow the list to an area, or **find a place** and
+  keep the claims within a distance of it; the charts follow.
 - Select claims, then **Assign surveyor**, **Move to zone**, **Take** (become
   their desk handler), **Priority** or **Inspected**.
 
@@ -30,6 +31,8 @@ field reports. **Open in claims system** on a claim leads back to it.
 - **Coverages and payments**: the estimate split across the policy's
   coverages.
 - **Where**: the location on the map, inside the event's footprint.
+- **Claims within 1 mile** and **Locations within 5 miles**: the lists, narrowed
+  to the neighbourhood around this claim.
 - **Comments**: a comment tells the claim's desk handler, in their
   [Notices](#notices).
 

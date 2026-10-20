@@ -180,3 +180,14 @@ def test_run_an_estimate(as_user, book, db):
     assert "1 in 100" in page and "Illustrative" in page
     curve = c.get(f"/_chart/showcase.loss_exceedance/data?x_event_id={event_id}").json()
     assert curve["points"][0][2] == 100 and len(curve["points"]) == 201
+
+
+def test_find_a_place_then_search_around_it(as_user, book):
+    c = as_user("viewer")
+    found = c.get("/_map/showcase.locations_map/places", params={"q": "Lake Charles, LA"}).json()
+    assert found["places"][0]["label"] == "Lake Charles, LA"            # refdata, via the hook
+    # Two of the book's Harris locations lie within 6 km of the first one.
+    rows = c.get("/_grid/showcase.locations/rows", params={"near": "-95.8,29.7,6000"}).text
+    assert rows.count("<tr data-id") == 2
+    page = c.get("/showcase/locations", params={"near": "-95.8,29.7,8047", "near_label": "Katy"}).text
+    assert 'name="near" x-ref="near" value="-95.8,29.7,8047"' in page

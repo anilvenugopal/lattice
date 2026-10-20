@@ -9,7 +9,8 @@ import asyncio
 from pathlib import Path
 
 import geoengine
-from lattice.api import AppManifest, NavNode
+import refdata
+from lattice.api import AppManifest, Library, NavNode
 from lattice_showcase import (
     cat_seed,
     claims,
@@ -63,6 +64,7 @@ APP = AppManifest(
     help=HERE / "help",
     sql=HERE / "sql",
     library_schemas=[geoengine.SCHEMA],
+    libraries=[Library("refdata", [refdata.SCHEMA], refdata.migrate)],
     nav=[
         NavNode("overview", "Showcase", "/showcase", icon="showcase:app",
                 keywords="demo examples components catastrophe story",
