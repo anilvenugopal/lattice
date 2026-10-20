@@ -103,3 +103,15 @@ def test_distribution_charts_need_a_plain_numeric_x():
     with pytest.raises(AppError, match="needs a numeric column"):
         create_app(apps=[AppManifest(key="stats", label="Stats", charts=[
             ChartSpec("stats.h", "H", AUDIT, "histogram", x=Time("at"))])])
+
+
+def test_a_click_narrows_by_the_charts_columns(as_user, events):
+    c = as_user("admin")
+    data = c.get("/_chart/stats.per_day/data").json()
+    assert data["drill"] == {"x": "at", "xLabel": "When", "series": "action", "seriesLabel": "Event"}
+    day = data["points"][0][0][:10]
+    # A day narrows a timestamp column to that whole day.
+    total = c.get("/_chart/stats.by_action/data").json()
+    narrowed = c.get(f"/_chart/stats.by_action/data?x_at={day}").json()
+    assert sum(p[2] for p in narrowed["points"]) == sum(p[2] for p in total["points"])   # all today
+    assert c.get("/_chart/stats.by_action/data?x_at=2001-01-01").json()["points"] == []

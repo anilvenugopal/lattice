@@ -104,6 +104,9 @@ class ChartSpec:
     format: ValueFormat = "number"  # how values show in tooltips and the axis
     height: int = 280               # pixels
     permission: str = ""            # who may see it, in addition to the grid's permission
+    # Clicking a bar, slice, box or day narrows the list to it: the grid on the same page
+    # (linked charts), or this list page, opened with the chart's rows narrowed further.
+    drill: str = ""                 # e.g. "/showcase/claims"
     empty_text: str = "No data for these filters."
 
     @property

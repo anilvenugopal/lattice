@@ -65,6 +65,24 @@ Saved views work the same way.
 A chart with no grid on its page still needs a `GridSpec` for its rows. Declare
 one and list it in `grids=` without placing it on a page.
 
+## Click to narrow the list
+
+Clicking a bar, slice, treemap box or calendar day narrows the rows to it, by
+the chart's `x` and `series` columns. A `Time` by day narrows a timestamp
+column to that whole day. Histograms, exceedance curves, sankeys and world maps
+are not clickable.
+
+- **A linked chart** narrows the grid on its page in place. The grid shows each
+  narrowing as a chip (*Construction: Frame*) that removes it.
+- **`drill="/showcase/claims"`** on a chart without a grid on its page opens
+  that list page instead, narrowed by `x_` parameters in the address, with the
+  same chips. The event page's claims calendar does this.
+
+```python
+ChartSpec("showcase.claims_calendar", "Claims calendar", GRID, "calendar",
+          x=Time("reported_at", "day"), drill="/showcase/claims")
+```
+
 ## Kinds
 
 | `kind` | `x` | `series` | Draws |

@@ -25,16 +25,16 @@ def build_map(request: Request, spec: MapSpec, *, linked: bool = True,
         raise HTTPException(403)
     filters = {f"f_{f.key}" for f in spec.source.filters}
     params = [(k, v) for k, v in request.query_params.multi_items()
-              if linked and (k in ("q", "view", "shape") or k in filters)]
-    for key, value in (fixed or {}).items():
-        params += [(f"x_{key}", str(v)) for v in (value if isinstance(value, (list, tuple))
-                                                  else [value])]
+              if linked and (k in ("q", "view", "shape") or k in filters or k.startswith("x_"))]
+    pinned = [(f"x_{key}", str(v)) for key, value in (fixed or {}).items()
+              for v in (value if isinstance(value, (list, tuple)) else [value])]
+    params += pinned
     return {"spec": spec, "config": {
         "key": spec.key,
         "endpoint": f"/_map/{spec.key}/data",
         "grid": spec.source.key if linked else "",
         "params": urlencode(params),
-        "fixed": urlencode([(k, v) for k, v in params if k.startswith("x_")]),
+        "fixed": urlencode(pinned),
         "basemap": basemap_url(),
         "draw": linked and spec.source.spatial is not None,   # shapes drawn here filter the grid
     }}

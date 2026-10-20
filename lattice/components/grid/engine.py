@@ -17,6 +17,7 @@ boundary: a row the query does not return cannot be shown, exported or acted on.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -27,6 +28,7 @@ from psycopg.errors import QueryCanceled
 from psycopg.postgres import types as pg_types
 from sqlalchemy import (
     ColumnElement,
+    Date,
     String,
     and_,
     bindparam,
@@ -48,6 +50,7 @@ from lattice.kernel.services import preferences
 PAGE_SIZES = preferences.PAGE_SIZES
 DEFAULT_PAGE_SIZE = preferences.DEFAULTS["page_size"]
 MAX_BULK = 10_000
+_DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 MAX_EXPORT = 50_000
 
 
@@ -187,8 +190,12 @@ class _Wrapped:
         self.c = self.sq.c
 
     def match(self, key: str, values: list) -> ColumnElement:
-        values = _coerce_all(self.shape.types.get(key), values)
         col = self.c[key]
+        py = self.shape.types.get(key)
+        if py is datetime and values and all(_DAY.fullmatch(str(v)) for v in values):
+            days = _coerce_all(date, values)            # a day matches the whole day
+            return cast(col, Date).in_(days) if days else false()
+        values = _coerce_all(py, values)
         if not values:
             return false()
         return col == values[0] if len(values) == 1 else col.in_(values)

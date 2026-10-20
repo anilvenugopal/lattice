@@ -279,7 +279,7 @@ function exceedance(d, t) {
 function treemap(d, t) {
   const short = formatter(d.format, true);
   const seriesLabel = k => (d.series.find(e => e.key === k) || {}).label || k;
-  const tree = d.points.map(([x, s, v]) => ({ x: x === '__other__' ? 'Other' : (d.xLabels[x] ?? x), s: seriesLabel(s), v }));
+  const tree = d.points.map(([x, s, v]) => ({ x: x === '__other__' ? 'Other' : (d.xLabels[x] ?? x), s: seriesLabel(s), v, xk: x, sk: s }));
   const grouped = d.series.length > 1;
   const colorOf = new Map(d.series.map((s, i) => [s.label, seriesColor(t, s, i)]));
   return {
@@ -302,6 +302,47 @@ function treemap(d, t) {
     },
     options: { plugins: { legend: { display: false } } },
   };
+}
+
+// A treemap box's source row: a leaf carries it directly, a group through its children.
+function treemapRow(raw) { return (raw._data.children || [])[0] || raw._data; }
+
+// What a click on a chart part narrows the rows to: [{name: "x_col", value, label}], or null.
+function clicked(d, els, chart) {
+  const drill = d.drill || {};
+  if (!els.length || !drill.x && !drill.series) return null;
+  const rawOf = e => chart.data.datasets[e.datasetIndex].data[e.index];
+  let el = els[0];
+  let x = null, s = null;
+  if (d.kind === 'treemap') {
+    el = els.reduce((a, b) => (rawOf(b).l > rawOf(a).l ? b : a));
+    const raw = rawOf(el), src = treemapRow(raw);
+    const grouped = d.series.length > 1;
+    if (!grouped || raw.l > 0) x = src.xk;
+    if (grouped) s = src.sk;
+  } else if (d.kind === 'calendar') {
+    const cell = rawOf(el);
+    if (!cell.v) return null;
+    x = cell.date;
+  } else if (d.x.type === 'time') {
+    if (d.x.unit !== 'day') return null;
+    x = String(rawOf(el).x).slice(0, 10);
+    s = d.series[el.datasetIndex].key;
+  } else {
+    x = d.categories[el.index];
+    if (d.series.length > 1) s = d.series[el.datasetIndex].key;
+  }
+  const items = [];
+  const day = v => new Date(v + 'T00:00:00Z').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  if (drill.x && x !== null && x !== '__other__') {
+    const text = /^\d{4}-\d{2}-\d{2}$/.test(x) ? day(x) : (d.xLabels[x] ?? x);
+    items.push({ name: 'x_' + drill.x, value: x, label: `${drill.xLabel}: ${text}` });
+  }
+  if (drill.series && s) {
+    const series = d.series.find(e => e.key === s);
+    items.push({ name: 'x_' + drill.series, value: s, label: `${drill.seriesLabel}: ${series ? series.label : s}` });
+  }
+  return items.length ? items : null;
 }
 
 function sankey(d, t) {
@@ -378,7 +419,17 @@ async function configFor(d, month) {
     o.plugins.tooltip.callbacks = { label: item => `${item.raw.feature.properties.name}: ${fmt(item.raw.value)}` };
   }
   if (['calendar', 'exceedance'].includes(d.kind)) o.plugins.tooltip = cfg.options.plugins.tooltip;
-  if (d.kind === 'treemap') o.plugins.tooltip.callbacks = { title: items => items[0].raw.g, label: item => fmt(item.raw.v) };
+  if (d.kind === 'treemap') {
+    // The innermost box under the pointer, named with its group: "Homeowners › Frame".
+    o.plugins.tooltip.filter = (item, i, items) => item.raw.l === Math.max(...items.map(x => x.raw.l));
+    o.plugins.tooltip.callbacks = {
+      title: items => { const r = items[0].raw; const src = treemapRow(r); return r.l > 0 ? `${src.s} › ${r.g}` : r.g; },
+      label: item => fmt(item.raw.v),
+    };
+  }
+  if (d.drill && d.drill.x !== undefined) {
+    o.onHover = (e, els, chart) => { e.native.target.style.cursor = clicked(d, els, chart) ? 'pointer' : ''; };
+  }
   if (d.kind === 'sankey') o.plugins.tooltip.callbacks = { label: item => { const p = item.raw; return `${item.dataset.labels[p.from]} → ${item.dataset.labels[p.to]}: ${fmt(p.flow)}`; } };
   return cfg;
 }
@@ -443,11 +494,26 @@ function ltChart(config) {
       await libraries(d.kind);
       Chart.defaults.font.family = token('--font-ui');
       Chart.defaults.color = token('--text-2');
-      chart = new Chart(this.$refs.canvas, await configFor(d, this.month));
+      const cfg = await configFor(d, this.month);
+      if (config.grid || config.drill) cfg.options.onClick = (e, els, c) => this.open(clicked(d, els, c));
+      else delete cfg.options.onHover;
+      chart = new Chart(this.$refs.canvas, cfg);
       this.zoomable = d.x.type === 'time' && ['bar', 'line', 'area'].includes(d.kind);
     },
 
     resetZoom() { if (chart) chart.resetZoom(); },
+
+    // A click narrows the linked grid in place, or opens the drill page narrowed to it.
+    open(items) {
+      if (!items) return;
+      if (config.grid) {
+        window.dispatchEvent(new CustomEvent('gridnarrow', { detail: { key: config.grid, items } }));
+      } else if (config.drill) {
+        const q = new URLSearchParams(this.params);
+        items.forEach(i => q.set(i.name, i.value));
+        window.location = config.drill + '?' + q.toString();
+      }
+    },
 
     // Calendar: step to the previous (-1) or next (1) month that has data.
     stepMonth(step) {

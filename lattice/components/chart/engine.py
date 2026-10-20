@@ -105,6 +105,21 @@ def _distribution(chart: ChartSpec, db: Db, user, gq: grid_engine.GridQuery) -> 
     return [[lo + i * width, lo + (i + 1) * width, counts.get(i, 0)] for i in range(chart.bins)]
 
 
+CLICKABLE = ("bar", "line", "area", "pie", "doughnut", "calendar", "treemap")
+
+
+def _drill(chart: ChartSpec, x_col, s_col) -> dict:
+    """The columns a click narrows the rows by, with their labels: x is a column, or a
+    Time by day (a day narrows a timestamp column to that day)."""
+    if chart.kind not in CLICKABLE:
+        return {}
+    x = chart.x.column if isinstance(chart.x, Time) and chart.x.unit == "day" else (
+        chart.x if isinstance(chart.x, str) else "")
+    label = chart.source.column(x).label if chart.source.column(x) else x.replace("_", " ").capitalize()
+    return {"x": x, "xLabel": label, "series": chart.series,
+            "seriesLabel": s_col.label if s_col else chart.series}
+
+
 def data(chart: ChartSpec, db: Db, user, gq: grid_engine.GridQuery) -> dict:
     """The chart's points and how to draw them, as JSON for static/js/charts.js."""
     if chart.kind in ("histogram", "exceedance"):
@@ -137,6 +152,7 @@ def data(chart: ChartSpec, db: Db, user, gq: grid_engine.GridQuery) -> dict:
     if not chart.series:
         series[0]["label"] = chart.measure_label
     return {
+        "drill": _drill(chart, x_col, s_col),
         "kind": chart.kind,
         "x": {"type": "time" if time else "category",
               "unit": chart.x.unit if time else ""},

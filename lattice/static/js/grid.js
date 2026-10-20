@@ -29,6 +29,7 @@ function dataGrid(config) {
     savedDialog: { open: false, id: null, name: '', shared: false, busy: false, deleting: false },
 
     hasShape: false,
+    narrowed: config.narrowed,   // [{name: "x_col", value, label}]: a clicked chart's narrowing
 
     init() {
       this.updateFilterState();
@@ -38,6 +39,9 @@ function dataGrid(config) {
         this.onShape = e => { if (e.detail.key === config.key) this.setShape(e.detail.shape ? JSON.stringify(e.detail.shape) : ''); };
         window.addEventListener('mapshape', this.onShape);
       }
+      // A chart linked to this grid narrows it to the part clicked (static/js/charts.js).
+      this.onNarrow = e => { if (e.detail.key === config.key) this.narrow(e.detail.items); };
+      window.addEventListener('gridnarrow', this.onNarrow);
       if (config.poll) {
         this.timer = setInterval(() => {
           if (!document.hidden && !this.dialog.open && !this.rowMenu.open && !this.loading) this.reload({ quiet: true });
@@ -47,6 +51,17 @@ function dataGrid(config) {
     destroy() {
       clearInterval(this.timer);
       if (this.onShape) window.removeEventListener('mapshape', this.onShape);
+      window.removeEventListener('gridnarrow', this.onNarrow);
+    },
+
+    narrow(items) {
+      const names = items.map(i => i.name);
+      this.narrowed = [...this.narrowed.filter(n => !names.includes(n.name)), ...items];
+      this.$nextTick(() => this.reload({ page: 1, reset: true }));
+    },
+    unnarrow(name) {
+      this.narrowed = this.narrowed.filter(n => n.name !== name);
+      this.$nextTick(() => this.reload({ page: 1, reset: true }));
     },
 
     setShape(shape) {
@@ -90,7 +105,13 @@ function dataGrid(config) {
       const top = scroller ? scroller.scrollTop : 0;
       if (!opts.quiet) this.loading = true;
       const url = `${config.endpoint}/rows?${qs}${config.viewsInNav ? '&_nav=1' : ''}`;
-      if (config.syncUrl && !opts.quiet) history.replaceState(null, '', config.path + (qs ? '?' + qs : ''));
+      if (config.syncUrl && !opts.quiet) {
+        // The page's own fixed values belong to its route, not to the grid's state.
+        const shown = new URLSearchParams(qs);
+        (config.pinned || []).forEach(name => shown.delete(name));
+        const q = shown.toString();
+        history.replaceState(null, '', config.path + (q ? '?' + q : ''));
+      }
       this.updateFilterState();
       this.saved.state = this.stateString();
       // Charts on the same grid follow its search, filters and view (static/js/charts.js).
@@ -129,7 +150,8 @@ function dataGrid(config) {
     clearAll() {
       this.$refs.search.value = '';
       this.filterInputs().forEach(i => (i.checked = false));
-      this.reload({ page: 1, reset: true });
+      this.narrowed = [];
+      this.$nextTick(() => this.reload({ page: 1, reset: true }));
     },
     updateFilterState() {
       let any = !!this.$refs.search.value;
@@ -139,7 +161,7 @@ function dataGrid(config) {
         chip.querySelector('[data-filter-count]').textContent = n || '';
         any = any || n > 0;
       });
-      this.dirty = any;
+      this.dirty = any || this.narrowed.length > 0;
     },
 
     // ── Saved views ────────────────────────────────────────────────────────
