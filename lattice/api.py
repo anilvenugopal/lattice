@@ -39,6 +39,7 @@ from lattice.components.references import Ref, ReferenceKind, Resolved, parse, u
 from lattice.components.references import resolve as resolve_ref
 from lattice.components.search.providers import SearchProvider, SearchResult
 from lattice.components.tiles import HomeTile
+from lattice.components.timeline import TimelineSpec, build_timeline
 from lattice.kernel.auth.csrf import csrf_protect
 from lattice.kernel.auth.deps import current_user, require
 from lattice.kernel.auth.permissions import Permission
@@ -65,6 +66,8 @@ __all__ = [
     "CloudEvent",
     # Maps
     "MapSpec", "Points", "Hexagons", "Regions", "Areas", "build_map",
+    # Timelines
+    "TimelineSpec", "build_timeline",
     # Charts
     "ChartSpec", "Count", "Sum", "Avg", "Min", "Max", "Time", "Threshold", "build_chart",
     # Forms from JSON Schema

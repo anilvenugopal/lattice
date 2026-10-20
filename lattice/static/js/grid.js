@@ -42,6 +42,9 @@ function dataGrid(config) {
       // A chart linked to this grid narrows it to the part clicked (static/js/charts.js).
       this.onNarrow = e => { if (e.detail.key === config.key) this.narrow(e.detail.items); };
       window.addEventListener('gridnarrow', this.onNarrow);
+      // A timeline linked to this grid opens a bar's row here (static/js/timeline.js).
+      this.onPanel = e => { if (e.detail.key === config.key && config.hasPanel) this.openPanel(String(e.detail.id)); };
+      window.addEventListener('gridpanel', this.onPanel);
       if (config.poll) {
         this.timer = setInterval(() => {
           if (!document.hidden && !this.dialog.open && !this.rowMenu.open && !this.loading) this.reload({ quiet: true });
@@ -52,6 +55,7 @@ function dataGrid(config) {
       clearInterval(this.timer);
       if (this.onShape) window.removeEventListener('mapshape', this.onShape);
       window.removeEventListener('gridnarrow', this.onNarrow);
+      window.removeEventListener('gridpanel', this.onPanel);
     },
 
     narrow(items) {

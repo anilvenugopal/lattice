@@ -1,5 +1,6 @@
 """The standard grid on the showcase's grids: engine, endpoints, actions, scoping."""
 
+from datetime import date
 from pathlib import Path
 
 from lattice.api import sql_queries
@@ -174,3 +175,15 @@ def test_a_narrowing_in_the_url_shows_as_a_removable_chip(as_user, claims):
     assert '<input type="hidden" name="x_event_code" value="CAT-T02" data-narrow>' in page
     rows = as_user("viewer").get("/_grid/showcase.claims/rows?view=all&x_reported_at=2026-10-03").text
     assert rows.count("<tr data-id") == 6
+
+
+def test_the_event_timeline_windows_bars_and_markers(as_user, claims, db):
+    closed = db.one(CHECK.claim_event, id=claims[4].id)["event_id"]
+    db.run(CHECK.close_event, id=closed, closed_on=date(2026, 10, 5))
+    c = as_user("viewer")
+    url = "/_timeline/showcase.event_timeline/data"
+    every = c.get(url).json()["bars"]
+    assert {b["label"] for b in every if b["href"].endswith(f"/{closed}")} == {"Watch", "Response", "Closed"}
+    # Inside the response: the watch ended before, and the closing marker comes after.
+    window = c.get(url, params={"from": "2026-10-03T12:00:00Z", "to": "2026-10-04T00:00:00Z"}).json()
+    assert {b["label"] for b in window["bars"] if b["href"].endswith(f"/{closed}")} == {"Response"}

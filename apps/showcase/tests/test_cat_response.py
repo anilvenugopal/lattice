@@ -121,6 +121,14 @@ def test_intake_claims_handling_assessment_and_reports(as_user, book, db):
     assert res.status_code == 303
     assert "Gate locked" in c.get("/_grid/showcase.field_report/rows").text
 
+    # The claim's timeline: waited, was with the surveyor, now settling; the report a marker.
+    tl = c.get(f"/_timeline/showcase.claim_timeline/data?x_claim_id={first}").json()
+    phases = [(b["label"], b["end"] is None, b["marker"]) for b in tl["bars"]]
+    assert phases[:3] == [("Waiting for a surveyor", False, False), ("With the surveyor", False, False),
+                          ("Settling", True, False)]
+    assert phases[3][0].startswith("Field report: ") and phases[3][2]
+    assert [lane["label"] for lane in tl["lanes"]] == ["Progress", "Field reports"]
+
     # The deployment graph shows the zone and the surveyor.
     graph = c.get("/showcase/deployment").text
     assert "Pat Field" in graph and "Houston" in graph
@@ -139,6 +147,8 @@ def test_claims_pages_render(as_user, book, db):
                  "/showcase/field-reports", "/showcase/claims-system/CLM-26-000001"):
         assert c.get(path).status_code == 200, path
     assert c.get("/showcase/claims/1/assessment").status_code == 403    # viewers read only
+    assert "ltTimeline(" in c.get("/showcase/events").text
+    assert c.get("/_timeline/showcase.event_timeline/data").json()["bars"] == []   # none declared
 
 
 def test_the_loss_model():

@@ -1,10 +1,12 @@
 {% extends "base/shell.html" %}
 {% from "components/macros.html" import page_header, card, empty_state %}
 {% from "components/flows.html" import graph as graph_view %}
+{% from "components/timeline.html" import timeline as timeline_view %}
 {% block main %}
 <div class="page stack-lg">
-  {{ page_header("Deployment" ~ (": " ~ event.name if event else ""), "Zones, their leads, and the surveyors working each one. Select a zone for its actions; double-click any box to open its claims.") }}
+  {{ page_header("Deployment" ~ (": " ~ event.name if event else ""), "Zones, their leads, and the surveyors working each one. Select a zone for its actions; double-click any box to open its claims. Below, each surveyor's inspection visits: stacked bars are visits booked at the same time.") }}
   {% if graph %}{% call card(flush=True) %}{{ graph_view(graph) }}{% endcall %}
+  {{ timeline_view(workload) }}
   {% else %}{{ empty_state("No event underway", "Deployment shows the event in landfall or response.") }}{% endif %}
 </div>
 {% endblock %}

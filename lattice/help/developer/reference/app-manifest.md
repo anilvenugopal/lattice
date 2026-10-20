@@ -25,6 +25,7 @@ What an app adds to a host. Listed once per app package.
 | `grids` | `list[GridSpec]` | `[]` | registered for actions, export, Ctrl+J and tiles |
 | `charts` | `list[ChartSpec]` | `[]` | served at /_chart/{key}/data |
 | `maps` | `list[MapSpec]` | `[]` | served at /_map/{key}/data |
+| `timelines` | `list[TimelineSpec]` | `[]` | /_timeline/{key}/data |
 | `forms` | `list[FormSpec]` | `[]` | JSON Schema forms: /_form/{key}/render |
 | `schemas` | `list[SchemaDef]` | `[]` | named schemas forms can apply |
 | `documents` | `list[DocumentKind]` | `[]` | kinds in the document store |

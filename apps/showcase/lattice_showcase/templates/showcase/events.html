@@ -1,0 +1,11 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header %}
+{% from "components/grid.html" import data_grid %}
+{% from "components/timeline.html" import timeline as timeline_view %}
+{% block main %}
+<div class="page stack-lg">
+  {{ page_header("Events", "Catastrophes the carrier is responding to, or has. Drag across the timeline to zoom; click a bar to open the event.") }}
+  {{ timeline_view(timeline) }}
+  {{ data_grid(grid) }}
+</div>
+{% endblock %}

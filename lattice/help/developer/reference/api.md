@@ -74,6 +74,13 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `Areas` | class | Shapes from a function, not the grid: a fire perimeter, a forecast cone. |
 | `build_map` `(request, spec, linked=True, fixed=None)` | function | Context for one map. `linked` and `fixed` work as for build_chart(). |
 
+## Timelines
+
+| Name | Kind | Description |
+|---|---|---|
+| `TimelineSpec` | class |  |
+| `build_timeline` `(request, spec, linked=True, fixed=None)` | function | Context for one timeline. `linked` and `fixed` work as for build_chart(): a linked timeline follows the grid on its page, and a click opens that grid's side panel when the spec has no `href`. |
+
 ## Charts
 
 | Name | Kind | Description |

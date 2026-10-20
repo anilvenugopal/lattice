@@ -75,3 +75,7 @@ WHERE event_id = :event_id ORDER BY id;
 -- name: claim_event
 -- A claim's event.
 SELECT event_id FROM showcase.claim WHERE id = :id;
+
+-- name: close_event
+-- Close an event on a day, for the timeline tests.
+UPDATE showcase.event SET closed_on = :closed_on WHERE id = :id;

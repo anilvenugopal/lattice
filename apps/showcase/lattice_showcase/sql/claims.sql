@@ -6,6 +6,8 @@ SELECT c.id, c.claim_number, c.event_id, e.code AS event_code, e.name AS event,
        c.loss_date, c.reported_at, c.channel, c.cause, c.severity, c.status, c.priority,
        c.estimate, c.paid, c.zone_id, z.name AS zone, s.name AS surveyor, a.name AS adjuster,
        c.handler_id, h.display_name AS handler,
+       c.assigned_at, c.inspected_at, c.settled_at,
+       c.inspected_at - make_interval(mins => 30 + CAST(c.id % 4 AS integer) * 10) AS visit_from,
        l.ref AS location_ref, l.insured, l.line, l.policy_number, l.county_fips, l.county,
        l.state, l.city, p.lon, p.lat, p.quality, p.h3_7,
        CAST(c.reported_at AS date) - e.landfall_on AS days_after,
@@ -46,6 +48,7 @@ WHERE id = ANY(:ids);
 -- Give claims a surveyor; new claims become assigned.
 UPDATE showcase.claim
 SET surveyor_id = :surveyor_id, updated_at = lattice.utc_now(),
+    assigned_at = coalesce(assigned_at, lattice.utc_now()),
     status = CASE WHEN status = 'new' THEN 'assigned' ELSE status END
 WHERE id = ANY(:ids);
 
@@ -67,7 +70,8 @@ WHERE c.id = :id;
 
 -- name: mark_inspected
 -- Record that claims were inspected.
-UPDATE showcase.claim SET status = 'inspected', updated_at = lattice.utc_now()
+UPDATE showcase.claim SET status = 'inspected', updated_at = lattice.utc_now(),
+       assigned_at = coalesce(assigned_at, lattice.utc_now()), inspected_at = lattice.utc_now()
 WHERE id = ANY(:ids) AND status IN ('new', 'assigned');
 
 -- name: intake
@@ -133,3 +137,23 @@ GROUP BY z.id, z.name, e.code, z.event_id;
 -- Flag every waiting claim in zones as priority.
 UPDATE showcase.claim SET priority = true, updated_at = lattice.utc_now()
 WHERE zone_id = ANY(:ids) AND status IN ('new', 'assigned');
+
+-- name: progress
+-- One claim's progress as bars for its timeline: waiting for a surveyor, with the
+-- surveyor, settling and closing (the current one still going), and field reports as
+-- markers (negative ids: documents, not claims). Fixed to one claim by its page.
+SELECT c.id * 10 + p.n AS id, c.id AS claim_id, 'claim' AS lane, p.phase, p.label,
+       p.starts_at, p.ends_at, false AS is_marker
+FROM showcase.claim c
+CROSS JOIN LATERAL (VALUES
+  (1, 'waiting', 'Waiting for a surveyor', c.reported_at, c.assigned_at, c.status = 'new'),
+  (2, 'surveyor', 'With the surveyor', c.assigned_at, c.inspected_at, c.status = 'assigned'),
+  (3, 'settling', 'Settling', c.inspected_at, c.settled_at, c.status = 'inspected'),
+  (4, 'closing', 'Closing', c.settled_at, c.closed_at, c.status = 'settled')
+) AS p (n, phase, label, starts_at, ends_at, current)
+WHERE p.starts_at IS NOT NULL AND (p.ends_at IS NOT NULL OR p.current)
+UNION ALL
+SELECT -d.id, c.id, 'reports', 'report', 'Field report: ' || d.title, d.created_at, NULL, true
+FROM showcase.claim c
+JOIN lattice.document d ON d.kind = 'showcase.field_report'
+                       AND d.data ->> 'claim_number' = c.claim_number;

@@ -17,6 +17,7 @@ from lattice.components.record import RecordPanel
 from lattice.components.references import ReferenceKind
 from lattice.components.search.providers import SearchProvider
 from lattice.components.tiles import HomeTile
+from lattice.components.timeline import TimelineSpec
 from lattice.kernel.auth.permissions import Permission
 from lattice.kernel.database import Db
 from lattice.kernel.events import Subscriber
@@ -39,6 +40,7 @@ class AppManifest:
     grids: list[GridSpec] = field(default_factory=list)
     charts: list[ChartSpec] = field(default_factory=list)  # served at /_chart/{key}/data
     maps: list[MapSpec] = field(default_factory=list)      # served at /_map/{key}/data
+    timelines: list[TimelineSpec] = field(default_factory=list)  # /_timeline/{key}/data
     forms: list[FormSpec] = field(default_factory=list)  # JSON Schema forms: /_form/{key}/render
     schemas: list[SchemaDef] = field(default_factory=list)  # named schemas forms can apply
     documents: list[DocumentKind] = field(default_factory=list)  # kinds in the document store

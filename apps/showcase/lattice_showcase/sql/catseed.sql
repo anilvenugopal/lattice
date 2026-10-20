@@ -71,10 +71,10 @@ RETURNING id;
 -- One claim copied from the claims system.
 INSERT INTO showcase.claim (claim_number, event_id, location_id, loss_date, reported_at,
   channel, cause, severity, status, priority, estimate, paid, zone_id, surveyor_id,
-  adjuster_id, closed_at, updated_at)
+  adjuster_id, assigned_at, inspected_at, settled_at, closed_at, updated_at)
 VALUES (:claim_number, :event_id, :location_id, :loss_date, :reported_at, :channel, :cause,
         :severity, :status, :priority, :estimate, :paid, :zone_id, :surveyor_id, :adjuster_id,
-        :closed_at, :updated_at);
+        :assigned_at, :inspected_at, :settled_at, :closed_at, :updated_at);
 
 -- name: delta_estimate
 -- Queue and start a loss estimate of one of Hurricane Delta's footprint versions.

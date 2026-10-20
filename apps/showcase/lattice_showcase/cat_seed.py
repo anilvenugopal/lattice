@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 import math
 import random
-from datetime import date, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import geoengine
@@ -20,7 +20,9 @@ from lattice.api import Db, sql_queries
 SQL = sql_queries(Path(__file__).parent / "sql").catseed
 STATIC_MAPS = Path(__file__).parents[3] / "lattice" / "static" / "maps"
 SNAPSHOT = date(2026, 10, 19)
-NOW = datetime(2026, 10, 20, 9, 0)
+# The story's present: Delta two days after landfall. Never ahead of the real clock, or
+# claims would be reported in the future.
+NOW = min(datetime(2026, 10, 20, 9, 0), datetime.now(UTC).replace(tzinfo=None))
 
 STATES = {"48": "TX", "22": "LA", "12": "FL", "06": "CA", "28": "MS", "01": "AL"}
 
@@ -225,6 +227,24 @@ ZONES = {
 }
 
 
+STEPS = {"assigned": 1, "inspected": 2, "settled": 3, "closed": 4}
+
+
+def progress(rng: random.Random, reported: datetime, status: str) -> dict:
+    """When a claim was assigned, inspected, settled and closed, as far as its status goes.
+    Waits are drawn so some claims sit for days: the gaps are what the timelines show."""
+    reached = STEPS.get(status, 0)
+    out, at = {}, reported
+    for i, (key, lo, hi) in enumerate((("assigned_at", 0.1, 3), ("inspected_at", 0.3, 6),
+                                       ("settled_at", 3, 30), ("closed_at", 1, 12)), start=1):
+        if i <= reached:
+            step = at + timedelta(days=rng.uniform(lo, hi))
+            # A step drawn past now happened somewhere between the last one and now.
+            at = step if step < NOW else at + (NOW - at) * rng.uniform(0.05, 0.95)
+        out[key] = at if i <= reached else None
+    return out
+
+
 def seed_events(db: Db, rng: random.Random, counties: dict) -> None:
     staff = {s[0]: db.value(SQL.add_staff, name=s[0], role=s[1], team=s[2], home=s[3])
              for s in STAFF}
@@ -303,8 +323,8 @@ def seed_events(db: Db, rng: random.Random, counties: dict) -> None:
                 estimate=estimate, paid=paid, zone_id=zone_id,
                 surveyor_id=rng.choice(pool) if status != "new" else None,
                 adjuster_id=rng.choice(adjusters) if status in ("inspected", "settled", "closed") else None,
-                closed_at=reported + timedelta(days=rng.uniform(10, 70)) if status == "closed" else None,
-                updated_at=min(NOW, reported + timedelta(days=rng.uniform(0, 20)))))
+                updated_at=min(NOW, reported + timedelta(days=rng.uniform(0, 20))),
+                **progress(rng, reported, status)))
         db.run_many(SQL.add_claim, claims)
 
 

@@ -1,0 +1,47 @@
+{#
+  A timeline over a grid's rows (lattice/components/timeline, ADR 0014). Build the context
+  with build_timeline() and render:
+    {% from "components/timeline.html" import timeline %}{{ timeline(t) }}
+  Client behaviour lives in static/js/timeline.js (Alpine component `ltTimeline`).
+#}
+{% macro timeline(t) -%}
+<section class="card tl" id="timeline-{{ t.spec.key }}" x-data='ltTimeline({{ t.config | tojson }})'
+         @keydown="onKey($event)">
+  <header class="card__head">
+    <h3 class="card__title">{{ t.spec.title }}</h3>
+    <span class="dg__spacer"></span>
+    <span class="tl__range" x-text="rangeLabel()"></span>
+    <button type="button" class="btn btn--link btn--sm" x-show="zoomed" x-cloak @click="resetZoom()">Reset zoom</button>
+  </header>
+  <div class="tl__body" :class="{ 'is-loading': loading }"
+       {% if t.spec.height %}style="max-height: {{ t.spec.height }}px"{% endif %}>
+    <div class="tl__axis">
+      <span class="tl__corner"></span>
+      <div class="tl__ticks">
+        <template x-for="tk in ticks()" :key="tk.at">
+          <span class="tl__tick" :style="`left:${tk.left}%`" x-text="tk.label"></span>
+        </template>
+      </div>
+    </div>
+    <div class="tl__lanes" x-ref="lanes">
+      <template x-for="lane in lanes()" :key="lane.key">
+        <div class="tl__lane">
+          <span class="tl__name" x-text="lane.label" :title="lane.label"></span>
+          <div class="tl__track" :style="`height:${lane.height}px`" @mousedown="dragStart($event)">
+            <template x-for="b in lane.bars" :key="b.id + b.start">
+              <button type="button" class="tl__bar" :class="b.cls" :style="b.style"
+                      :data-tip="b.tip" :aria-label="b.tip" @click="open(b)"
+                      :data-lane="lane.key"><span x-text="b.marker ? '' : b.label"></span></button>
+            </template>
+          </div>
+        </div>
+      </template>
+      <span class="tl__now" x-show="nowLeft() !== null" :style="`left:${nowLeft()}%`" x-cloak></span>
+      <span class="tl__select" x-show="drag" x-cloak :style="drag && `left:${drag.left}%;width:${drag.width}%`"></span>
+    </div>
+    <p class="tl__note" x-show="data && !data.bars.length && !error" x-cloak>Nothing in this window.</p>
+    <p class="tl__note" x-show="data && data.truncated" x-cloak>Showing the first {{ t.spec.limit }} bars: drag across the timeline to zoom in.</p>
+    <p class="tl__note tl__note--error" x-show="error" x-cloak x-text="error"></p>
+  </div>
+</section>
+{%- endmacro %}

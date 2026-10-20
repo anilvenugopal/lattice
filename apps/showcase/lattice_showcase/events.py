@@ -30,15 +30,17 @@ from lattice.api import (
     Permission,
     RecordPage,
     Step,
+    TimelineSpec,
     View,
     audit,
     build_form,
+    build_grid,
+    build_timeline,
     csrf_protect,
     current_user,
     flash,
     get_db,
     parse_form,
-    render_grid_page,
     render_page,
     render_record_page,
     require,
@@ -104,10 +106,26 @@ GRID = GridSpec(
 router = APIRouter(dependencies=[Depends(csrf_protect)])
 
 
+STAGES_GRID = GridSpec(
+    key="showcase.event_stages", title="Event stages", path="/showcase/events", query=SQL.stages,
+    columns=[Column("event", "Event", kind="strong"),
+             Column("stage", "Stage", kind="badge", labels={"watch": "Watch", "response": "Response",
+                                                            "closed": "Closed"},
+                    tones={"watch": "warning", "response": "danger", "closed": "success"}),
+             Column("starts_at", "From", kind="datetime"), Column("ends_at", "To", kind="datetime")],
+    selection="none", export=False, views=[View("all", "All")],
+)
+TIMELINE = TimelineSpec(
+    "showcase.event_timeline", "The year's events", STAGES_GRID, start="starts_at",
+    end="ends_at", lane="event", label="{stage_label}", tone="stage", marker="is_marker",
+    href="/showcase/events/{event_id}")
+
+
 @router.get("/events")
 def events_page(request: Request, db: Db = Depends(get_db)):
-    return render_grid_page(request, db, GRID, "events.list",
-                            subtitle="Catastrophes the carrier is responding to, or has.")
+    return render_page(request, "showcase/events.html", "events.list",
+                       timeline=build_timeline(request, TIMELINE, linked=False),
+                       grid=build_grid(request, db, GRID))
 
 
 # ── The event page ───────────────────────────────────────────────────────────

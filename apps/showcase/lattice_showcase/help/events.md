@@ -11,6 +11,11 @@ Napa and Sonoma (in recovery), and **Hurricane Delta**, which is live.
 
 ## The list
 
+The **timeline** above the list shows the year's events: the watch before
+landfall, then the response, and a diamond when the event closed. Delta's
+response is still going, so its bar runs to the dashed "now" line. Drag across
+it to zoom; click a bar to open the event.
+
 - **Tabs**: Active, Closed and All.
 - **Next stage** moves an event along: Watch → Landfall → Response → Recovery →
   Closed.
