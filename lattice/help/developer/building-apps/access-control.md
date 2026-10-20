@@ -102,10 +102,10 @@ Roles do not decide which rows a user may see. The grid's query does:
 
 ```sql
 -- name: grid
--- The current user's notices, and nobody else's: this query is the grid's access boundary.
-SELECT id, subject, body, href, is_read, created_at
-FROM showcase.notice
-WHERE owner_id = :user_id;
+-- The signed-in user's notifications, and nobody else's: the access boundary.
+SELECT n.id, n.kind, n.title, n.body, n.subject, n.count, n.created_at, n.read_at
+FROM lattice.notification n
+WHERE n.user_id = :user_id;
 ```
 
 The grid fills `:user_id` with the signed-in user's id on every request; nothing
@@ -127,17 +127,18 @@ see that record in the list. Put the same condition in the record's own query:
 
 ```sql
 -- name: open
--- Mark one of the user's notices read and return where it points.
-UPDATE showcase.notice SET is_read = true
-WHERE id = :id AND owner_id = :user_id
-RETURNING href;
+-- Mark one of a user's notifications read and return what it is about.
+UPDATE lattice.notification SET read_at = coalesce(read_at, lattice.utc_now())
+WHERE id = :id AND user_id = :user_id
+RETURNING subject;
 ```
 
 ```python
-notice = db.one(SQL.open, id=notice_id, user_id=user.id)   # else 404
+row = db.first(SQL.notifications.open, id=notification_id, user_id=user.id)
 ```
 
-The showcase's Notices (`notices.py`, `sql/notices.sql`) work this way.
+Lattice's own notifications inbox (`lattice/platform/notifications.py`,
+`lattice/sql/notifications.sql`) works this way.
 
 A grid's side panel does not need this: the grid loads the row through its own
 query before it calls `panel`.

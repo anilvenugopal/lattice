@@ -16,6 +16,7 @@
                       label_for(status_col, record[page.status]) if status_col else "",
                       tone_for(status_col, record[page.status]) if status_col else "neutral") %}
     <a class="btn btn--ghost" href="{{ config.back }}">{{ icon('chevron-left', 14) }}Back to list</a>
+    {% if follow %}{% with subject = follow.subject, following = follow.following %}{% include "account/follow_button.html" %}{% endwith %}{% endif %}
     {% for link, href in links %}
     <a class="btn btn--{{ link.tone }}" href="{{ href }}">{% if link.icon %}{{ icon(link.icon, 14) }}{% endif %}{{ link.label }}</a>
     {% endfor %}

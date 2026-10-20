@@ -58,6 +58,7 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 | [Grids](grids.md) | `GridSpec` in depth: columns, filters, views, actions, panels, layouts, embedding |
 | [Charts](charts.md) | `ChartSpec`: bar, line, area, pie, calendar, treemap, sankey and map charts on a grid's rows, linked to its filters |
 | [Maps](maps.md) | `MapSpec`: points, hexagons, shaded states and counties and areas over a self-hosted basemap; geoengine for spatial work |
+| [Notifications](notifications.md) | `notify()`, kinds tied to events, following records, how notifications clear |
 | [Timelines](timelines.md) | `TimelineSpec`: bars in lanes on a time axis, with markers, a "now" line, zoom and click to open |
 | [Record pages](record-pages.md) | `RecordPage`: the standard detail page for one grid row, with its actions, panels and history |
 | [Grid performance](grid-performance.md) | What the database runs for a grid, what is expensive on large tables, and how to keep grids fast |
@@ -84,8 +85,8 @@ The showcase in `apps/showcase/lattice_showcase/` uses every part:
 | `exposure.py`, `losses.py` | Maps, charts, and grids of background runs that refresh themselves |
 | `locations.py` | A map with drawing that filters its grid and charts |
 | `deployment.py` | A graph with node actions |
-| `notices.py` | Rows scoped to the signed-in user in the grid's query |
-| `links.py` | Reference kinds and a `comments.added` subscriber |
+| `links.py` | Reference kinds |
+| `claims.py` `take` | Following a record for the user, so they are notified of comments on it |
 | `templates/showcase/` | Record page panels, the overview, and form pages built from the shared macros |
 | `static/showcase.css` | An app stylesheet scoped to `[data-app="showcase"]` |
 | `help/` | Help topics with a Mermaid diagram and a `help.toml` |

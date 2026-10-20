@@ -509,7 +509,9 @@ Its own design document comes before it is built.
 
 Not yet placed in the order of work. Each will get its own plan when it is started.
 
-1. **Notifications** service app: in-app notifications from events, email later.
+1. **Notifications**: in Lattice's core, not a service app (ADR 0016). Phase 1, the
+   in-app inbox, `notify()`, kinds tied to events and following records, is built;
+   email with preferences, then webhooks, follow.
 2. **Attachments** on any record, keyed by reference (comments exist, step 8).
 3. **API tokens and per-app JSON APIs** (OpenAPI, ADR 0011), for incident
    ingestion and calls between services.

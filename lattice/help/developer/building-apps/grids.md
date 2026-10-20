@@ -140,8 +140,8 @@ column it selects is a row key: `Column`, `search`, `Filter`, `View`, `when`,
   needs `assignee_id` in the select. It does not need a `Column`; only keys in
   `columns` are shown.
 - **It is the access boundary.** Filter out rows the user may not see here. The
-  query may use `:user_id`, the signed-in user, as the showcase's Notices do:
-  `WHERE owner_id = :user_id` (`apps/showcase/lattice_showcase/sql/notices.sql`). Paging, panels, actions, export, tiles and
+  query may use `:user_id`, the signed-in user, as the notifications inbox does:
+  `WHERE n.user_id = :user_id` (`lattice/sql/notifications.sql`). Paging, panels, actions, export, tiles and
   Ctrl+J all run through it, so a row the query does not return cannot be
   reached any other way.
 - **`spatial=("lon", "lat")` allows a drawn shape** as a filter, from a linked

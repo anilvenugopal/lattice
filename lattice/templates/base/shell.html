@@ -47,6 +47,9 @@
         {{ icon('search', 15) }}<span>Search or jump to…</span><kbd>Ctrl J</kbd>
       </button>
       <div class="topbar__right">
+        <a class="icon-btn bell" href="/account/notifications" data-tip="Notifications" data-tip-pos="below" aria-label="Notifications">
+          {{ icon('bell', 17) }}<span class="bell__count" hx-get="/account/notifications/badge" hx-trigger="load" hx-swap="outerHTML" hidden></span>
+        </a>
         <button class="icon-btn" type="button" @click="cycleTheme()" :data-tip="'Theme: ' + theme" data-tip-pos="below" aria-label="Change theme">
           <span x-show="theme === 'light'">{{ icon('sun', 17) }}</span>
           <span x-show="theme === 'dark'" x-cloak>{{ icon('moon', 17) }}</span>

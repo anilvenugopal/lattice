@@ -33,6 +33,7 @@ What an app adds to a host. Listed once per app package.
 | `panels` | `list[RecordPanel]` | `[]` |  |
 | `publishes` | `list[str]` | `[]` | event types: "{key}.{event}" |
 | `subscribes` | `dict[str, Subscriber]` | `{}` | event type -> handler |
+| `notifications` | `list[NotificationKind]` | `[]` | What people may be told about (ADR 0016): kinds for notify(), or tied to an event. |
 | `search` | `list[SearchProvider]` | `[]` | extra Ctrl+J sources |
 | `tiles` | `list[HomeTile]` | `[]` | count tiles on the home page |
 | `templates` | `Path \| None` | `None` | Folder holding templates/{key}/…; searched before core templates. |

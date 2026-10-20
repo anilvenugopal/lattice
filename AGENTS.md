@@ -50,7 +50,7 @@ are `LATTICE_*` environment variables (`.env.example`).
 | `lattice/cli.py` | `lattice migrate`, `new-migration`, `reset`, `create-user`, `seed`, `dev`, `docs build\|check` |
 | `lattice/testing.py` | Pytest fixtures for core and app tests (`db`, `users`, `client`, `as_user`, `host_apps`…) |
 | `lattice/templates/`, `lattice/static/` | Shell layout, shared macros, grid templates; the five CSS layers |
-| `apps/showcase/` | `lattice-showcase`: a catastrophe response app for a P&C carrier, using every component (Events, Exposure, Loss estimate, Claims, Intake, Deployment, Field reports, Notices, Locations), its `sql/` (schema `showcase` and named queries), templates, styles, seed and tests |
+| `apps/showcase/` | `lattice-showcase`: a catastrophe response app for a P&C carrier, using every component (Events, Exposure, Loss estimate, Claims, Intake, Deployment, Field reports, Locations), its `sql/` (schema `showcase` and named queries), templates, styles, seed and tests |
 | `packages/refdata/` | `refdata`: public reference data loaded into Postgres (schema `ref`) with lookups; today US towns, counties and zip codes for place search. Imports nothing of Lattice or geoengine; apps install it with `libraries=[Library("refdata", [refdata.SCHEMA], refdata.migrate)]` |
 | `packages/geoengine/` | `geoengine`: spatial engine on PostGIS (layers, point-in-area, distances, H3, quality tiers). Imports nothing of Lattice; Lattice never imports it; apps use it and list `geoengine.SCHEMA` in `library_schemas` (ADR 0013) |
 | `hosts/showcase/` | `lattice-showcase-host`: runs Lattice with the showcase app |
@@ -139,6 +139,10 @@ the layers below it. Apps import only `lattice.api`.
 - Libraries: a folder of SQL is `library_schemas=` (geoengine); a library that
   migrates itself is `libraries=[Library(name, schemas, migrate)]` (Taskline),
   run after Lattice's migrations and before the apps'.
+- Notifications (ADR 0016): declare kinds in `notifications=[NotificationKind(…)]`
+  (optionally tied to an event your app publishes), call
+  `notifications.notify(db, user_ids, kind, title, subject=urn)`, and
+  `notifications.follow(db, user_id, urn)` to have people told about a record.
 - Background work: `background=` (an async function started with the host).
   Example data: `seed=` (run by `lattice seed`).
 
@@ -154,8 +158,8 @@ the layers below it. Apps import only `lattice.api`.
   permission. Hiding a button is not access control; the server checks all of
   them. `create_app` refuses an undeclared permission.
 - A grid's `query` is its access boundary. Rows a user may not see must be filtered
-  in that named query (see `apps/showcase/lattice_showcase/sql/notices.sql`:
-  `WHERE owner_id = :user_id`). Actions, panels, export and Ctrl+J results all
+  in that named query (see `lattice/sql/notifications.sql`:
+  `WHERE n.user_id = :user_id`). Actions, panels, export and Ctrl+J results all
   go through it. A detail route loading a record by id applies the same condition.
 - Never log or render passwords, session tokens or OIDC tokens. Session ids in
   the database are SHA-256 hashes of the cookie.
@@ -272,8 +276,7 @@ declare form with variants and file upload), `exposure.py` (maps, a spatial
 grid filter, a background job), `losses.py` (Monte Carlo, histogram and
 exceedance charts), `claims.py` (bulk actions, record page with a tree,
 assessment documents, free-form field reports in a split grid, the polling
-intake simulator), `deployment.py` (graph with node actions), `notices.py`
-(rows scoped to the user), `locations.py` (draw-to-search, saved areas) and
+intake simulator), `deployment.py` (graph with node actions), `locations.py` (draw-to-search, saved areas) and
 `cat_seed.py` (the data). Policies, claims and forecasts stand in for the
 systems of record and say so on screen; a real host replaces the showcase
 with its own apps.

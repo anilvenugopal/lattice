@@ -113,8 +113,10 @@ module per page:
 - **Events** (`events.py`): a grid, a record page and the Declare event form;
 - **Exposure**, **Loss estimate** and **Locations** (`exposure.py`, `losses.py`,
   `locations.py`): maps, charts and background jobs;
-- **Deployment** (`deployment.py`): a graph with node actions;
-- **Notices** (`notices.py`): rows scoped to the signed-in user.
+- **Deployment** (`deployment.py`): a graph with node actions.
+
+Lattice's own notifications (the bell) show rows scoped to the signed-in user,
+in `lattice/platform/notifications.py`.
 
 ## Everyday commands
 

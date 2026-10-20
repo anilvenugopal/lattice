@@ -15,6 +15,7 @@ from lattice.kernel.nav import NODES, NavNode, can_open
 from lattice.kernel.queries import SQL
 from lattice.kernel.services import audit, preferences, users
 from lattice.kernel.web import render_page, toast
+from lattice.platform import notifications as notification_pages
 
 router = APIRouter(dependencies=[Depends(csrf_protect)])
 
@@ -95,11 +96,15 @@ def account_root():
 
 
 APP = AppManifest(
-    key="account", label="Account", routers=[router],
+    key="account", label="Account", routers=[router, notification_pages.router],
+    grids=[notification_pages.GRID], tiles=notification_pages.TILES,
+    background=notification_pages.background,
     nav=[
         NavNode("account", "Account", "/account/preferences", icon="user", bottom=True),
         NavNode("account.preferences", "Preferences", "/account/preferences", parent="account",
                 keywords="theme dark light density settings"),
+        NavNode("account.notifications", "Notifications", "/account/notifications", parent="account",
+                keywords="bell inbox alerts follow"),
         NavNode("account.profile", "Profile", "/account/profile", parent="account"),
         NavNode("account.security", "Security", "/account/security", parent="account",
                 keywords="password sessions sign out"),

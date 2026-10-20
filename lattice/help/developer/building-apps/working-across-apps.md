@@ -15,8 +15,9 @@ through three contracts, each following a standard where one exists
 | **Record panels** | A section one app adds to other apps' record pages | Lattice registry |
 | **Events** | One app announces that something happened; others react | CloudEvents 1.0 |
 
-The showcase and Comments use all of them: comment on a claim, and its desk
-handler gets a notice in the showcase's Notices (`apps/showcase/lattice_showcase/links.py`).
+The showcase and Comments use all of them: comment on a claim, and the people
+following it, its desk handler among them, are notified
+([Notifications](notifications.md)).
 
 ## References
 
@@ -104,12 +105,15 @@ db.publish("comments.added", subject=urn("showcase.claim", 42),
 **Subscribe** in another app's manifest:
 
 ```python
-def notify_handler(db: Db, event: CloudEvent) -> None:
-    ref = parse(event.subject)
+def on_comment(db: Db, event: CloudEvent) -> None:
+    ref = parse(event.subject)          # the record commented on
     …
 
-APP = AppManifest(key="showcase", …, subscribes={"comments.added": links.notify_handler})
+APP = AppManifest(key="showcase", …, subscribes={"comments.added": on_comment})
 ```
+
+To tell people rather than react in code, declare a notification kind tied to
+the event instead ([Notifications](notifications.md)).
 
 - **After the commit.** Subscribers run once the publishing request has
   committed. If the request fails, nothing was saved, so nothing is delivered.

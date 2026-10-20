@@ -41,6 +41,7 @@ from lattice.kernel.auth import routes as auth_routes
 from lattice.kernel.auth.middleware import AuthMiddleware, is_htmx
 from lattice.kernel.config import settings
 from lattice.kernel.database import NotFound
+from lattice.kernel.services import notifications
 from lattice.kernel.web import render, set_host_assets
 from lattice.platform import account, admin, home
 
@@ -92,6 +93,9 @@ def _check(app: AppManifest) -> None:
     for spec in app.forms:
         if not spec.key.startswith(app.key + "."):
             fail(f"form key {spec.key!r} must start with {app.key + '.'!r}")
+    for kind in app.notifications:
+        if not kind.key.startswith(app.key + "."):
+            fail(f"notification kind {kind.key!r} must start with {app.key + '.'!r}")
     for name, items in (("reference kind", [k.key for k in app.references]),
                         ("record panel", [p.key for p in app.panels]),
                         ("event type", app.publishes)):
@@ -161,6 +165,8 @@ def _register(app: AppManifest, platform: bool) -> None:
         map_router.register(spec)
     for spec in app.timelines:
         timeline_router.register(spec)
+    for kind in app.notifications:
+        notifications.register(kind)
     for spec in app.forms:
         forms.register_form(spec)
     for schema in app.schemas:
@@ -205,6 +211,11 @@ def _check_contracts(app_keys: set[str]) -> None:
             apps = ", ".join(sorted({app for app, _ in handlers}))
             raise AppError(f"App {apps!r} subscribes to {event_type!r}, which its app does "
                            "not publish")
+    for kind in notifications.KINDS.values():
+        for event_type in [kind.event, *kind.clears]:
+            if event_type and event_type.split(".")[0] in app_keys and event_type not in events.PUBLISHED:
+                raise AppError(f"Notification kind {kind.key!r} names event {event_type!r}, "
+                               "which its app does not publish")
     for panel in record_component.PANELS:
         if panel.kinds != "*":
             unknown = [k for k in panel.kinds
@@ -243,6 +254,7 @@ def _reset_registries() -> None:
     chart_router.REGISTRY.clear()
     map_router.REGISTRY.clear()
     timeline_router.REGISTRY.clear()
+    notifications.reset()
     forms.FORMS.clear()
     forms.SCHEMAS.clear()
     references.KINDS.clear()
