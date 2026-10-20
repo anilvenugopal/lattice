@@ -34,6 +34,7 @@ APP = AppManifest(
     key="showcase",
     label="Showcase",
     icon="showcase:app",
+    accent="warning",
     help_url="/help/showcase",
     icons={"app": '<rect x="3" y="3" width="7" height="18" rx="1.5"/>'
                   '<rect x="13" y="3" width="8" height="7" rx="1.5"/>'

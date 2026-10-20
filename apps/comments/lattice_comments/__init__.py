@@ -16,6 +16,7 @@ APP = AppManifest(
     key="comments",
     label="Comments",
     icon="comments:app",
+    accent="info",
     icons={"app": '<path d="M4 5h16v11H9l-5 4z"/>'},
     routers=[comments.router],
     grids=[comments.GRID],
