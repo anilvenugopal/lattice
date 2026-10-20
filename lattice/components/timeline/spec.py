@@ -25,7 +25,8 @@ class TimelineSpec:
     key: str                        # unique: "{app}.{name}"
     title: str
     source: GridSpec                # the rows; its query is the access boundary
-    start: str                      # timestamp column: where the bar starts
+    start: str                      # timestamp or date column: where the bar starts (a date is
+                                    # a whole calendar day, shown without a time or time zone)
     lane: str                       # column grouping bars into lanes; its Column labels name them
     end: str = ""                   # timestamp column: where it ends; NULL means still going.
                                     # Without one, every row is a marker

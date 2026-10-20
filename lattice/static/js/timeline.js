@@ -19,6 +19,10 @@ const day = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' 
 const dateOnly = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
 const full = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 
+const isDay = s => s.length === 10;
+// A calendar day ("2026-02-14") is local midnight: never moved by the time zone.
+const when = s => (isDay(s) ? new Date(s + 'T00:00').getTime() : Date.parse(s));
+
 function duration(ms) {
   if (ms < HOUR) return Math.max(1, Math.round(ms / MIN)) + 'm';
   if (ms < 2 * DAY) return (ms / HOUR).toFixed(ms < 10 * HOUR ? 1 : 0) + 'h';
@@ -33,6 +37,7 @@ function ltTimeline(config) {
     params: config.params,
     win: null,                // [from, to] in ms when zoomed in, else null (the whole extent)
     drag: null,               // the window being dragged out: {x0, left, width, track}
+    tip: null,                // the bar under the pointer or focus: {label, when, note, x, y, below}
     now: Date.now(),
 
     get zoomed() { return this.win !== null; },
@@ -82,7 +87,7 @@ function ltTimeline(config) {
       if (this.win) return this.win;
       const d = this.data;
       if (!d || !d.extent.from) return [this.now - DAY, this.now];
-      let [lo, hi] = [Date.parse(d.extent.from), Date.parse(d.extent.to)];
+      let [lo, hi] = [when(d.extent.from), when(d.extent.to)];
       if (hi - lo < MIN) hi = lo + HOUR;
       const pad = (hi - lo) * 0.02;
       return [lo - pad, hi + pad];
@@ -95,24 +100,26 @@ function ltTimeline(config) {
       const [lo, hi] = this.range();
       const byLane = new Map(d.lanes.map(l => [l.key, { ...l, bars: [] }]));
       for (const b of d.bars) {
-        const start = Date.parse(b.start);
-        const end = b.marker ? start : b.end ? Date.parse(b.end) : this.now;
+        const start = when(b.start);
+        const end = b.marker ? start : b.end ? when(b.end) : this.now;
+        const f = isDay(b.start) ? dateOnly : full;
         const left = Math.max(0, this.pct(start));
         const right = Math.min(100, this.pct(Math.max(end, start)));
-        const span = b.marker ? `at ${full.format(start)}`
-          : `${full.format(start)} – ${b.end ? full.format(end) : 'now'} (${duration(end - start)})`;
+        const span = b.marker ? f.format(start)
+          : `${f.format(start)} – ${b.end ? f.format(end) : 'now'}`;
+        const note = b.marker ? '' : b.end ? duration(end - start) : `${duration(end - start)} so far, still going`;
         byLane.get(b.lane).bars.push({
           ...b, from: start, to: b.marker ? start : end,
           cls: [b.tone && 'tone-' + b.tone, b.marker && 'is-marker', !b.end && !b.marker && 'is-open'].filter(Boolean).join(' '),
           style: b.marker ? `left:${this.pct(start)}%` : `left:${left}%;width:${Math.max(0, right - left)}%`,
-          tip: `${b.label} · ${span}`,
+          tip: `${b.label} · ${span}`, when: span, note,
           hidden: end < lo || start > hi,
         });
       }
       return [...byLane.values()].map(l => {
         // Greedy packing: each bar takes the first row free at its start.
         const ends = [];
-        const bars = l.bars.filter(b => !b.hidden).sort((a, b) => a.from - b.from).map(b => {
+        const bars = l.bars.filter(b => !b.hidden).sort((a, b) => a.from - b.from || a.to - b.to).map(b => {
           let row = ends.findIndex(e => e <= b.from);
           if (row < 0) row = ends.length < MAX_ROWS ? ends.length : MAX_ROWS - 1;
           ends[row] = Math.max(ends[row] || 0, b.to);
@@ -141,6 +148,14 @@ function ltTimeline(config) {
       if (!this.data) return '';
       const f = hi - lo > 2 * DAY ? dateOnly : full;
       return `${f.format(lo)} – ${f.format(hi)}`;
+    },
+
+    // One floating tooltip, placed against the viewport so the scrolling body cannot clip it.
+    showTip(b, el) {
+      const r = el.getBoundingClientRect();
+      const below = r.top < 90;
+      this.tip = { label: b.label, when: b.when, note: b.note, x: r.left + r.width / 2,
+                   y: below ? r.bottom + 8 : r.top - 8, below };
     },
 
     // ── Zoom: drag across a track ──────────────────────────────────────────
