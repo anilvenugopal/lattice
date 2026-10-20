@@ -20,11 +20,14 @@ from lattice.api import (
     GraphEdge,
     GraphNode,
     GridSpec,
+    TimelineSpec,
     build_graph,
+    build_timeline,
     get_db,
     render_page,
     sql_queries,
 )
+from lattice_showcase import claims
 from lattice_showcase.claims import MANAGE
 
 SQL = sql_queries(Path(__file__).parent / "sql").claims
@@ -44,6 +47,12 @@ ZONES = GridSpec(
                     icon="flag", permission=MANAGE,
                     confirm="Flag every waiting claim in this zone as priority?")],
 )
+
+# Each surveyor's inspection visits; the gaps between them are travel and paperwork.
+WORKLOAD = TimelineSpec(
+    "showcase.workload", "Surveyor visits", claims.GRID, start="visit_from", end="inspected_at",
+    lane="surveyor", label="{claim_number} · {insured}", tone="severity",
+    href="/showcase/claims/{id}", lane_order="lane", height=560)
 
 router = APIRouter()
 
@@ -85,5 +94,7 @@ def _graph(db: Db, event: dict) -> Graph:
 def deployment_page(request: Request, db: Db = Depends(get_db)):
     event = db.first(SQL.live_event)
     graph = build_graph(request, db, _graph(db, event)) if event else None
+    workload = build_timeline(request, WORKLOAD, linked=False,
+                              fixed={"event_code": event["code"]}) if event else None
     return render_page(request, "showcase/deployment.html", "claims.deployment", event=event,
-                       graph=graph)
+                       graph=graph, workload=workload)

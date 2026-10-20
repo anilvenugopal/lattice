@@ -22,6 +22,8 @@ field reports. **Open in claims system** on a claim leads back to it.
 ## A claim's page
 
 - **Status**, from new to closed.
+- **How long each stage took**: waiting for a surveyor, with the surveyor,
+  settling and closing, as a timeline, with field reports as diamonds.
 - **Damage assessment**: the form changes with what was inspected (a home, a
   vehicle or a commercial building). Saving it marks the claim inspected.
 - **Field reports**: what the surveyor saw, in their own words.
@@ -46,7 +48,12 @@ claims a minute, and **Pause**. Use 120 to show a surge.
 ## Deployment
 
 Each zone of the live event, its lead, its surveyors and their claims, as a
-graph. Select a zone to **prioritise its waiting claims**.
+graph. Select a zone to **prioritise its waiting claims**. Click a surveyor to
+open their claims in the zone.
+
+Below it, **Surveyor visits** shows each surveyor's inspection visits through
+the day. Bars stacked on top of each other are visits booked at the same time:
+a surveyor with more work than hours.
 
 ## Notices
 

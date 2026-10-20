@@ -42,12 +42,14 @@ from lattice.api import (
     Step,
     Sum,
     Time,
+    TimelineSpec,
     TreeNode,
     View,
     build_chart,
     build_form,
     build_grid,
     build_map,
+    build_timeline,
     csrf_protect,
     current_user,
     documents,
@@ -358,6 +360,27 @@ def _where(request: Request, db: Db, row: dict) -> dict:
                              fixed={"id": row["id"], "event_id": row["event_id"]})}
 
 
+PROGRESS = GridSpec(
+    key="showcase.claim_progress", title="Claim progress", path="/showcase/claims",
+    query=SQL.progress,
+    columns=[Column("label", "Stage", kind="strong"),
+             Column("lane", "Lane", labels={"claim": "Progress", "reports": "Field reports"}),
+             Column("phase", "Phase", tones={"waiting": "warning", "surveyor": "info",
+                                            "settling": "accent", "closing": "success",
+                                            "report": "neutral"}),
+             Column("starts_at", "From", kind="datetime"), Column("ends_at", "To", kind="datetime")],
+    selection="none", export=False, views=[View("all", "All")],
+)
+TIMELINE = TimelineSpec(
+    "showcase.claim_timeline", "Progress", PROGRESS, start="starts_at", end="ends_at",
+    lane="lane", label="{label}", tone="phase", marker="is_marker", lane_order="lane")
+
+
+def _progress(request: Request, db: Db, row: dict) -> dict:
+    return {"timeline": build_timeline(request, TIMELINE, linked=False,
+                                       fixed={"claim_id": row["id"]})}
+
+
 DETAIL = RecordPage(
     grid=GRID, nav_key="claims.claim", title="{claim_number} · {insured}",
     subtitle="{event} · {city}", status="status", crumb="{claim_number}",
@@ -366,6 +389,8 @@ DETAIL = RecordPage(
                 "handler", "line", "location_ref", "reported_at"],
     links=[Link("Open in claims system", "/showcase/claims-system/{claim_number}", icon="external")],
     panels=[Panel("lifecycle", "Status", "showcase/event_lifecycle.html", load=_lifecycle),
+            Panel("progress", "How long each stage took", "showcase/claim_progress.html",
+                  load=_progress, flush=True),
             Panel("assessment", "Damage assessment", "showcase/claim_assessment.html",
                   load=_assessment),
             Panel("reports", "Field reports", "showcase/claim_reports.html", load=_reports),
@@ -511,7 +536,8 @@ def simulate_intake(rng: random.Random, seconds: float) -> int:
                 cause=cat_seed.weighted(rng, spec["causes"]), severity=severity, status="new",
                 priority=False, estimate=round(float(loc["tiv"]) * rng.uniform(lo, hi), -2), paid=0,
                 zone_id=rng.choice(zones) if zones else None, surveyor_id=None, adjuster_id=None,
-                closed_at=None, updated_at=now))
+                assigned_at=None, inspected_at=None, settled_at=None, closed_at=None,
+                updated_at=now))
         db.run_many(cat_seed.SQL.add_claim, rows)
         return len(rows)
 

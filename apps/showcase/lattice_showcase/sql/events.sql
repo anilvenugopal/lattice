@@ -95,3 +95,19 @@ SELECT DISTINCT county_fips, county, state FROM showcase.location ORDER BY state
 -- name: by_id
 -- One event.
 SELECT id, code, name, peril, status, region FROM showcase.event WHERE id = :id;
+
+-- name: stages
+-- Each event's stages as bars for the timeline: watch until landfall, then the response
+-- (still going until the event closes), and a marker when it closed.
+SELECT e.id * 10 + 1 AS id, e.id AS event_id, e.code || ' · ' || e.name AS event,
+       'watch' AS stage, 'Watch' AS stage_label, CAST(e.starts_on AS timestamp) AS starts_at,
+       CAST(coalesce(e.landfall_on, e.closed_on) AS timestamp) AS ends_at, false AS is_marker
+FROM showcase.event e
+UNION ALL
+SELECT e.id * 10 + 2, e.id, e.code || ' · ' || e.name, 'response', 'Response',
+       CAST(e.landfall_on AS timestamp), CAST(e.closed_on AS timestamp), false
+FROM showcase.event e WHERE e.landfall_on IS NOT NULL
+UNION ALL
+SELECT e.id * 10 + 3, e.id, e.code || ' · ' || e.name, 'closed', 'Closed',
+       CAST(e.closed_on AS timestamp), NULL, true
+FROM showcase.event e WHERE e.closed_on IS NOT NULL;
