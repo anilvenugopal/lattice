@@ -1,0 +1,16 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "refdata"
+version = "0.1.0"
+description = "Public reference data loaded into Postgres, with simple lookups: US towns, counties and zip codes to search by. Knows nothing of Lattice or its apps."
+requires-python = ">=3.14"
+dependencies = [
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["refdata"]

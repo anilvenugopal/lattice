@@ -51,6 +51,7 @@ are `LATTICE_*` environment variables (`.env.example`).
 | `lattice/testing.py` | Pytest fixtures for core and app tests (`db`, `users`, `client`, `as_user`, `host_apps`…) |
 | `lattice/templates/`, `lattice/static/` | Shell layout, shared macros, grid templates; the five CSS layers |
 | `apps/showcase/` | `lattice-showcase`: a catastrophe response app for a P&C carrier, using every component (Events, Exposure, Loss estimate, Claims, Intake, Deployment, Field reports, Notices, Locations), its `sql/` (schema `showcase` and named queries), templates, styles, seed and tests |
+| `packages/refdata/` | `refdata`: public reference data loaded into Postgres (schema `ref`) with lookups; today US towns, counties and zip codes for place search. Imports nothing of Lattice or geoengine; apps install it with `libraries=[Library("refdata", [refdata.SCHEMA], refdata.migrate)]` |
 | `packages/geoengine/` | `geoengine`: spatial engine on PostGIS (layers, point-in-area, distances, H3, quality tiers). Imports nothing of Lattice; Lattice never imports it; apps use it and list `geoengine.SCHEMA` in `library_schemas` (ADR 0013) |
 | `hosts/showcase/` | `lattice-showcase-host`: runs Lattice with the showcase app |
 | `tests/sql/`, `apps/*/tests/sql/` | Named queries the tests use to set up and check rows |
