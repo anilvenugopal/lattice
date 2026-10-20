@@ -6,3 +6,5 @@
 .chart__note { padding: var(--sp-8) 0; font-size: var(--fs-md); color: var(--text-3); text-align: center; }
 .chart__note--error { color: var(--danger); }
 .chart-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: var(--sp-4); }
+.chart__months { display: inline-flex; align-items: center; gap: var(--sp-1); }
+.chart__month { min-width: 120px; font-size: var(--fs-md); font-weight: var(--fw-medium); text-align: center; color: var(--text); }

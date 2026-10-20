@@ -1,24 +1,35 @@
 ---
 title: Showcase
-summary: Every Lattice component on sample data, one page per capability.
+summary: A carrier responding to catastrophes, built with every Lattice component.
 ---
 
-The showcase puts every Lattice component on one page each, with sample data.
-Nothing here models a real business: the items, messages, jobs and specs exist
-to show what the components do.
+The showcase is a **catastrophe response app** for a property and casualty
+carrier. When a hurricane is forecast, the team needs to know which insured
+locations are in its path and what it could cost. Once it lands, they need to
+know how claims are arriving and who is handling them.
 
-| Page | Shows |
+The app sits beside the systems of record. It reads policies and claims from
+them, and keeps the response itself: events, footprints, exposure, estimates,
+assignments, assessments, field reports and notices.
+
+| Page | Use it to |
 |---|---|
-| [Items](items.md) | The standard list: search, filters, views, saved views, bulk actions, the side panel, export; the record page; the plain form |
-| [Live updates](jobs.md) | A list that refreshes itself, with actions that depend on each row's state |
-| [Reading pane](inbox.md) | A list beside a reading pane, showing only your own messages |
-| [Charts](charts.md) | Ten chart kinds that follow the list's filters |
-| [Forms](forms.md) | Forms drawn from a schema, documents, and a form with no schema |
-| [Flows](flows.md) | A stepper, a tree and a dependency graph you can act from |
+| [Events](events.md) | See each catastrophe, declare a new one, follow its footprint and exposure |
+| [Loss estimate](events.md#loss-estimate) | See what an event could cost, from a Monte Carlo simulation |
+| [Claims](claims.md) | Work the claims across events: assign, prioritise, assess, report |
+| [Locations](locations.md) | Search the insured locations on the map, and save an area |
 
-What you learn here applies to every list, record and form in every Lattice
-app.
+## What is real and what is simulated
+
+| Data | In production, from | In the showcase |
+|---|---|---|
+| Insured locations | Policy administration, as a nightly snapshot | 42,659 synthetic locations in real metro areas |
+| Claims | The claims system, every few minutes | Seeded for past events; a labelled simulator for Hurricane Delta |
+| Hurricane forecast | National Hurricane Center advisories | Three sample advisory cones |
+| Loss estimate | A licensed catastrophe model | A simple Monte Carlo with stated assumptions |
+
+Places, counties and coastlines are real; policies, people and claims are not.
 
 > [!TIP]
 > Press **F1** on any page to open the help for that page, and **Ctrl J** to
-> search pages, records, commands and help from anywhere.
+> search pages, events, claims, commands and help from anywhere.

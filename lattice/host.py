@@ -31,6 +31,7 @@ from lattice.components.help import provider as help_provider
 from lattice.components.help import router as help_router
 from lattice.components.help import search as help_search
 from lattice.components.manifest import AppManifest
+from lattice.components.map import router as map_router
 from lattice.components.search import providers as search_providers
 from lattice.components.search import router as search_router
 from lattice.kernel import css_rules, events, icons, nav, slots
@@ -73,6 +74,13 @@ def _check(app: AppManifest) -> None:
             fail(f"grid key {grid.key!r} must start with {app.key + '.'!r}")
         if not grid.path.startswith(app.prefix + "/") and grid.path != app.prefix:
             fail(f"grid {grid.key!r} path {grid.path!r} must start with {app.prefix}")
+    for spec in app.maps:
+        if not spec.key.startswith(app.key + "."):
+            fail(f"map key {spec.key!r} must start with {app.key + '.'!r}")
+        try:
+            spec.check()
+        except ValueError as exc:
+            fail(str(exc))
     for spec in app.forms:
         if not spec.key.startswith(app.key + "."):
             fail(f"form key {spec.key!r} must start with {app.key + '.'!r}")
@@ -141,6 +149,8 @@ def _register(app: AppManifest, platform: bool) -> None:
         grid_router.register(grid)
     for chart in app.charts:
         chart_router.register(chart)
+    for spec in app.maps:
+        map_router.register(spec)
     for spec in app.forms:
         forms.register_form(spec)
     for schema in app.schemas:
@@ -202,6 +212,7 @@ def _check_permissions() -> None:
         named += [(f"action {spec.key}.{a.key}", a.permission) for a in spec.actions]
     named += [(f"chart {c.key!r}", c.permission) for c in chart_router.REGISTRY.values()]
     named += [(f"form {f.key!r}", f.permission) for f in forms.FORMS.values()]
+    named += [(f"map {m.key!r}", m.permission) for m in map_router.REGISTRY.values()]
     named += [(f"record panel {p.key!r}", p.permission) for p in record_component.PANELS]
     named += [(f"Ctrl+J source {p.key!r}", p.permission) for p in search_providers.registered()]
     named += [(f"help topic {t.url}", t.permission)
@@ -219,6 +230,7 @@ def _reset_registries() -> None:
     slots.reset()
     grid_router.REGISTRY.clear()
     chart_router.REGISTRY.clear()
+    map_router.REGISTRY.clear()
     forms.FORMS.clear()
     forms.SCHEMAS.clear()
     references.KINDS.clear()
@@ -291,7 +303,7 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
     web.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
     web.add_middleware(AuthMiddleware)
     for router in (auth_routes.router, grid_router.router, chart_router.router,
-                   form_router.router, search_router.router,
+                   map_router.router, form_router.router, search_router.router,
                    help_router.router):
         web.include_router(router)
     for app, mount in ordered:

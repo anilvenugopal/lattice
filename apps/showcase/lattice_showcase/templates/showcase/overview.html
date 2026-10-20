@@ -1,8 +1,12 @@
 {% extends "base/shell.html" %}
-{% from "components/macros.html" import page_header %}
+{% from "components/macros.html" import page_header, card %}
 {% block main %}
 <div class="page stack-lg">
-  {{ page_header("Showcase", "Every Lattice component on sample data. Each page names what it shows and how it is built.") }}
+  {{ page_header("Catastrophe response", "A carrier responding to catastrophes: the Lattice components doing a job a P&C team knows.") }}
+  <p>When a hurricane is forecast, the carrier needs to know which insured locations are in its
+    path, what the event could cost, and, once it lands, how claims are arriving and who is
+    handling them. This app is the command centre beside the systems of record: it reads
+    policies and claims from them, and keeps the response itself.</p>
   <div class="showcase-cards">
     {% for title, href, text, built in pages %}
     <a class="card showcase-card" href="{{ href }}">
@@ -12,7 +16,17 @@
     </a>
     {% endfor %}
   </div>
-  <p class="u-muted">How each is built: <a href="/help/lattice/developer/building-apps">Help › Building apps</a>.
-    The data is sample data; nothing here means anything.</p>
+  {% call card("Showcase and production", flush=True) %}
+  <table class="table">
+    <thead><tr><th>Data</th><th>In production, from</th><th>In the showcase</th></tr></thead>
+    <tbody>
+    {% for data, real, here in sources %}
+    <tr><td>{{ data }}</td><td>{{ real }}</td><td>{{ here }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% endcall %}
+  <p class="u-muted">Places, counties and coastlines are real; policies, people and claims are not.
+    How each page is built: <a href="/help/lattice/developer/building-apps">Help › Building apps</a>.</p>
 </div>
 {% endblock %}

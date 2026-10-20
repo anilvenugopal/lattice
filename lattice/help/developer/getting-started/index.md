@@ -63,19 +63,19 @@ Signed in as the admin, try these. Each one shows a part of Lattice that your
 apps get for free.
 
 1. **The rail.** The icons on the left are the apps and their sections: Home,
-   the showcase's Overview, Grids, Reading pane, Charts, Forms and Flows, then
+   the showcase's Overview, Events, Claims and Locations, then
    Administration and Account at the bottom. **Overview** links every page.
-2. **A grid.** Open **Grids › Items**:
+2. **A grid.** Open **Claims**:
    - switch views with the tabs;
-   - filter by status and type in the search box;
-   - select a few rows and choose **Assign**.
-   The action asks for an owner, updates the rows and shows a toast. The URL
+   - filter by status and severity in the search box;
+   - select a few rows and choose **Assign surveyor**.
+   The action asks for a surveyor, updates the rows and shows a toast. The URL
    keeps the view, filters and sort, so a link reopens the same list.
-3. **Ctrl+J.** Press **Ctrl J** and type `pipeline`:
-   - results come from pages, items, commands and help;
+3. **Ctrl+J.** Press **Ctrl J** and type `Delta`:
+   - results come from pages, events, claims, commands and help;
    - the chips at the top filter by source;
    - the pane on the right previews the highlighted result.
-4. **F1.** On Items, press **F1**. Help opens at the topic for that
+4. **F1.** On Claims, press **F1**. Help opens at the topic for that
    page.
 5. **Theme.** Use the moon icon in the top bar, or **Account › Preferences**,
    to switch light, dark or system. Density, page size and time format are
@@ -107,13 +107,14 @@ docs/                    architecture and decision records
 The showcase in `apps/showcase/` is the best source of working examples, one
 module per page:
 
-- **Items** (`items.py`, `sql/items.sql`): a table grid with every column kind,
-  bulk actions and a side panel; the record page; the plain form pattern;
-- **Live updates** (`jobs.py`): a grid that refreshes itself, with actions that
-  depend on each row's state;
-- **Reading pane** (`inbox.py`): a message list with a reading pane;
-- **Charts** (`charts.py`), **Specs and Free-form** (`specs.py`) and **Flows**
-  (`flows.py`).
+- **Claims** (`claims.py`, `sql/claims.sql`): a grid with views and bulk
+  actions, the record page, a form with variants, a free-form form, the live
+  intake grid that refreshes itself, and the Field reports reading pane;
+- **Events** (`events.py`): a grid, a record page and the Declare event form;
+- **Exposure**, **Loss estimate** and **Locations** (`exposure.py`, `losses.py`,
+  `locations.py`): maps, charts and background jobs;
+- **Deployment** (`deployment.py`): a graph with node actions;
+- **Notices** (`notices.py`): rows scoped to the signed-in user.
 
 ## Everyday commands
 

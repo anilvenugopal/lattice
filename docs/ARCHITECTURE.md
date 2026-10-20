@@ -76,7 +76,7 @@ lattice/                         (this repository, a uv workspace)
     static/css/                  the five CSS layers
     templates/                   shell layout, macros
   apps/
-    showcase/                    the showcase: every component on sample data
+    showcase/                    the showcase: catastrophe response, on every component
   frontend/
     graph/                       the one built component (ADR 0005)
   hosts/
@@ -215,7 +215,7 @@ small `data`. Inside a host they travel on an in-process bus. An app publishes
 inside its transaction, and the event is delivered after the commit:
 
 ```python
-db.publish("comments.added", subject="urn:lattice:showcase.item:42", data={"comment_id": 7})
+db.publish("comments.added", subject="urn:lattice:showcase.claim:42", data={"comment_id": 7})
 ```
 
 Another process's state is read, not streamed: an app that must react to
@@ -225,7 +225,7 @@ Events from remote systems will arrive over HTTP, in the CloudEvents HTTP
 binding, when API tokens exist.
 
 Subscribers run in the publishing process, after the commit. For example,
-the showcase subscribes to `comments.added` to tell an item's owner, and
+the showcase subscribes to `comments.added` to tell a claim's handler, and
 notifications will subscribe to `incidents.created`. Event types are
 `{app}.{event}`, and data is small: references and a few fields, never whole
 records.
@@ -355,8 +355,8 @@ Chart.js 4 with plugins, vendored and loaded on first use.
 | Thresholds | `chartjs-plugin-annotation` |
 
 ```python
-ChartSpec(key="showcase.by_week", title="Created per week", source=ITEMS_GRID,
-          kind="bar", x=Time("created_at", "week"), series="status", stacked=True)
+ChartSpec(key="showcase.claims_per_day", title="Claims per day", source=CLAIMS_GRID,
+          kind="bar", x=Time("reported_at", "day"), series="severity", stacked=True)
 ```
 
 - **A chart's source is a GridSpec.** The grid's query, view, filters, search
@@ -579,8 +579,8 @@ before the next starts.
    ([ADR 0011](adr/0011-integration-standards.md)). An event-feed reader was
    built and then removed ([ADR 0012](adr/0012-taskline-ui-and-contract.md)).
 8. **The showcase uses the framework.** Done: a second app, Comments, comments
-   on any record by reference; the showcase resolves its items and specs, shows
-   the Comments panel on item pages, and tells an item's owner about new
+   on any record by reference; the showcase resolves its events and claims, shows
+   the Comments panel on their pages, and tells a claim's handler about new
    comments.
 9. **Taskline UI** ([ADR 0012](adr/0012-taskline-ui-and-contract.md)):
    - Taskline builds its public contract: the `taskline_api` views and async
@@ -589,7 +589,11 @@ before the next starts.
    - Taskline UI in its own repository, `taskline-ui`: runs, run detail with the
      stepper, queues, workers, cancel and retry, run job, a Jobs panel on any
      record.
-10. **Incidents** in its own repository, after its own design document.
+10. **Catastrophe response showcase.** Done ([plan](plans/step-10-cat-response-showcase.md),
+    [ADR 0013](adr/0013-geoengine-and-maps.md)): the sample pages are replaced
+    by one story a P&C audience knows; `geoengine` (PostGIS, H3, location
+    quality) and the map component with draw-to-search.
+11. **Incidents** in its own repository, after its own design document.
 
 ## 12. Open questions
 

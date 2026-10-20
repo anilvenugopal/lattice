@@ -1,24 +1,5 @@
 /* Showcase styles. Components layer, scoped to the showcase's pages and panels (ADR 0010). */
 @layer components {
-
-/* ── Inbox message cell and reading pane ─────────────────────────────── */
-[data-app="showcase"] .msg { min-width: 0; padding: 2px 0; }
-[data-app="showcase"] .msg__top { display: flex; align-items: center; gap: 6px; }
-[data-app="showcase"] .msg__from, [data-app="showcase"] .msg__subject, [data-app="showcase"] .msg__snippet {
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-[data-app="showcase"] .msg__clip { display: flex; color: var(--text-3); }
-[data-app="showcase"] .msg__snippet { font-size: var(--fs-sm); color: var(--text-3); }
-[data-app="showcase"] .is-unread .msg__from, [data-app="showcase"] .is-unread .msg__subject {
-  font-weight: var(--fw-semibold); color: var(--text); }
-[data-app="showcase"] .reader { display: flex; flex-direction: column; gap: var(--sp-4); }
-[data-app="showcase"] .reader__meta { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
-[data-app="showcase"] .reader__body { font-size: var(--fs-base); }
-[data-app="showcase"] .reader__attach { display: flex; align-items: center; gap: var(--sp-2); padding: 10px;
-  font-size: var(--fs-md); border: 1px solid var(--border); border-radius: var(--r-md); }
-
-}
-
-@layer components {
 /* ── Overview cards ─────────────────────────────────────────────────── */
 [data-app="showcase"] .showcase-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--sp-4); }
 [data-app="showcase"] .showcase-card { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-4); color: var(--text); text-decoration: none; transition: border-color var(--dur); }
@@ -26,4 +7,8 @@
 [data-app="showcase"] .showcase-card__title { font-size: var(--fs-lg); font-weight: var(--fw-semibold); }
 [data-app="showcase"] .showcase-card__text { flex: 1; font-size: var(--fs-md); color: var(--text-2); }
 [data-app="showcase"] .showcase-card__built { font-size: var(--fs-sm); color: var(--text-3); }
+}
+
+@layer components {
+[data-app="showcase"] .showcase-pad { padding: var(--sp-4); }
 }

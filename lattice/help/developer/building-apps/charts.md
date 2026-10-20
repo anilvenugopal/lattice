@@ -2,7 +2,7 @@
 title: Charts
 summary: Draw a grid's rows as a bar, line, area, pie, calendar, treemap, sankey or map chart, counted in the database and following the grid's filters.
 order: 22
-keywords: chart chartspec chart.js bar line area pie doughnut calendar heatmap matrix treemap sankey map choropleth geo time series zoom threshold aggregate count sum average dashboard
+keywords: chart chartspec chart.js bar line area pie doughnut calendar heatmap histogram exceedance probability matrix treemap sankey map choropleth geo time series zoom threshold aggregate count sum average dashboard
 ---
 
 A chart draws the rows of a grid you already have. It reads the grid's query,
@@ -65,6 +65,24 @@ Saved views work the same way.
 A chart with no grid on its page still needs a `GridSpec` for its rows. Declare
 one and list it in `grids=` without placing it on a page.
 
+## Click to narrow the list
+
+Clicking a bar, slice, treemap box or calendar day narrows the rows to it, by
+the chart's `x` and `series` columns. A `Time` by day narrows a timestamp
+column to that whole day. Histograms, exceedance curves, sankeys and world maps
+are not clickable.
+
+- **A linked chart** narrows the grid on its page in place. The grid shows each
+  narrowing as a chip (*Construction: Frame*) that removes it.
+- **`drill="/showcase/claims"`** on a chart without a grid on its page opens
+  that list page instead, narrowed by `x_` parameters in the address, with the
+  same chips. The event page's claims calendar does this.
+
+```python
+ChartSpec("showcase.claims_calendar", "Claims calendar", GRID, "calendar",
+          x=Time("reported_at", "day"), drill="/showcase/claims")
+```
+
 ## Kinds
 
 | `kind` | `x` | `series` | Draws |
@@ -72,7 +90,9 @@ one and list it in `grids=` without placing it on a page.
 | `bar` | a column or `Time` | optional: one bar colour per value | Bars; `stacked=True`, `horizontal=True` |
 | `line`, `area` | a column or `Time` | optional: one line per value | Lines, or filled areas; `stacked=True` for areas |
 | `pie`, `doughnut` | a column | none | Slices |
-| `calendar` | `Time(column, "day")` | none | A heatmap of days, one column per week |
+| `calendar` | `Time(column, "day")` | none | One month as a calendar, each day shaded and labelled with its value. It opens on the month of the busiest day; ‹ › step through the months that have data |
+| `histogram` | a numeric column | none | How many rows fall in each of `bins` (20) equal ranges |
+| `exceedance` | a numeric column | none | The chance a value is exceeded, from 100% at the smallest to 0% at the largest; `thresholds` mark probabilities, such as `Threshold(1, "1 in 100")` |
 | `treemap` | a column | optional: boxes grouped by it | Nested boxes sized by the measure |
 | `sankey` | the "from" column | the "to" column (required) | Flows between the values of two columns |
 | `choropleth` | a column of country names or ISO 3166 numeric codes | none | A world map shaded by the measure |
@@ -93,7 +113,7 @@ The second argument is the label in tooltips and legends.
 `day`, `week`, `month`, `quarter`, `year`. Users zoom a time chart by dragging
 across it (Ctrl+wheel also zooms; Shift-drag pans); **Reset zoom** undoes it.
 
-**Many categories.** Category charts show the `limit` (12) largest values. With
+**Many categories.** Bar, pie and treemap charts on a category show the `limit` (12) largest values (line and area charts keep every value, in order, as an axis). With
 `Count` or `Sum`, the rest add up to one **Other**, drawn grey. With an average,
 minimum or maximum, the rest are left out.
 

@@ -75,3 +75,15 @@ def test_background_tasks_start_and_stop(db):
     with TestClient(create_app(apps=[_app(background=loop)])):
         pass
     assert events == ["started", "stopped"]
+
+
+def test_library_schemas_migrate_before_the_app_and_only_once():
+    from pathlib import Path
+
+    from lattice.components.manifest import AppManifest
+    from lattice.kernel.migrate import sources_for
+
+    geo = ("geo", Path("/libs/geo/schema"))
+    a = AppManifest(key="a", label="A", library_schemas=[geo], sql=Path("/apps/a/sql"))
+    b = AppManifest(key="b", label="B", library_schemas=[geo])
+    assert [s for s, _ in sources_for([a, b])] == ["lattice", "geo", "a"]

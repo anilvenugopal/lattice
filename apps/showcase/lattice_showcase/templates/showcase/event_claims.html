@@ -1,0 +1,3 @@
+{# Event page panel: the event's claims, per day and as they flowed. #}
+{% from "components/chart.html" import chart %}
+<div class="chart-row showcase-pad">{% for c in values.charts %}{{ chart(c) }}{% endfor %}</div>

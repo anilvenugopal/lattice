@@ -1,0 +1,14 @@
+/* Maps (components/map.html, static/js/maps.js). MapLibre's own CSS loads with the library. */
+.map__head { flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
+.map__toggle { display: inline-flex; align-items: center; gap: var(--sp-1); font-size: var(--fs-sm); color: var(--text-2); cursor: pointer; }
+.map__swatch { width: 10px; height: 10px; border-radius: 2px; }
+.map__body { position: relative; transition: opacity var(--dur); }
+.map__body.is-loading { opacity: 0.6; }
+.map__canvas { width: 100%; border-radius: 0 0 var(--r-lg) var(--r-lg); overflow: hidden; }
+.map__note { position: absolute; left: var(--sp-3); bottom: var(--sp-3); margin: 0; padding: var(--sp-1) var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); background: var(--surface-panel); border: 1px solid var(--border); border-radius: var(--r-md); }
+.map__note--error { color: var(--danger); }
+.map .maplibregl-popup-content { padding: var(--sp-2) var(--sp-3); font-family: var(--font-ui); font-size: var(--fs-md); color: var(--text); background: var(--surface-panel); border-radius: var(--r-md); box-shadow: var(--shadow-md); }
+.map .maplibregl-popup-tip { border-top-color: var(--surface-panel); border-bottom-color: var(--surface-panel); }
+.map .maplibregl-ctrl-attrib { font-size: var(--fs-xs); }
+.map__draw { display: inline-flex; gap: var(--sp-1); }
+.map__draw .btn.is-on { color: var(--text-on-accent); background: var(--accent); border-color: var(--accent); }

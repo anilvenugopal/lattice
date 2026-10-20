@@ -91,6 +91,9 @@ class ActionContext:
     ids: list[Any]                  # eligible ids, already scoped by GridSpec.query
     rows: list[dict]                # the eligible rows as the grid query returns them
     values: dict[str, str]          # Field inputs
+    # The grid's state when the action ran: search, filters, view, fixed filters and a drawn
+    # shape (query.shape), e.g. for a toolbar action that saves what the user narrowed to.
+    query: Any = None
 
     @property
     def count(self) -> int:
@@ -156,7 +159,7 @@ class Palette:
     """
 
     title: str                      # result title, formatted with the row: "{ref} · {title}"
-    href: str                       # opened with Enter: "/showcase/items/{id}"
+    href: str                       # opened with Enter: "/showcase/claims/{id}"
     subtitle: str = ""              # muted second line
     icon: str = "link"              # result icon
 
@@ -174,7 +177,7 @@ class GridSpec:
     # It may use :user_id (the signed-in user) to scope rows.
     query: Query
     columns: list[Column]           # in display order
-    # Fixed values the query is run with, beside :user_id, e.g. {"kind": "showcase.spec"}.
+    # Fixed values the query is run with, beside :user_id, e.g. {"kind": "showcase.field_report"}.
     # Part of the access boundary: users cannot change them.
     params: dict[str, Any] = field(default_factory=dict)
     search: list[str] = field(default_factory=list)  # columns matched by the search box (ILIKE)
@@ -196,10 +199,13 @@ class GridSpec:
     empty_title: str = "Nothing here yet"  # shown when no rows match
     empty_text: str = ""            # second line under empty_title
     palette: Palette | None = None  # make rows findable from Ctrl+J
+    # (lon, lat) columns: rows can then be narrowed to a shape drawn on a linked map. The
+    # shape travels in the URL like a filter. Needs PostGIS (ADR 0013).
+    spatial: tuple[str, str] | None = None
 
     @property
     def app_key(self) -> str:
-        """The owning app's key: the grid key's prefix ("showcase.jobs" -> "showcase"); "" for platform grids."""
+        """The owning app's key: the grid key's prefix ("showcase.claims" -> "showcase"); "" for platform grids."""
         return self.key.partition(".")[0] if "." in self.key else ""
 
     def column(self, key: str) -> Column | None:

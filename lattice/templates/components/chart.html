@@ -9,6 +9,11 @@
   <header class="card__head chart__head">
     <h3 class="card__title">{{ c.spec.title }}</h3>
     <span class="dg__spacer"></span>
+    <span class="chart__months" x-show="months.length" x-cloak>
+      <button type="button" class="icon-btn icon-btn--sm" @click="stepMonth(-1)" :disabled="months.indexOf(month) <= 0" aria-label="Previous month">{{ icon('chevron-left', 14) }}</button>
+      <span class="chart__month" x-text="monthLabel()"></span>
+      <button type="button" class="icon-btn icon-btn--sm" @click="stepMonth(1)" :disabled="months.indexOf(month) >= months.length - 1" aria-label="Next month">{{ icon('chevron-right', 14) }}</button>
+    </span>
     <button type="button" class="btn btn--link btn--sm" x-show="zoomable" x-cloak @click="resetZoom()"
             data-tip="Drag across the chart to zoom; Shift-drag pans">Reset zoom</button>
   </header>

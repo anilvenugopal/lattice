@@ -1,10 +1,11 @@
 # Postgres for development and tests. Start it with `make db-up`
 # (podman compose or docker compose); data stays in the lattice-pg18 volume.
-# Postgres 18 because Taskline's schema uses uuidv7() (ADR 0012). The 18 image keeps its
-# data under /var/lib/postgresql/18, so the volume mounts /var/lib/postgresql.
+# Postgres 18 because Taskline's schema uses uuidv7() (ADR 0012), with PostGIS for
+# geoengine (ADR 0013). The 18 image keeps its data under /var/lib/postgresql/18, so the
+# volume mounts /var/lib/postgresql; the PostGIS image reads the same volume.
 services:
   postgres:
-    image: docker.io/library/postgres:18
+    image: docker.io/postgis/postgis:18-3.6
     environment:
       POSTGRES_USER: lattice
       POSTGRES_PASSWORD: lattice

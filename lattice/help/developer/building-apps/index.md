@@ -57,6 +57,7 @@ apps/helpdesk/                    the distribution: lattice-helpdesk
 | [Pages and navigation](pages-and-navigation.md) | `NavNode`, `render_page`, page types, detail pages, breadcrumbs |
 | [Grids](grids.md) | `GridSpec` in depth: columns, filters, views, actions, panels, layouts, embedding |
 | [Charts](charts.md) | `ChartSpec`: bar, line, area, pie, calendar, treemap, sankey and map charts on a grid's rows, linked to its filters |
+| [Maps](maps.md) | `MapSpec`: points, hexagons, shaded states and counties and areas over a self-hosted basemap; geoengine for spatial work |
 | [Record pages](record-pages.md) | `RecordPage`: the standard detail page for one grid row, with its actions, panels and history |
 | [Grid performance](grid-performance.md) | What the database runs for a grid, what is expensive on large tables, and how to keep grids fast |
 | [Forms from JSON Schema](json-forms.md) | `FormSpec`: a form drawn from a Pydantic model or JSON Schema, JSON in and out; the document store |
@@ -77,12 +78,13 @@ The showcase in `apps/showcase/lattice_showcase/` uses every part:
 
 | File | Shows |
 |---|---|
-| `items.py` | A table grid with every column kind, views, filters, bulk actions with input fields, a star toggle, a side panel, the record page, create and edit forms, home tiles and Ctrl+J |
-| `jobs.py` | A grid that refreshes itself, actions that depend on each row's state, and a background task |
-| `inbox.py` | A split list with a reading pane, rows scoped to the signed-in user, and a star toggle |
-| `charts.py` | Ten charts on the Items grid, linked to its filters |
-| `specs.py` | Forms from a Pydantic model, the document store, and a form with no schema |
-| `flows.py` | A stepper, a tree and a dependency graph with node actions |
-| `templates/showcase/` | Record page panels, the overview, and a form built from the shared macros |
+| `claims.py` | A grid with views, filters, bulk actions with input fields, a `$me` view, home tiles and Ctrl+J; the record page with a stepper and a tree; a form with variants and a free-form form, both saved in the document store; a grid that refreshes itself; the Field reports reading pane; a map and charts |
+| `events.py` | A grid, a record page, and the Declare event form with variants |
+| `exposure.py`, `losses.py` | Maps, charts, and grids of background runs that refresh themselves |
+| `locations.py` | A map with drawing that filters its grid and charts |
+| `deployment.py` | A graph with node actions |
+| `notices.py` | Rows scoped to the signed-in user in the grid's query |
+| `links.py` | Reference kinds and a `comments.added` subscriber |
+| `templates/showcase/` | Record page panels, the overview, and form pages built from the shared macros |
 | `static/showcase.css` | An app stylesheet scoped to `[data-app="showcase"]` |
-| `help/` | Help topics with a Mermaid diagram, a callout and a `help.toml` |
+| `help/` | Help topics with a Mermaid diagram and a `help.toml` |

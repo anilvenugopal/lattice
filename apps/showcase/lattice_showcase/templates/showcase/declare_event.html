@@ -1,0 +1,10 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, alert %}
+{% from "components/json_form.html" import json_form with context %}
+{% block main %}
+<div class="page page--narrow stack-lg">
+  {{ page_header("Declare an event", "The form changes with the peril and with how you give the affected area.") }}
+  {% if areas %}{{ alert("info", "Saved areas: " ~ (areas | map(attribute="name") | join(", ")) ~ ". Draw more on the Locations map.") }}{% endif %}
+  {% call card() %}{{ json_form(form, action="/showcase/events/new", submit="Declare", cancel="/showcase/events") }}{% endcall %}
+</div>
+{% endblock %}

@@ -1,0 +1,4 @@
+{# Claim page panel: the estimate across the policy's coverages, as a tree (an illustration). #}
+{% from "components/flows.html" import tree %}
+{{ tree(values.nodes) }}
+<p class="u-muted u-small u-mt-3">Split by typical shares for the line: an illustration, not adjusting.</p>

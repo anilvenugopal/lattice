@@ -1,0 +1,13 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, alert %}
+{% from "components/grid.html" import data_grid %}
+{% from "components/chart.html" import chart %}
+{% block main %}
+<div class="page stack-lg">
+  {{ page_header("Live intake" ~ (": " ~ event.name if event else ""), "New claims as they arrive from the claims system.") }}
+  {{ alert("warning", "Simulated. In the showcase, Start intake makes up new claims for " ~ (event.name if event else "the live event") ~ " at the chosen rate, so you can watch the list and chart move. In production they are pulled from the claims system.") }}
+  <p class="u-muted">Intake is <strong>{{ "running, " ~ intake.per_minute ~ " a minute" if intake.running else "paused" }}</strong>.</p>
+  {{ chart(per_hour) }}
+  {{ data_grid(grid) }}
+</div>
+{% endblock %}

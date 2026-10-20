@@ -1,9 +1,0 @@
-{% extends "base/shell.html" %}
-{% from "components/macros.html" import page_header, card %}
-{% from "components/json_form.html" import json_form with context %}
-{% block main %}
-<div class="page page--narrow stack-lg">
-  {{ page_header("Free-form", "No schema: the form is inferred from the document. Add a field at the bottom; the JSON tab shows the whole document.") }}
-  {% call card() %}{{ json_form(form, action="/showcase/freeform") }}{% endcall %}
-</div>
-{% endblock %}

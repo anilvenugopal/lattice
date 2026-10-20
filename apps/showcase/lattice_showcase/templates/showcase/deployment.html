@@ -1,0 +1,10 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card, empty_state %}
+{% from "components/flows.html" import graph as graph_view %}
+{% block main %}
+<div class="page stack-lg">
+  {{ page_header("Deployment" ~ (": " ~ event.name if event else ""), "Zones, their leads, and the surveyors working each one. Select a zone for its actions; double-click any box to open its claims.") }}
+  {% if graph %}{% call card(flush=True) %}{{ graph_view(graph) }}{% endcall %}
+  {% else %}{{ empty_state("No event underway", "Deployment shows the event in landfall or response.") }}{% endif %}
+</div>
+{% endblock %}

@@ -15,13 +15,13 @@ through three contracts, each following a standard where one exists
 | **Record panels** | A section one app adds to other apps' record pages | Lattice registry |
 | **Events** | One app announces that something happened; others react | CloudEvents 1.0 |
 
-The showcase and Comments use all of them: comment on any item, and its owner
-gets a message in the showcase's Reading pane.
+The showcase and Comments use all of them: comment on a claim, and its desk
+handler gets a notice in the showcase's Notices (`apps/showcase/lattice_showcase/links.py`).
 
 ## References
 
 A reference is a URN: `urn:lattice:{kind}:{id}`, such as
-`urn:lattice:showcase.item:42`. The kind starts with the owning app's key. Store
+`urn:lattice:showcase.claim:42`. The kind starts with the owning app's key. Store
 and pass references as text; never as a foreign key into another app's
 tables.
 
@@ -31,26 +31,27 @@ what a user sees:
 ```python
 from lattice.api import ReferenceKind, Resolved
 
-def resolve_item(db: Db, user, item_id: str) -> Resolved | None:
-    row = db.first(SQL.items.by_id, id=int(item_id)) if item_id.isdigit() else None
+def resolve_claim(db: Db, user, claim_id: str) -> Resolved | None:
+    row = db.first(SQL.claims.by_id, id=int(claim_id)) if claim_id.isdigit() else None
     if row is None:
         return None
-    return Resolved(f"{row['ref']} · {row['name']}", f"/showcase/items/{row['id']}",
-                    badge=STATUS_LABELS[row["status"]], tone=STATUS_TONES[row["status"]])
+    return Resolved(row["claim_number"], f"/showcase/claims/{row['id']}",
+                    badge=dict(STATUSES)[row["status"]], tone=STATUS_TONES[row["status"]])
 
-APP = AppManifest(key="showcase", …, references=[ReferenceKind("showcase.item", "Item", resolve_item)])
+APP = AppManifest(key="showcase", …,
+                  references=[ReferenceKind("showcase.claim", "Claim", resolve_claim, icon="queue")])
 ```
 
 **Return `None`** when the record is gone **or this user may not see it**: a
 reference never shows a record its viewer couldn't open.
 
 **Any template draws one** with `{{ ref(urn) }}`: the title linked to the
-record, with its status badge, or "Item unavailable". It works in grid cells
+record, with its status badge, or "Claim unavailable". It works in grid cells
 (`kind="template"`), panels and pages.
 
 | In Python | Does |
 |---|---|
-| `urn("showcase.item", 42)` | `"urn:lattice:showcase.item:42"` |
+| `urn("showcase.claim", 42)` | `"urn:lattice:showcase.claim:42"` |
 | `parse(value)` | A `Ref` with `.kind`, `.id`, `.app` and `.urn`; raises on anything else |
 | `resolve_ref(db, user, value)` | The `Resolved`, or `None` |
 
@@ -73,7 +74,7 @@ APP = AppManifest(key="comments", …, panels=[PANEL])
 **A record page shows them** when it names its kind:
 
 ```python
-DETAIL = RecordPage(grid=GRID, …, reference_kind="showcase.item")
+DETAIL = RecordPage(grid=GRID, …, reference_kind="showcase.claim")
 ```
 
 Contributed panels follow the page's own. Each appears only to users with its
@@ -96,18 +97,18 @@ itself, use `ref(subject.urn)`.
 ```python
 APP = AppManifest(key="comments", …, publishes=["comments.added"])
 
-db.publish("comments.added", subject=urn("showcase.item", 42),
-           data={"comment_id": 7, "author_id": 3, "excerpt": "Valve looks worn."})
+db.publish("comments.added", subject=urn("showcase.claim", 42),
+           data={"comment_id": 7, "author_id": 3, "excerpt": "Roof photos attached."})
 ```
 
 **Subscribe** in another app's manifest:
 
 ```python
-def notify_owner(db: Db, event: CloudEvent) -> None:
+def notify_handler(db: Db, event: CloudEvent) -> None:
     ref = parse(event.subject)
     …
 
-APP = AppManifest(key="showcase", …, subscribes={"comments.added": notify_owner})
+APP = AppManifest(key="showcase", …, subscribes={"comments.added": links.notify_handler})
 ```
 
 - **After the commit.** Subscribers run once the publishing request has

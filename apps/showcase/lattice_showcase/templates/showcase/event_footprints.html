@@ -1,0 +1,16 @@
+{# Event page panel: footprint versions and what each one's exposure run found. #}
+<table class="table">
+  <thead><tr><th>Version</th><th class="u-text-right">Locations</th><th class="u-text-right">Exposed value</th></tr></thead>
+  <tbody>
+  {% for v in values.versions %}
+  <tr>
+    <td><strong>v{{ v.version }}</strong> {{ v.label }}<div class="u-muted u-small">{{ v.source | replace("_", " ") }} · {{ time_tag(v.created_at) }}</div></td>
+    {% if v.run_status == "done" %}
+    <td class="u-text-right u-num">{{ v.locations | number(0) }}</td><td class="u-text-right u-num">{{ v.tiv | money }}</td>
+    {% else %}
+    <td colspan="2" class="u-text-right u-muted">{{ (v.run_status or "not run") | capitalize }}{% if v.run_status == "running" %} · {{ v.progress }}%{% endif %}</td>
+    {% endif %}
+  </tr>
+  {% endfor %}
+  </tbody>
+</table>

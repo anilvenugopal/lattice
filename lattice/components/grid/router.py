@@ -116,10 +116,9 @@ async def run_action(key: str, action_key: str, request: Request,
     if action not in spec.actions_for(user):
         raise HTTPException(403, detail="You do not have permission for this action.")
     body = await request.json()
+    gq = engine.GridQuery.from_params(QueryParams(parse_qsl(body.get("params", ""))), spec)
 
     if body.get("all"):
-        params = QueryParams(parse_qsl(body.get("params", "")))
-        gq = engine.GridQuery.from_params(params, spec)
         with _bad_state():
             selected = engine.fetch_all(spec, db, user, gq, engine.MAX_BULK)
     else:
@@ -139,7 +138,7 @@ async def run_action(key: str, action_key: str, request: Request,
     values = _validated_values(action, body.get("values") or {}, db, user)
 
     ctx = ActionContext(db=db, user=user, ids=[r["id"] for r in eligible], rows=eligible,
-                        values=values)
+                        values=values, query=gq)
     result = action.handler(ctx)
     if inspect.isawaitable(result):          # an async handler, e.g. awaiting a library's API
         result = await result

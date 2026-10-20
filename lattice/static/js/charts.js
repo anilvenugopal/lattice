@@ -151,44 +151,126 @@ function pie(d, t) {
   };
 }
 
-function calendar(d, t, fmt) {
+// The months that have data, and the one with the busiest day (where a calendar opens).
+function calendarMonths(d) {
+  const months = [...new Set(d.points.map(p => p[0].slice(0, 7)))].sort();
+  let peak = months[months.length - 1] || '';
+  let best = -Infinity;
+  for (const [x, , v] of d.points) if (v > best) { best = v; peak = x.slice(0, 7); }
+  return { months, peak };
+}
+
+// One month as a calendar: weekdays across, weeks down, each day shaded by its value.
+function calendar(d, t, fmt, month) {
   const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const values = new Map(d.points.map(([x, , v]) => [x.slice(0, 10), v]));
-  const dates = [...values.keys()].sort();
+  const max = Math.max(1, ...values.values());
+  const first = new Date(month + '-01T00:00:00Z');
+  const lead = (first.getUTCDay() + 6) % 7;                       // days before the 1st, from Monday
+  const days = new Date(Date.UTC(first.getUTCFullYear(), first.getUTCMonth() + 1, 0)).getUTCDate();
+  const weeks = Math.ceil((lead + days) / 7);
   const cells = [];
-  let max = 0;
-  if (dates.length) {
-    const start = new Date(dates[0] + 'T00:00:00Z');
-    start.setUTCDate(start.getUTCDate() - ((start.getUTCDay() + 6) % 7));   // back to Monday
-    const end = new Date(dates[dates.length - 1] + 'T00:00:00Z');
-    for (let day = new Date(start), i = 0; day <= end; day.setUTCDate(day.getUTCDate() + 1), i++) {
-      const iso = day.toISOString().slice(0, 10);
-      const v = values.get(iso) || 0;
-      max = Math.max(max, v);
-      cells.push({ x: Math.floor(i / 7), y: DAYS[i % 7], v, date: iso });
-    }
+  for (let day = 1; day <= days; day++) {
+    const i = lead + day - 1;
+    const iso = `${month}-${String(day).padStart(2, '0')}`;
+    cells.push({ x: DAYS[i % 7], y: Math.floor(i / 7), v: values.get(iso) || 0, date: iso, day });
   }
-  const weeks = cells.length ? cells[cells.length - 1].x + 1 : 1;
   const base = t.series[0];
+  const shade = v => (v ? alpha(base, 0.15 + 0.85 * v / max) : t.grid);
   return {
     type: 'matrix',
     data: {
       datasets: [{
-        label: d.measure, data: cells,
-        backgroundColor: c => { const v = c.raw ? c.raw.v : 0; return v ? alpha(base, 0.15 + 0.85 * v / (max || 1)) : t.grid; },
-        borderWidth: 0,
-        width: ({ chart }) => ((chart.chartArea || {}).width || 0) / weeks - 2,
-        height: ({ chart }) => ((chart.chartArea || {}).height || 0) / 7 - 2,
+        label: d.measure, data: cells, borderWidth: 0,
+        backgroundColor: c => shade(c.raw ? c.raw.v : 0),
+        width: ({ chart }) => ((chart.chartArea || {}).width || 0) / 7 - 4,
+        height: ({ chart }) => ((chart.chartArea || {}).height || 0) / weeks - 4,
       }],
     },
     options: {
       scales: {
-        x: { type: 'linear', min: -0.5, max: weeks - 0.5, offset: false, display: false },
-        y: { type: 'category', labels: DAYS, offset: true, grid: { display: false }, ticks: { color: t.muted } },
+        x: { type: 'category', labels: DAYS, position: 'top', offset: true, grid: { display: false }, ticks: { color: t.muted } },
+        y: { type: 'linear', min: -0.5, max: weeks - 0.5, reverse: true, offset: false, display: false },
       },
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { title: items => items[0].raw.date, label: item => `${d.measure}: ${fmt(item.raw.v)}` } },
+        tooltip: { callbacks: { title: items => new Date(items[0].raw.date + 'T00:00:00Z').toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', timeZone: 'UTC' }),
+                                label: item => `${d.measure}: ${fmt(item.raw.v)}` } },
+      },
+    },
+    plugins: [{
+      id: 'calendarDays',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        ctx.save();
+        ctx.font = `11px ${t.font}`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        chart.getDatasetMeta(0).data.forEach((el, i) => {
+          const c = cells[i];
+          const strong = c.v / max > 0.55;
+          ctx.fillStyle = strong ? t.panel : t.muted;
+          const { x, y, width, height } = el.getProps(['x', 'y', 'width', 'height'], true);
+          ctx.fillText(String(c.day), x + 5, y + 4);
+          if (c.v && height > 34) {
+            ctx.font = `600 12px ${t.font}`;
+            ctx.fillStyle = strong ? t.panel : t.text;
+            ctx.fillText(fmt(c.v), x + 5, y + height - 18);
+            ctx.font = `11px ${t.font}`;
+          }
+          void width;
+        });
+        ctx.restore();
+      },
+    }],
+  };
+}
+
+// How many rows fall in each range: touching bars, labelled with their ranges.
+function histogram(d, t) {
+  const short = formatter(d.format, true);
+  return {
+    type: 'bar',
+    data: {
+      labels: d.points.map(([lo, hi]) => `${short(lo)}–${short(hi)}`),
+      datasets: [{ label: d.measure, data: d.points.map(p => p[2]), backgroundColor: t.series[0],
+                   barPercentage: 1, categoryPercentage: 0.96, borderRadius: 2 }],
+    },
+    options: {
+      scales: {
+        x: { grid: { display: false }, ticks: { color: t.muted, maxRotation: 45, autoSkip: true } },
+        y: { beginAtZero: true, grid: { color: t.grid }, ticks: { color: t.muted, precision: 0 } },
+      },
+      plugins: { legend: { display: false } },
+    },
+  };
+}
+
+// The chance a value is exceeded: amount across, probability up. Thresholds mark probabilities.
+function exceedance(d, t) {
+  const short = formatter(d.format, true);
+  const fmt = formatter(d.format);
+  const annotations = {};
+  d.thresholds.forEach((th, i) => {
+    annotations['t' + i] = {
+      type: 'line', scaleID: 'y', value: th.value, borderColor: t.tone(th.tone), borderWidth: 1.5, borderDash: [5, 4],
+      label: { display: !!th.label, content: th.label, position: i % 2 ? 'start' : 'end', backgroundColor: t.tone(th.tone), color: t.panel, font: { size: 11 } },
+    };
+  });
+  return {
+    type: 'line',
+    data: { datasets: [{ label: 'Chance of exceeding', data: d.points.map(([v, , p]) => ({ x: v, y: p })),
+                         borderColor: t.series[0], backgroundColor: alpha(t.series[0], 0.12), fill: 'origin',
+                         pointRadius: 0, borderWidth: 2, tension: 0.2 }] },
+    options: {
+      scales: {
+        x: { type: 'linear', grid: { color: t.grid }, ticks: { color: t.muted, callback: short } },
+        y: { min: 0, max: 100, grid: { color: t.grid }, ticks: { color: t.muted, callback: v => v + '%' } },
+      },
+      plugins: {
+        legend: { display: false },
+        annotation: { annotations },
+        tooltip: { callbacks: { title: () => '', label: item => `${item.parsed.y.toFixed(1)}% chance of more than ${fmt(item.parsed.x)}` } },
       },
     },
   };
@@ -197,7 +279,7 @@ function calendar(d, t, fmt) {
 function treemap(d, t) {
   const short = formatter(d.format, true);
   const seriesLabel = k => (d.series.find(e => e.key === k) || {}).label || k;
-  const tree = d.points.map(([x, s, v]) => ({ x: x === '__other__' ? 'Other' : (d.xLabels[x] ?? x), s: seriesLabel(s), v }));
+  const tree = d.points.map(([x, s, v]) => ({ x: x === '__other__' ? 'Other' : (d.xLabels[x] ?? x), s: seriesLabel(s), v, xk: x, sk: s }));
   const grouped = d.series.length > 1;
   const colorOf = new Map(d.series.map((s, i) => [s.label, seriesColor(t, s, i)]));
   return {
@@ -220,6 +302,47 @@ function treemap(d, t) {
     },
     options: { plugins: { legend: { display: false } } },
   };
+}
+
+// A treemap box's source row: a leaf carries it directly, a group through its children.
+function treemapRow(raw) { return (raw._data.children || [])[0] || raw._data; }
+
+// What a click on a chart part narrows the rows to: [{name: "x_col", value, label}], or null.
+function clicked(d, els, chart) {
+  const drill = d.drill || {};
+  if (!els.length || !drill.x && !drill.series) return null;
+  const rawOf = e => chart.data.datasets[e.datasetIndex].data[e.index];
+  let el = els[0];
+  let x = null, s = null;
+  if (d.kind === 'treemap') {
+    el = els.reduce((a, b) => (rawOf(b).l > rawOf(a).l ? b : a));
+    const raw = rawOf(el), src = treemapRow(raw);
+    const grouped = d.series.length > 1;
+    if (!grouped || raw.l > 0) x = src.xk;
+    if (grouped) s = src.sk;
+  } else if (d.kind === 'calendar') {
+    const cell = rawOf(el);
+    if (!cell.v) return null;
+    x = cell.date;
+  } else if (d.x.type === 'time') {
+    if (d.x.unit !== 'day') return null;
+    x = String(rawOf(el).x).slice(0, 10);
+    s = d.series[el.datasetIndex].key;
+  } else {
+    x = d.categories[el.index];
+    if (d.series.length > 1) s = d.series[el.datasetIndex].key;
+  }
+  const items = [];
+  const day = v => new Date(v + 'T00:00:00Z').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+  if (drill.x && x !== null && x !== '__other__') {
+    const text = /^\d{4}-\d{2}-\d{2}$/.test(x) ? day(x) : (d.xLabels[x] ?? x);
+    items.push({ name: 'x_' + drill.x, value: x, label: `${drill.xLabel}: ${text}` });
+  }
+  if (drill.series && s) {
+    const series = d.series.find(e => e.key === s);
+    items.push({ name: 'x_' + drill.series, value: s, label: `${drill.seriesLabel}: ${series ? series.label : s}` });
+  }
+  return items.length ? items : null;
 }
 
 function sankey(d, t) {
@@ -269,13 +392,15 @@ async function choropleth(d, t) {
   };
 }
 
-async function configFor(d) {
+async function configFor(d, month) {
   const t = theme();
   const fmt = formatter(d.format);
   let cfg;
   if (['bar', 'line', 'area'].includes(d.kind)) cfg = cartesian(d, t, fmt);
   else if (['pie', 'doughnut'].includes(d.kind)) cfg = pie(d, t);
-  else if (d.kind === 'calendar') cfg = calendar(d, t, fmt);
+  else if (d.kind === 'calendar') cfg = calendar(d, t, fmt, month);
+  else if (d.kind === 'histogram') cfg = histogram(d, t);
+  else if (d.kind === 'exceedance') cfg = exceedance(d, t);
   else if (d.kind === 'treemap') cfg = treemap(d, t);
   else if (d.kind === 'sankey') cfg = sankey(d, t);
   else cfg = await choropleth(d, t);
@@ -293,7 +418,18 @@ async function configFor(d) {
   if (d.kind === 'choropleth') {
     o.plugins.tooltip.callbacks = { label: item => `${item.raw.feature.properties.name}: ${fmt(item.raw.value)}` };
   }
-  if (d.kind === 'treemap') o.plugins.tooltip.callbacks = { title: items => items[0].raw.g, label: item => fmt(item.raw.v) };
+  if (['calendar', 'exceedance'].includes(d.kind)) o.plugins.tooltip = cfg.options.plugins.tooltip;
+  if (d.kind === 'treemap') {
+    // The innermost box under the pointer, named with its group: "Homeowners › Frame".
+    o.plugins.tooltip.filter = (item, i, items) => item.raw.l === Math.max(...items.map(x => x.raw.l));
+    o.plugins.tooltip.callbacks = {
+      title: items => { const r = items[0].raw; const src = treemapRow(r); return r.l > 0 ? `${src.s} › ${r.g}` : r.g; },
+      label: item => fmt(item.raw.v),
+    };
+  }
+  if (d.drill && d.drill.x !== undefined) {
+    o.onHover = (e, els, chart) => { e.native.target.style.cursor = clicked(d, els, chart) ? 'pointer' : ''; };
+  }
   if (d.kind === 'sankey') o.plugins.tooltip.callbacks = { label: item => { const p = item.raw; return `${item.dataset.labels[p.from]} → ${item.dataset.labels[p.to]}: ${fmt(p.flow)}`; } };
   return cfg;
 }
@@ -307,6 +443,8 @@ function ltChart(config) {
     zoomable: false,
     params: config.params,
     data: null,
+    months: [],               // calendar: the months with data, and the one shown
+    month: '',
 
     init() {
       this.$refs.box.style.height = this.$el.dataset.height + 'px';
@@ -335,6 +473,11 @@ function ltChart(config) {
         if (!res.ok) throw new Error(body.detail || `Could not load the chart (${res.status}).`);
         this.data = body;
         this.error = '';
+        if (body.kind === 'calendar') {
+          const { months, peak } = calendarMonths(body);
+          this.months = months;
+          if (!months.includes(this.month)) this.month = peak;
+        }
         await this.draw();
       } catch (err) {
         this.error = err.message;
@@ -351,11 +494,35 @@ function ltChart(config) {
       await libraries(d.kind);
       Chart.defaults.font.family = token('--font-ui');
       Chart.defaults.color = token('--text-2');
-      chart = new Chart(this.$refs.canvas, await configFor(d));
+      const cfg = await configFor(d, this.month);
+      if (config.grid || config.drill) cfg.options.onClick = (e, els, c) => this.open(clicked(d, els, c));
+      else delete cfg.options.onHover;
+      chart = new Chart(this.$refs.canvas, cfg);
       this.zoomable = d.x.type === 'time' && ['bar', 'line', 'area'].includes(d.kind);
     },
 
     resetZoom() { if (chart) chart.resetZoom(); },
+
+    // A click narrows the linked grid in place, or opens the drill page narrowed to it.
+    open(items) {
+      if (!items) return;
+      if (config.grid) {
+        window.dispatchEvent(new CustomEvent('gridnarrow', { detail: { key: config.grid, items } }));
+      } else if (config.drill) {
+        const q = new URLSearchParams(this.params);
+        items.forEach(i => q.set(i.name, i.value));
+        window.location = config.drill + '?' + q.toString();
+      }
+    },
+
+    // Calendar: step to the previous (-1) or next (1) month that has data.
+    stepMonth(step) {
+      const i = this.months.indexOf(this.month) + step;
+      if (i >= 0 && i < this.months.length) { this.month = this.months[i]; this.draw(); }
+    },
+    monthLabel() {
+      return this.month ? new Date(this.month + '-01T00:00:00Z').toLocaleDateString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
+    },
   };
 }
 })();

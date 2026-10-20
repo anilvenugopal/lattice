@@ -16,6 +16,8 @@ boundary: a row the query does not return cannot be shown, exported or acted on.
 
 from __future__ import annotations
 
+import json
+import re
 from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -24,7 +26,20 @@ from math import ceil
 
 from psycopg.errors import QueryCanceled
 from psycopg.postgres import types as pg_types
-from sqlalchemy import ColumnElement, String, and_, cast, column, false, func, or_, select, text
+from sqlalchemy import (
+    ColumnElement,
+    Date,
+    String,
+    and_,
+    bindparam,
+    cast,
+    column,
+    false,
+    func,
+    or_,
+    select,
+    text,
+)
 from sqlalchemy.exc import DBAPIError
 
 from lattice.components.grid.spec import GridSpec
@@ -35,6 +50,7 @@ from lattice.kernel.services import preferences
 PAGE_SIZES = preferences.PAGE_SIZES
 DEFAULT_PAGE_SIZE = preferences.DEFAULTS["page_size"]
 MAX_BULK = 10_000
+_DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
 MAX_EXPORT = 50_000
 
 
@@ -51,6 +67,7 @@ class GridQuery:
     # Set by the page that embeds the grid (build_grid(fixed=…)), not by the user.
     # It travels as x_{key} parameters and narrows the query; it is not access control.
     fixed: dict[str, list[str]] = field(default_factory=dict)
+    shape: str = ""                 # a drawn GeoJSON polygon (GridSpec.spatial grids)
 
     @classmethod
     def from_params(cls, params, spec: GridSpec, default_size: int = DEFAULT_PAGE_SIZE):
@@ -72,7 +89,9 @@ class GridQuery:
             view = ""
         if not view and spec.views:
             view = spec.views[0].key
+        shape = params.get("shape", "") if spec.spatial else ""
         return cls(
+            shape=shape,
             q=(params.get("q") or "").strip(),
             sort=params.get("sort", ""),
             page=max(1, as_int("page", 1)),
@@ -171,8 +190,12 @@ class _Wrapped:
         self.c = self.sq.c
 
     def match(self, key: str, values: list) -> ColumnElement:
-        values = _coerce_all(self.shape.types.get(key), values)
         col = self.c[key]
+        py = self.shape.types.get(key)
+        if py is datetime and values and all(_DAY.fullmatch(str(v)) for v in values):
+            days = _coerce_all(date, values)            # a day matches the whole day
+            return cast(col, Date).in_(days) if days else false()
+        values = _coerce_all(py, values)
         if not values:
             return false()
         return col == values[0] if len(values) == 1 else col.in_(values)
@@ -197,6 +220,12 @@ def filtered(spec: GridSpec, db: Db, user, gq: GridQuery):
             conds.append(g.match(key, val if isinstance(val, list) else [val]))
     for key, values in gq.filters.items():
         conds.append(g.match(key, values))
+    if gq.shape:
+        lon, lat = spec.spatial
+        point = func.ST_SetSRID(func.ST_MakePoint(g.c[lon], g.c[lat]), 4326)
+        area = func.ST_SetSRID(func.ST_GeomFromGeoJSON(bindparam("shape", check_shape(gq.shape))),
+                               4326)
+        conds.append(func.ST_Intersects(point, area))
     for term in gq.q.split():
         pattern = f"%{_escape_like(term)}%"
         conds.append(or_(*(
@@ -205,6 +234,23 @@ def filtered(spec: GridSpec, db: Db, user, gq: GridQuery):
     if conds:
         stmt = stmt.where(and_(*conds))
     return stmt, g
+
+
+MAX_SHAPE_POINTS = 2000
+
+
+def check_shape(shape: str) -> str:
+    """A drawn shape, validated: a GeoJSON Polygon or MultiPolygon of at most 2,000 points."""
+    try:
+        geometry = json.loads(shape)
+        kind = geometry["type"]
+        points = (sum(len(r) for r in geometry["coordinates"]) if kind == "Polygon" else
+                  sum(len(r) for p in geometry["coordinates"] for r in p))
+        if kind not in ("Polygon", "MultiPolygon") or points > MAX_SHAPE_POINTS:
+            raise ValueError
+    except (ValueError, KeyError, TypeError):
+        raise ValueError("The drawn shape must be a polygon of at most 2,000 points") from None
+    return json.dumps(geometry)
 
 
 def _ordered(stmt, g: _Wrapped, spec: GridSpec, gq: GridQuery):

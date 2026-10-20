@@ -78,7 +78,8 @@ hx-swap="innerHTML" hx-trigger="{{ trigger }}"
 
 {# One node of the form tree (lattice/components/forms/nodes.py Node), drawn by kind. #}
 {% macro node(key, n, depth, bare=false) -%}
-{% if n.kind == "object" %}
+{% if n.hidden %}
+{% elif n.kind == "object" %}
   {% if depth and not bare %}<fieldset class="jf__group"><legend class="jf__legend">{{ n.label }}</legend>
     {% if n.help %}<p class="field__hint">{{ n.help }}</p>{% endif %}{% endif %}
   {% if n.value %}<input type="hidden" name="{{ n.name }}/__present" value="1">{% endif %}
@@ -184,7 +185,15 @@ hx-swap="innerHTML" hx-trigger="{{ trigger }}"
 {% else %}
   <label class="field{% if n.error %} field--invalid{% endif %}">
     {{ label_of(n) }}
-    {% if n.widget == "textarea" %}
+    {% if n.widget == "file" %}
+    <span class="jf__file" x-data="{ chosen: '' }">
+      <input class="input" type="file" accept="{{ n.attrs.accept }}" aria-label="{{ n.label }}"
+             @change="const f = $event.target.files[0];
+                      if (f) f.text().then(t => { $refs.value.value = t; chosen = `${f.name}, ${Math.ceil(f.size / 1024)} KB`; })">
+      <textarea name="{{ n.name }}" x-ref="value" hidden>{{ n.value }}</textarea>
+      <span class="field__hint" x-text="chosen ? 'Loaded: ' + chosen : '{{ ('A file is loaded (%d characters). Choose another to replace it.' % (n.value | length)) if n.value else 'No file chosen.' }}'"></span>
+    </span>
+    {% elif n.widget == "textarea" %}
     <textarea class="input" name="{{ n.name }}" rows="4" placeholder="{{ n.placeholder }}"
               {% for a, v in n.attrs.items() %}{{ a }}="{{ v }}" {% endfor %}{% if n.readonly %}readonly{% endif %}>{{ n.value }}</textarea>
     {% else %}

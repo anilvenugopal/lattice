@@ -29,7 +29,8 @@ def clean_state(spec: GridSpec, state: str) -> str:
         return ((k == "sort" and v.lstrip("-") in sorts)
                 or (k == "size" and v.isdigit() and int(v) in engine.PAGE_SIZES)
                 or (k == "view" and spec.view(v) is not None)
-                or (k in filters and v != ""))
+                or (k in filters and v != "")
+                or (k == "shape" and spec.spatial is not None and v != ""))
 
     keep = [("q", v.strip()) if k == "q" else (k, v)
             for k, v in parse_qsl(state.lstrip("?"))

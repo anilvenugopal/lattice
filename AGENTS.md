@@ -50,10 +50,11 @@ are `LATTICE_*` environment variables (`.env.example`).
 | `lattice/cli.py` | `lattice migrate`, `new-migration`, `reset`, `create-user`, `seed`, `dev`, `docs build\|check` |
 | `lattice/testing.py` | Pytest fixtures for core and app tests (`db`, `users`, `client`, `as_user`, `host_apps`…) |
 | `lattice/templates/`, `lattice/static/` | Shell layout, shared macros, grid templates; the five CSS layers |
-| `apps/showcase/` | `lattice-showcase`: every component on sample data (Items, Live updates, Reading pane, Charts, Specs, Free-form, Flows), its `sql/` (schema `showcase` and named queries), templates, styles, seed and tests |
+| `apps/showcase/` | `lattice-showcase`: a catastrophe response app for a P&C carrier, using every component (Events, Exposure, Loss estimate, Claims, Intake, Deployment, Field reports, Notices, Locations), its `sql/` (schema `showcase` and named queries), templates, styles, seed and tests |
+| `packages/geoengine/` | `geoengine`: spatial engine on PostGIS (layers, point-in-area, distances, H3, quality tiers). Imports nothing of Lattice; Lattice never imports it; apps use it and list `geoengine.SCHEMA` in `library_schemas` (ADR 0013) |
 | `hosts/showcase/` | `lattice-showcase-host`: runs Lattice with the showcase app |
 | `tests/sql/`, `apps/*/tests/sql/` | Named queries the tests use to set up and check rows |
-| `compose.yaml` | Postgres 18 for development and tests (Taskline needs 18) |
+| `compose.yaml` | Postgres 18 with PostGIS for development and tests (Taskline needs 18, geoengine PostGIS) |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | Target design and decisions. Read before changing anything they cover |
 | `lattice/help/` | The user guide and developer guide, served in the app at `/help`. `developer/building-apps/` covers the grid, pages, styling and access; `developer/running/` covers sign-in, users and branding. `developer/reference/` is generated: run `uv run lattice docs build` after changing what it documents |
 
@@ -149,8 +150,8 @@ the layers below it. Apps import only `lattice.api`.
   permission. Hiding a button is not access control; the server checks all of
   them. `create_app` refuses an undeclared permission.
 - A grid's `query` is its access boundary. Rows a user may not see must be filtered
-  in that named query (see `apps/showcase/lattice_showcase/sql/inbox.sql`:
-  `WHERE m.owner_id = :user_id`). Actions, panels, export and Ctrl+J results all
+  in that named query (see `apps/showcase/lattice_showcase/sql/notices.sql`:
+  `WHERE owner_id = :user_id`). Actions, panels, export and Ctrl+J results all
   go through it. A detail route loading a record by id applies the same condition.
 - Never log or render passwords, session tokens or OIDC tokens. Session ids in
   the database are SHA-256 hashes of the cookie.
@@ -220,7 +221,7 @@ a package exporting `APP = AppManifest(key="<name>", …, sql=HERE / "sql")`,
 
 Declare a `RecordPage` on the list's grid and render it with
 `render_record_page(request, db, PAGE, id)`, as in
-`apps/showcase/lattice_showcase/items.py` (`DETAIL`). It reads the row through
+`apps/showcase/lattice_showcase/claims.py` (`DETAIL`). It reads the row through
 the grid's query, shows the grid's row actions, properties, panels and the
 audit history. Guide: `lattice/help/developer/building-apps/record-pages.md`.
 
@@ -261,11 +262,17 @@ a row in `templates/account/preferences.html`, and read it with
 
 ## The showcase app
 
-`apps/showcase` shows every component on sample data, one module per page:
-`items.py` (table grid, record page, plain forms), `jobs.py` (polling grid with
-state-dependent actions), `inbox.py` (split list and reading pane), `charts.py`,
-`specs.py` (forms from JSON Schema, the document store, an inferred form) and
-`flows.py`. Its data means nothing; a real host replaces it with its own apps.
+`apps/showcase` is a carrier responding to catastrophes (ADR 0013, step 10
+plan), one module per area: `events.py` (grid, record page with a stepper,
+declare form with variants and file upload), `exposure.py` (maps, a spatial
+grid filter, a background job), `losses.py` (Monte Carlo, histogram and
+exceedance charts), `claims.py` (bulk actions, record page with a tree,
+assessment documents, free-form field reports in a split grid, the polling
+intake simulator), `deployment.py` (graph with node actions), `notices.py`
+(rows scoped to the user), `locations.py` (draw-to-search, saved areas) and
+`cat_seed.py` (the data). Policies, claims and forecasts stand in for the
+systems of record and say so on screen; a real host replaces the showcase
+with its own apps.
 
 ## Writing style
 

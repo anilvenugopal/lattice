@@ -70,7 +70,7 @@ class Link:
     """A header button that opens a page, e.g. the record's edit form."""
 
     label: str
-    href: str                       # formatted with the row: "/showcase/items/{id}/edit"
+    href: str                       # formatted with the row: "/showcase/claims/{id}/assessment"
     icon: str = ""
     tone: Literal["default", "primary", "danger", "ghost"] = "default"
     permission: str = ""
@@ -93,7 +93,7 @@ class RecordPage:
     history: bool = True            # the audit timeline of the grid's actions on this row
     back: str = ""                  # "Back to list" target; default: the grid's path
     crumb: str = ""                 # breadcrumb text, formatted with the row; default: title
-    # The record's reference kind ("showcase.item"): other apps' RecordPanels for it appear
+    # The record's reference kind ("showcase.claim"): other apps' RecordPanels for it appear
     # after the app's own panels. Empty: none.
     reference_kind: str = ""
 

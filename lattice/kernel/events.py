@@ -1,6 +1,6 @@
 """Events between apps: CloudEvents 1.0 on an in-process bus (ADR 0011).
 
-    db.publish("comments.added", subject="urn:lattice:showcase.item:42", data={"id": 7})
+    db.publish("comments.added", subject="urn:lattice:showcase.claim:42", data={"id": 7})
 
     APP = AppManifest(key="comments", publishes=["comments.added"], …)
     APP = AppManifest(key="showcase", subscribes={"comments.added": on_comment}, …)

@@ -584,7 +584,7 @@ Two of Lattice's own checks now cover Notes too:
 From here:
 
 - **Detail page.** Declare a `RecordPage` on the grid, as `DETAIL` in
-  `apps/showcase/lattice_showcase/items.py` ([Record pages](../building-apps/record-pages.md)).
+  `apps/showcase/lattice_showcase/claims.py` ([Record pages](../building-apps/record-pages.md)).
 - **Side panel.** Add `panel=` to the grid.
 - **Home page tile.** Add `HomeTile("Pinned notes", GRID, view="pinned")` to
   the manifest's `tiles`.

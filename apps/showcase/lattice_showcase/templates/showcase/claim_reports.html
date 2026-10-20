@@ -1,0 +1,8 @@
+{# Claim page panel: free-form field reports about this claim. #}
+{% for r in values.reports %}
+  <div class="u-mt-3"><strong>{{ r.data.summary or "Report" }}</strong> <span class="u-muted u-small">{{ time_tag(r.updated_at) }}</span>
+    {% if r.data.observed %}<p class="prose">{{ r.data.observed }}</p>{% endif %}</div>
+{% else %}
+  <p class="u-muted">No reports from the field yet.</p>
+{% endfor %}
+{% if values.can_edit %}<a class="btn btn--sm u-mt-3" href="/showcase/claims/{{ values.claim_id }}/report">{{ icon('plus', 14) }}Write a report</a>{% endif %}

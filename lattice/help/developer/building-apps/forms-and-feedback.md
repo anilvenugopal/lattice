@@ -73,8 +73,9 @@ The template uses the field macros, which show the label, hint and error:
 ```
 
 For a create and an edit form that share one template, see
-`work_item_form.html` in the demo. It reads each value from `values` after a
-failed post, else from the record.
+`lattice/templates/admin/role_form.html` and `_role_page()` in
+`lattice/platform/admin.py`. Each route passes `values`: the submitted values
+after a failed post, else the record's.
 
 ## In-place forms with HTMX
 

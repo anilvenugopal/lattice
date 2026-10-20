@@ -1,0 +1,17 @@
+{# Claim page panel: the damage assessment, or a link to start one. #}
+{% from "components/macros.html" import prop_list %}
+{% set doc = values.doc %}
+{% if doc %}
+  {% set p = doc.data.property %}
+  {{ prop_list([
+    ("Inspected", p.kind | capitalize),
+    ("Repair estimate", doc.data.damage_estimate | money),
+    ("Photos", doc.data.photos),
+    ("Updated", time_tag(doc.updated_at)),
+  ], columns=2) }}
+  {% if doc.data.notes %}<p class="prose u-mt-3">{{ doc.data.notes }}</p>{% endif %}
+  {% if values.can_edit %}<a class="btn btn--sm u-mt-3" href="/showcase/claims/{{ values.claim_id }}/assessment">{{ icon('edit', 14) }}Edit assessment</a>{% endif %}
+{% else %}
+  <p class="u-muted">Not assessed yet.</p>
+  {% if values.can_edit %}<a class="btn btn--primary btn--sm" href="/showcase/claims/{{ values.claim_id }}/assessment">Start assessment</a>{% endif %}
+{% endif %}

@@ -121,6 +121,9 @@ Components style themselves with these tokens (`var(--text-2)`, `var(--sp-3)`), 
 | `--chart-danger` | `#BE2D44` | `#E8657A` |  |
 | `--chart-accent` | `#7A5CC8` | `#A993E6` |  |
 | `--chart-grid` | `#E7EAF0` | `#232B3F` |  |
+| `--map-land` | `#F7F8FA` | `#151B2B` |  |
+| `--map-water` | `#EEF3FC` | `#0A0E18` |  |
+| `--map-line` | `#C3CAD6` | `#313A50` |  |
 | `--focus-ring` | `0 0 0 3px rgba(46, 87, 168, 0.28)` | `0 0 0 3px rgba(143, 170, 220, 0.35)` |  |
 | `--shadow-sm` | `0 1px 2px rgba(15, 22, 41, 0.06)` | `0 1px 2px rgba(0, 0, 0, 0.4)` |  |
 | `--shadow-md` | `0 4px 12px rgba(15, 22, 41, 0.10), 0 1px 3px rgba(15, 22, 41, 0.06)` | `0 4px 14px rgba(0, 0, 0, 0.45)` |  |

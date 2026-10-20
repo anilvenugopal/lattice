@@ -33,6 +33,7 @@ from lattice.components.grid import (
     render_grid_page,
 )
 from lattice.components.manifest import AppManifest
+from lattice.components.map import Areas, Hexagons, MapSpec, Points, Regions, build_map
 from lattice.components.record import Link, Panel, RecordPage, RecordPanel, render_record_page
 from lattice.components.references import Ref, ReferenceKind, Resolved, parse, urn
 from lattice.components.references import resolve as resolve_ref
@@ -61,6 +62,8 @@ __all__ = [
     # Working across apps (ADR 0011)
     "Ref", "ReferenceKind", "Resolved", "urn", "parse", "resolve_ref", "RecordPanel",
     "CloudEvent",
+    # Maps
+    "MapSpec", "Points", "Hexagons", "Regions", "Areas", "build_map",
     # Charts
     "ChartSpec", "Count", "Sum", "Avg", "Min", "Max", "Time", "Threshold", "build_chart",
     # Forms from JSON Schema

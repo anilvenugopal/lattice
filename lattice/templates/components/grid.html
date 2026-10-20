@@ -24,9 +24,12 @@
     <input type="hidden" name="sort" x-ref="sort" value="{{ gq.sort }}">
     <input type="hidden" name="page" x-ref="page" value="{{ gq.page }}">
     <input type="hidden" name="size" x-ref="size" value="{{ gq.size }}">
-    {% for key, values in gq.fixed.items() %}{% for v in values %}
+    {% if spec.spatial %}<input type="hidden" name="shape" x-ref="shape" value="{{ gq.shape }}">{% endif %}
+    {% set narrowed = grid.config.narrowed | map(attribute="name") | list %}
+    {% for key, values in gq.fixed.items() if ("x_" ~ key) not in narrowed %}{% for v in values %}
     <input type="hidden" name="x_{{ key }}" value="{{ v }}">
     {% endfor %}{% endfor %}
+    <template x-for="n in narrowed" :key="n.name + '=' + n.value"><input type="hidden" :name="n.name" :value="n.value"></template>
 
     <label class="dg__search">
       {{ icon('search', 15) }}
@@ -55,6 +58,14 @@
       </div>
     </div>
     {% endfor %}
+    {% if spec.spatial %}
+    <button type="button" class="chip is-on" x-show="hasShape" x-cloak @click="setShape('')" data-tip="Draw on the map to change it">
+      {{ icon('layout', 13) }}Inside drawn shape{{ icon('x', 13) }}</button>
+    {% endif %}
+    <template x-for="n in narrowed" :key="n.name + '=' + n.value">
+      <button type="button" class="chip is-on" @click="unnarrow(n.name)" data-tip="Show all again">
+        <span x-text="n.label"></span>{{ icon('x', 13) }}</button>
+    </template>
     <button type="button" class="btn btn--link btn--sm" x-show="dirty" x-cloak @click="clearAll()">Clear all</button>
 
     <span class="dg__spacer"></span>

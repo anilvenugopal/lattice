@@ -26,7 +26,7 @@ with a selection.
 | `path` | `str` | required | page that hosts the grid |
 | `query` | `Query` | required | A named query (sql/<area>.sql) returning the rows, with an "id" column. It may use :user_id (the signed-in user) to scope rows. |
 | `columns` | `list[Column]` | required | in display order |
-| `params` | `dict[str, Any]` | `{}` | Fixed values the query is run with, beside :user_id, e.g. {"kind": "showcase.spec"}. Part of the access boundary: users cannot change them. |
+| `params` | `dict[str, Any]` | `{}` | Fixed values the query is run with, beside :user_id, e.g. {"kind": "showcase.field_report"}. Part of the access boundary: users cannot change them. |
 | `search` | `list[str]` | `[]` | columns matched by the search box (ILIKE) |
 | `filters` | `list[Filter]` | `[]` | dropdowns in the filter bar |
 | `views` | `list[View]` | `[]` | tabs of preset filters |
@@ -45,6 +45,7 @@ with a selection.
 | `empty_title` | `str` | `'Nothing here yet'` | shown when no rows match |
 | `empty_text` | `str` | `''` | second line under empty_title |
 | `palette` | `Palette \| None` | `None` | make rows findable from Ctrl+J |
+| `spatial` | `tuple[str, str] \| None` | `None` | (lon, lat) columns: rows can then be narrowed to a shape drawn on a linked map. The shape travels in the URL like a filter. Needs PostGIS (ADR 0013). |
 
 ## Column
 
@@ -145,6 +146,7 @@ What an action handler receives.
 | `ids` | `list[Any]` | required | eligible ids, already scoped by GridSpec.query |
 | `rows` | `list[dict]` | required | the eligible rows as the grid query returns them |
 | `values` | `dict[str, str]` | required | Field inputs |
+| `query` | `Any` | `None` | The grid's state when the action ran: search, filters, view, fixed filters and a drawn shape (query.shape), e.g. for a toolbar action that saves what the user narrowed to. |
 
 ## ActionResult
 
@@ -167,6 +169,6 @@ Strings are formatted with the row; `href` values are URL-encoded.
 | Field | Type | Default | Description |
 |---|---|---|---|
 | `title` | `str` | required | result title, formatted with the row: "{ref} · {title}" |
-| `href` | `str` | required | opened with Enter: "/showcase/items/{id}" |
+| `href` | `str` | required | opened with Enter: "/showcase/claims/{id}" |
 | `subtitle` | `str` | `''` | muted second line |
 | `icon` | `str` | `'link'` | result icon |

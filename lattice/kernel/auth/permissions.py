@@ -2,12 +2,14 @@
 
 An app declares its permissions in its manifest:
 
-    Permission("showcase.items.edit", "Edit work items",
-               "Create, edit, assign and approve work items.", default_roles=("editor",))
+    Permission("showcase.claims.manage", "Handle claims",
+               "Assign claims to zones and surveyors, set priority, record inspections, "
+               "assessments and field reports, and run the intake simulator.",
+               default_roles=("editor",))
 
-Every check names a permission, never a role: `require("showcase.items.edit")` on a
-route, `permission="showcase.items.edit"` on a NavNode, GridSpec or Action, and
-`current_user.can("showcase.items.edit")` in a template.
+Every check names a permission, never a role: `require("showcase.claims.manage")` on a
+route, `permission="showcase.claims.manage"` on a NavNode, GridSpec or Action, and
+`current_user.can("showcase.claims.manage")` in a template.
 
 The catalogue (which permissions exist) comes from the code. Which role has
 which permission is data in lattice.role_permission, edited in Administration ›
@@ -34,7 +36,7 @@ class BadPermission(ValueError):
 
 @dataclass(frozen=True)
 class Permission:
-    key: str                                   # "{app}.{area}.{verb}", e.g. "showcase.items.edit"
+    key: str                                   # "{app}.{area}.{verb}", e.g. "showcase.claims.manage"
     label: str                                 # shown in Administration › Roles
     description: str = ""                      # one sentence: what it allows
     default_roles: tuple[str, ...] = ()        # granted once, when first migrated
@@ -52,7 +54,7 @@ def register(permissions: list[Permission], prefix: str) -> None:
     for p in permissions:
         if not _KEY.match(p.key):
             raise BadPermission(f"Permission {p.key!r}: use dotted lower_case words, "
-                                "e.g. 'showcase.items.edit'")
+                                "e.g. 'showcase.claims.manage'")
         if not p.key.startswith(prefix):
             raise BadPermission(f"Permission {p.key!r} must start with {prefix!r}")
         if p.key in CATALOGUE:

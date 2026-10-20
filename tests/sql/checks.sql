@@ -69,3 +69,11 @@ SELECT code, label, description FROM lattice.role WHERE code = :code;
 -- name: audit_detail
 -- The detail of the latest audit event with this action.
 SELECT detail FROM lattice.audit_event WHERE action = :action ORDER BY id DESC LIMIT 1;
+
+-- name: mapped_events
+-- Audit events placed on a map for the map tests: each at a made-up point, county and cell.
+SELECT id, -95.0 + id * 0.01 AS lon, 29.5 AS lat, action, target_type,
+       CAST(target_id AS text) AS county_fips, CAST('87446124cffffff' AS text) AS h3_7,
+       CAST(1 AS integer) AS weight
+FROM lattice.audit_event
+WHERE action LIKE 'maptest.%';

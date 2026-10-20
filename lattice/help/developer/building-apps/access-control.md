@@ -18,7 +18,7 @@ Both are checked on the server. Hiding a button is never the check.
 | Idea | What it is | Example | Who sets it |
 |---|---|---|---|
 | **User** | A person who can sign in | `editor@example.com` | Administrators, in Administration › Users |
-| **Permission** | One thing someone may do | `showcase.items.edit`: create, edit, assign and change items | **Developers**, in the app's manifest |
+| **Permission** | One thing someone may do | `showcase.claims.manage`: assign claims, set priority, record inspections and assessments | **Developers**, in the app's manifest |
 | **Role** | A named set of permissions | Editor; or a custom "Auditor" with `lattice.audit.view` | **Administrators**, in Administration › Roles |
 
 A user has one or more roles. Their permissions are everything their roles
@@ -102,10 +102,10 @@ Roles do not decide which rows a user may see. The grid's query does:
 
 ```sql
 -- name: grid
--- The signed-in user's messages: each user sees only their own.
-SELECT m.id, m.subject, m.received_at
-FROM showcase.message m
-WHERE m.owner_id = :user_id;
+-- The current user's notices, and nobody else's: this query is the grid's access boundary.
+SELECT id, subject, body, href, is_read, created_at
+FROM showcase.notice
+WHERE owner_id = :user_id;
 ```
 
 The grid fills `:user_id` with the signed-in user's id on every request; nothing
@@ -126,15 +126,18 @@ an HTMX endpoint that loads a record by id returns 404 when the user could not
 see that record in the list. Put the same condition in the record's own query:
 
 ```sql
--- name: by_id
--- One of the signed-in user's messages; no row if it is someone else's.
-SELECT id, subject, body, received_at FROM showcase.message
-WHERE id = :id AND owner_id = :user_id;
+-- name: open
+-- Mark one of the user's notices read and return where it points.
+UPDATE showcase.notice SET is_read = true
+WHERE id = :id AND owner_id = :user_id
+RETURNING href;
 ```
 
 ```python
-message = db.one(SQL.by_id, id=message_id, user_id=request.state.user.id)   # else 404
+notice = db.one(SQL.open, id=notice_id, user_id=user.id)   # else 404
 ```
+
+The showcase's Notices (`notices.py`, `sql/notices.sql`) work this way.
 
 A grid's side panel does not need this: the grid loads the row through its own
 query before it calls `panel`.

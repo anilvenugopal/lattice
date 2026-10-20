@@ -39,7 +39,7 @@ which roles have them.
 | Role | Has |
 |---|---|
 | `admin` (Administrator) | **Every permission, always**, including ones a new app adds. Cannot be edited |
-| `editor` (Editor) | The permissions apps give it by default, such as `showcase.items.edit`. Editable |
+| `editor` (Editor) | The permissions apps give it by default, such as `showcase.claims.manage`. Editable |
 | `viewer` (Viewer) | None by default: it can read every page that needs no permission. Editable |
 
 **What roles control.** Roles decide which features a user can use, not which

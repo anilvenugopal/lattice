@@ -23,10 +23,11 @@ def build_chart(request: Request, chart: ChartSpec, *, linked: bool = True,
         raise HTTPException(403)
     filters = {f"f_{f.key}" for f in chart.source.filters}
     params = [(k, v) for k, v in request.query_params.multi_items()
-              if linked and (k in ("q", "view") or k in filters)]
-    for key, value in (fixed or {}).items():
-        params += [(f"x_{key}", str(v)) for v in (value if isinstance(value, (list, tuple))
-                                                  else [value])]
+              if linked and (k in ("q", "view", "shape") or k in filters or k.startswith("x_"))]
+    # The page's fixed values; narrowings from the URL travel with the grid's state.
+    pinned = [(f"x_{key}", str(v)) for key, value in (fixed or {}).items()
+              for v in (value if isinstance(value, (list, tuple)) else [value])]
+    params += pinned
     return {
         "spec": chart,
         "config": {
@@ -34,6 +35,7 @@ def build_chart(request: Request, chart: ChartSpec, *, linked: bool = True,
             "endpoint": f"/_chart/{chart.key}/data",
             "grid": chart.source.key if linked else "",
             "params": urlencode(params),
-            "fixed": urlencode([(k, v) for k, v in params if k.startswith("x_")]),
+            "fixed": urlencode(pinned),
+            "drill": chart.drill,
         },
     }

@@ -1,0 +1,24 @@
+{% extends "base/shell.html" %}
+{% from "components/macros.html" import page_header, card %}
+{% from "components/grid.html" import data_grid %}
+{% from "components/map.html" import map_view %}
+{% from "components/chart.html" import chart %}
+{% from "components/json_form.html" import json_form with context %}
+{% block main %}
+<div class="page stack-lg">
+  {% call page_header("Exposure: " ~ event.name, event.code ~ " · footprint " ~ ((footprint.label ~ " (v" ~ footprint.version ~ ")") if footprint else "none yet") ~ ". Draw on the map to narrow everything to a shape.") %}
+    <a class="btn btn--ghost" href="/showcase/events/{{ event.id }}">{{ icon('chevron-left', 14) }}Back to the event</a>
+  {% endcall %}
+  {{ map_view(map) }}
+  <div class="chart-row">{% for c in charts %}{{ chart(c) }}{% endfor %}</div>
+  {{ data_grid(grid) }}
+  <div class="grid-2">
+    {% call card("Exposure runs", "Each footprint version is matched against every insured location", flush=True) %}{{ data_grid(runs) }}{% endcall %}
+    {% if can_manage %}
+    {% call card("Add a footprint version", "A new advisory or perimeter: its exposure run starts on its own") %}
+      {{ json_form(form, action="/showcase/events/%s/footprints" % event.id, submit="Add version") }}
+    {% endcall %}
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

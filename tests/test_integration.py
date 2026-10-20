@@ -79,11 +79,11 @@ def host_apps():
 
 
 def test_urns():
-    assert urn("showcase.item", 42) == "urn:lattice:showcase.item:42"
-    ref = parse("urn:lattice:showcase.item:IT:9")
-    assert (ref.kind, ref.id, ref.app) == ("showcase.item", "IT:9", "showcase")
+    assert urn("showcase.claim", 42) == "urn:lattice:showcase.claim:42"
+    ref = parse("urn:lattice:showcase.claim:IT:9")
+    assert (ref.kind, ref.id, ref.app) == ("showcase.claim", "IT:9", "showcase")
     with pytest.raises(BadReference):
-        parse("showcase.item:42")
+        parse("showcase.claim:42")
 
 
 def test_ref_renders_a_link_or_unavailable(client, db, users):

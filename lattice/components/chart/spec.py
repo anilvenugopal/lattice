@@ -16,7 +16,7 @@ from typing import Literal
 from lattice.components.grid.spec import GridSpec, Tone
 
 ChartKind = Literal["bar", "line", "area", "pie", "doughnut", "calendar", "treemap", "sankey",
-                    "choropleth"]
+                    "choropleth", "histogram", "exceedance"]
 TimeUnit = Literal["hour", "day", "week", "month", "quarter", "year"]
 ValueFormat = Literal["number", "money", "percent"]
 
@@ -79,7 +79,11 @@ class ChartSpec:
     kind and its dimensions:
       bar, line, area   x (a column or Time), optional series (one dataset per value)
       pie, doughnut     x (a column)
-      calendar          x = Time(column, "day"): a calendar heatmap of the measure
+      calendar          x = Time(column, "day"): one month as a calendar, shaded by the measure;
+                        it opens on the busiest day's month, with buttons for the others
+      histogram         x (a numeric column): how many rows fall in each of `bins` ranges
+      exceedance        x (a numeric column): the chance a value exceeds each amount, e.g.
+                        losses across simulations; thresholds mark probabilities in %
       treemap           x (a column), optional series (groups)
       sankey            x (from) and series (to): flows between two columns
       choropleth        x: a column of country names or ISO 3166 numeric codes
@@ -95,10 +99,14 @@ class ChartSpec:
     stacked: bool = False           # bar and area: stack the series
     horizontal: bool = False        # bar: bars run left to right
     limit: int = 12                 # category charts: the largest n categories; the rest is "Other"
+    bins: int = 20                  # histogram: how many equal ranges
     thresholds: list[Threshold] = field(default_factory=list)  # bar, line, area
     format: ValueFormat = "number"  # how values show in tooltips and the axis
     height: int = 280               # pixels
     permission: str = ""            # who may see it, in addition to the grid's permission
+    # Clicking a bar, slice, box or day narrows the list to it: the grid on the same page
+    # (linked charts), or this list page, opened with the chart's rows narrowed further.
+    drill: str = ""                 # e.g. "/showcase/claims"
     empty_text: str = "No data for these filters."
 
     @property
@@ -126,5 +134,8 @@ class ChartSpec:
             raise ValueError(f"chart {self.key!r}: a {self.kind} needs a column for x, not Time")
         if self.kind == "sankey" and not self.series:
             raise ValueError(f"chart {self.key!r}: a sankey needs series (the 'to' column)")
+        if self.kind in ("histogram", "exceedance") and (time or self.series):
+            raise ValueError(f"chart {self.key!r}: a {self.kind} needs a numeric column for x "
+                             "and no series")
         if self.kind in ("pie", "doughnut", "choropleth", "calendar") and self.series:
             raise ValueError(f"chart {self.key!r}: a {self.kind} has no series")

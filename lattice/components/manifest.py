@@ -12,6 +12,7 @@ from lattice.components.chart import ChartSpec
 from lattice.components.documents import DocumentKind
 from lattice.components.forms import FormSpec, SchemaDef
 from lattice.components.grid import GridSpec
+from lattice.components.map import MapSpec
 from lattice.components.record import RecordPanel
 from lattice.components.references import ReferenceKind
 from lattice.components.search.providers import SearchProvider
@@ -36,6 +37,7 @@ class AppManifest:
     # registered for actions, export, Ctrl+J and tiles
     grids: list[GridSpec] = field(default_factory=list)
     charts: list[ChartSpec] = field(default_factory=list)  # served at /_chart/{key}/data
+    maps: list[MapSpec] = field(default_factory=list)      # served at /_map/{key}/data
     forms: list[FormSpec] = field(default_factory=list)  # JSON Schema forms: /_form/{key}/render
     schemas: list[SchemaDef] = field(default_factory=list)  # named schemas forms can apply
     documents: list[DocumentKind] = field(default_factory=list)  # kinds in the document store
@@ -58,6 +60,9 @@ class AppManifest:
     icons: dict[str, str] = field(default_factory=dict)
     # What the app's users may do: checked with require(), permission=, can().
     permissions: list[Permission] = field(default_factory=list)
+    # Schemas of libraries the app uses, as (schema, migrations folder), e.g. geoengine.SCHEMA.
+    # `lattice migrate` applies them before the app's own, once even if several apps list them.
+    library_schemas: list[tuple[str, Path]] = field(default_factory=list)
     # Folder of the app's SQL: named queries in *.sql, migrations in schema/*.sql.
     # The migrations create and fill the Postgres schema named after the app's key.
     sql: Path | None = None

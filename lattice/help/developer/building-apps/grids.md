@@ -137,10 +137,12 @@ column it selects is a row key: `Column`, `search`, `Filter`, `View`, `when`,
   needs `assignee_id` in the select. It does not need a `Column`; only keys in
   `columns` are shown.
 - **It is the access boundary.** Filter out rows the user may not see here. The
-  query may use `:user_id`, the signed-in user, as the demo Inbox does:
-  `WHERE m.owner_id = :user_id`. Paging, panels, actions, export, tiles and
+  query may use `:user_id`, the signed-in user, as the showcase's Notices do:
+  `WHERE owner_id = :user_id` (`apps/showcase/lattice_showcase/sql/notices.sql`). Paging, panels, actions, export, tiles and
   Ctrl+J all run through it, so a row the query does not return cannot be
   reached any other way.
+- **`spatial=("lon", "lat")` allows a drawn shape** as a filter, from a linked
+  [map](maps.md#draw-to-search). Needs PostGIS.
 - **`params` binds fixed values.** `params={"kind": "demo.policy"}` runs the
   query with `:kind` bound, so one query can serve several grids (the
   [document store](json-forms.md#the-document-store) does this). Users cannot
@@ -165,9 +167,9 @@ So the query can be as complex as SQL allows, and every column it returns can
 be shown, searched, filtered and sorted. Postgres merges the wrapping away
 before it runs, so it costs nothing (see [Grid performance](grid-performance.md)).
 
-**Joins.** Join as many tables as you need. The showcase's Items grid joins the
-users table to show each item's owner by name, and its own table for the parent's
-reference (`apps/showcase/lattice_showcase/sql/items.sql`).
+**Joins.** Join as many tables as you need. The showcase's Claims grid joins
+each claim's event, location, zone and surveyor, and the users table to show its
+handler by name (`apps/showcase/lattice_showcase/sql/claims.sql`).
 
 **Lookups, counts and computed values.** Anything SQL can compute becomes a
 column. For example, each customer with their number of open tickets and a
@@ -297,7 +299,7 @@ a list of people.
   `row_href`.
 
 **Split** (`layout="split"`) shows the list on the left and a reading pane on
-the right, as in the demo Inbox.
+the right, as in the showcase's Field reports.
 
 A **panel** is a function `(db, user, row) -> dict`. It returns a
 `template` and the context for it:
@@ -382,9 +384,9 @@ def customer(customer_id: int, request: Request, db: Db = Depends(get_db)):
 {% call card("Tickets", flush=True) %}{{ data_grid(tickets) }}{% endcall %}
 ```
 
-A working example is in the showcase: open any item. **Other items in this
-category** is the Items grid fixed to that item's category (`_related()` in
-`apps/showcase/lattice_showcase/items.py`).
+A working example is in the showcase: open an event's Exposure page. **Exposure
+runs** is the `RUNS` grid fixed to that event (`_page()` in
+`apps/showcase/lattice_showcase/exposure.py`).
 
 ### What `fixed` does
 

@@ -56,11 +56,22 @@ from lattice.api import AppManifest, GridSpec, render_page
 | `Ref` | class | A parsed reference. |
 | `ReferenceKind` | class |  |
 | `Resolved` | class | What a reference shows: its title, link and, optionally, a status badge. |
-| `urn` `(kind, record_id)` | function | The reference to one record: urn("showcase.item", 42) -> "urn:lattice:showcase.item:42". |
+| `urn` `(kind, record_id)` | function | The reference to one record: urn("showcase.claim", 42) -> "urn:lattice:showcase.claim:42". |
 | `parse` `(value)` | function |  |
 | `resolve_ref` `(db, user, value)` | function | The reference as this user may see it; None for an unknown kind, a missing record, or one the user may not see. |
 | `RecordPanel` | class | A panel an app adds to other apps' record pages, matched on reference kind (ADR 0011). |
 | `CloudEvent` | class | A CloudEvents 1.0 event, as subscribers receive it. |
+
+## Maps
+
+| Name | Kind | Description |
+|---|---|---|
+| `MapSpec` | class |  |
+| `Points` | class | One dot per row, at the row's longitude and latitude. |
+| `Hexagons` | class | A measure per H3 cell, shaded from light to dark. |
+| `Regions` | class | A measure per US state or county, shaded from light to dark. |
+| `Areas` | class | Shapes from a function, not the grid: a fire perimeter, a forecast cone. |
+| `build_map` `(request, spec, linked=True, fixed=None)` | function | Context for one map. `linked` and `fixed` work as for build_chart(). |
 
 ## Charts
 

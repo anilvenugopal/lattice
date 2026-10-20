@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
+from datetime import date
 
 from fastapi import HTTPException, Request
 from starlette.datastructures import QueryParams
@@ -11,7 +13,7 @@ from lattice.components.grid import engine
 from lattice.components.grid.spec import Field, Filter, GridSpec
 from lattice.kernel.database import Db
 from lattice.kernel.services import preferences
-from lattice.kernel.web import fmt, render, render_page
+from lattice.kernel.web import fmt, label_for, render, render_page
 
 
 def hidden_columns(spec: GridSpec, user) -> set[str]:
@@ -30,6 +32,15 @@ def field_config(fld: Field, db, user) -> dict:
             "options": [list(o) for o in resolve_options(fld.options, db, user)]}
 
 
+def narrow_label(spec: GridSpec, key: str, value: str) -> str:
+    """Chip text for a narrowing: "Construction: Frame", "Reported: 9 Oct 2026"."""
+    col = spec.column(key)
+    text = str(label_for(col, value))
+    with contextlib.suppress(ValueError):
+        text = date.fromisoformat(value).strftime("%-d %b %Y") if len(value) == 10 else text
+    return f"{col.label if col else key.replace('_', ' ').capitalize()}: {text}"
+
+
 def build_grid(request: Request, db: Db, spec: GridSpec, *, views_in_nav: bool = False,
                sync_url: bool = True, fixed: dict | None = None) -> dict:
     """Template context for components/grid.html: render it with `data_grid(grid)`.
@@ -45,9 +56,12 @@ def build_grid(request: Request, db: Db, spec: GridSpec, *, views_in_nav: bool =
     default_size = int(preferences.get(user, "page_size"))
     params = request.query_params if sync_url else QueryParams()
     gq = engine.GridQuery.from_params(params, spec, default_size)
-    if fixed is not None:
-        gq.fixed = {k: [str(x) for x in (v if isinstance(v, (list, tuple)) else [v])]
-                    for k, v in fixed.items()}
+    # x_ values in the URL (a chart clicked on another page) narrow the rows too, shown as
+    # chips the user can remove; the page's own fixed values are not shown.
+    pinned = {k: [str(x) for x in (v if isinstance(v, (list, tuple)) else [v])]
+              for k, v in (fixed or {}).items()}
+    narrowed = {k: v for k, v in gq.fixed.items() if k not in pinned}
+    gq.fixed = {**narrowed, **pinned}
     page = engine.fetch_page(spec, db, user, gq)
     hidden = hidden_columns(spec, user)
     actions = spec.actions_for(user)
@@ -58,7 +72,8 @@ def build_grid(request: Request, db: Db, spec: GridSpec, *, views_in_nav: bool =
     current_sort = gq.effective_sort(spec)
     config = {
         "key": spec.key,
-        "path": spec.path,
+        "path": request.url.path,           # the page the grid is on, for its URL state
+        "pinned": [f"x_{k}" for k in pinned],
         "endpoint": f"/_grid/{spec.key}",
         "selection": spec.selection,
         "layout": spec.layout,
@@ -66,8 +81,11 @@ def build_grid(request: Request, db: Db, spec: GridSpec, *, views_in_nav: bool =
         "rowHref": spec.row_href,
         "poll": spec.poll_seconds,
         "syncUrl": sync_url,
+        "spatial": spec.spatial is not None,
         "viewsInNav": views_in_nav,
         "total": page.total,
+        "narrowed": [{"name": f"x_{k}", "value": v, "label": narrow_label(spec, k, v)}
+                     for k, values in narrowed.items() for v in values],
         "view": gq.view,
         "defaultView": spec.views[0].key if spec.views else "",
         "sort": current_sort,
