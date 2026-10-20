@@ -82,3 +82,10 @@ def test_seed_fills_every_page(db, users):
     assert db.value(CHECK.count_items) == 400
     assert db.value(CHECK.count_links) > 15
     assert len(documents.all_of(db, specs.SPEC)) == 2
+    assert db.value(CHECK.count_locations) > 40_000
+    summary = {r["code"]: (r["status"], r["footprints"]) for r in db.all(CHECK.event_summary)}
+    assert summary == {"CAT-2602": ("closed", 1), "CAT-2604": ("closed", 1),
+                       "CAT-2608": ("recovery", 2), "CAT-2610": ("response", 3)}
+    assert all(r["claims"] > 100 for r in db.all(CHECK.event_summary))
+    tiv = [r["tiv"] for r in db.all(CHECK.delta_exposure)]
+    assert tiv[1] > tiv[2]              # the forecast moved east, away from Houston

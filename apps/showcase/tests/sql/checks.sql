@@ -56,3 +56,22 @@ SELECT count(*) FROM showcase.item;
 -- name: count_links
 -- How many item dependencies exist.
 SELECT count(*) FROM showcase.item_link;
+
+-- name: event_summary
+-- Each event's status, footprint versions and claims, for the seed test.
+SELECT e.code, e.status,
+       (SELECT count(*) FROM showcase.footprint f WHERE f.event_id = e.id) AS footprints,
+       (SELECT count(*) FROM showcase.claim c WHERE c.event_id = e.id) AS claims
+FROM showcase.event e ORDER BY e.code;
+
+-- name: delta_exposure
+-- Hurricane Delta's exposed insured value at each advisory.
+SELECT f.version, r.tiv
+FROM showcase.exposure_run r
+JOIN showcase.footprint f ON f.id = r.footprint_id
+JOIN showcase.event e ON e.id = r.event_id
+WHERE e.code = 'CAT-2610' ORDER BY f.version;
+
+-- name: count_locations
+-- How many insured locations the snapshot holds.
+SELECT count(*) FROM showcase.location;

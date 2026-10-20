@@ -7,6 +7,7 @@ data; nothing here models a business.
 
 from pathlib import Path
 
+import geoengine
 from lattice.api import AppManifest, NavNode
 from lattice_showcase import charts, flows, inbox, items, jobs, links, overview, specs
 from lattice_showcase.seed import seed
@@ -42,6 +43,7 @@ APP = AppManifest(
     templates=HERE / "templates",
     help=HERE / "help",
     sql=HERE / "sql",
+    library_schemas=[geoengine.SCHEMA],
     nav=[
         NavNode("overview", "Showcase", "/showcase", icon="showcase:app",
                 keywords="demo examples components gallery",

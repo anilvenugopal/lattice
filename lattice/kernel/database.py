@@ -98,6 +98,13 @@ class Db:
     def run(self, query: Query, **values) -> int:
         return self._execute(query, values).rowcount
 
+    def run_many(self, query: Query, rows: list[dict[str, Any]]) -> None:
+        """Run a statement once per row, in one round trip batch: bulk inserts and updates."""
+        if not isinstance(query, Query):
+            raise TypeError("Db runs named queries from a sql/ folder, not SQL text")
+        if rows:
+            self.conn.execute(query.statement, [_bind(r) for r in rows])
+
 
 @contextmanager
 def transaction() -> Iterator[Db]:

@@ -7,10 +7,11 @@ name = "lattice-showcase"
 version = "0.1.0"
 description = "Lattice showcase: every component on sample data, one page per capability."
 requires-python = ">=3.14"
-dependencies = ["lattice"]
+dependencies = ["lattice", "geoengine"]
 
 [tool.uv.sources]
 lattice = { workspace = true }
+geoengine = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
 packages = ["lattice_showcase"]

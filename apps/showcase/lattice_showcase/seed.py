@@ -11,7 +11,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from lattice.api import Db, documents, sql_queries
-from lattice_showcase import inbox, items, jobs, specs
+from lattice_showcase import cat_seed, inbox, items, jobs, specs
 
 SQL = sql_queries(Path(__file__).parent / "sql").seed
 
@@ -135,3 +135,4 @@ def seed(db: Db) -> None:
     people = [r["id"] for r in db.all(SQL.people)]
     seed_examples(db, people)
     seed_documents(db, _Seeder(people[0]))
+    cat_seed.seed(db)
