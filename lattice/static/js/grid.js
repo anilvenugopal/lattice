@@ -7,6 +7,12 @@
 (function () {
 document.addEventListener('alpine:init', () => Alpine.data('dataGrid', dataGrid));
 
+function describeNear(near, label) {
+  if (!near) return '';
+  const miles = Number(near.split(',')[2]) / 1609.344;
+  return `Within ${miles >= 1 ? Math.round(miles) : miles.toFixed(1)} mi of ${label || 'the pin'}`;
+}
+
 function dataGrid(config) {
   return {
     config,
@@ -29,6 +35,7 @@ function dataGrid(config) {
     savedDialog: { open: false, id: null, name: '', shared: false, busy: false, deleting: false },
 
     hasShape: false,
+    nearText: '',          // "Within 5 mi of Lake Charles, LA": a place searched on a linked map
     narrowed: config.narrowed,   // [{name: "x_col", value, label}]: a clicked chart's narrowing
 
     init() {
@@ -38,6 +45,9 @@ function dataGrid(config) {
         this.hasShape = !!this.$refs.shape.value;
         this.onShape = e => { if (e.detail.key === config.key) this.setShape(e.detail.shape ? JSON.stringify(e.detail.shape) : ''); };
         window.addEventListener('mapshape', this.onShape);
+        this.nearText = describeNear(this.$refs.near.value, this.$refs.nearLabel.value);
+        this.onNear = e => { if (e.detail.key === config.key) this.setNear(e.detail.near); };
+        window.addEventListener('mapnear', this.onNear);
       }
       // A chart linked to this grid narrows it to the part clicked (static/js/charts.js).
       this.onNarrow = e => { if (e.detail.key === config.key) this.narrow(e.detail.items); };
@@ -54,6 +64,7 @@ function dataGrid(config) {
     destroy() {
       clearInterval(this.timer);
       if (this.onShape) window.removeEventListener('mapshape', this.onShape);
+      if (this.onNear) window.removeEventListener('mapnear', this.onNear);
       window.removeEventListener('gridnarrow', this.onNarrow);
       window.removeEventListener('gridpanel', this.onPanel);
     },
@@ -76,6 +87,14 @@ function dataGrid(config) {
         this.$refs.state.prepend(input);
       });
       if (reload) this.reload({ page: 1, reset: true });
+    },
+
+    // near: {lon, lat, metres, label} or null.
+    setNear(near) {
+      this.$refs.near.value = near ? `${near.lon.toFixed(5)},${near.lat.toFixed(5)},${Math.round(near.metres)}` : '';
+      this.$refs.nearLabel.value = near ? near.label : '';
+      this.nearText = describeNear(this.$refs.near.value, this.$refs.nearLabel.value);
+      this.reload({ page: 1, reset: true });
     },
 
     setShape(shape) {

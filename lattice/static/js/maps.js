@@ -100,22 +100,51 @@ function colorAlpha(hex, a) {
   return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
 }
 
+const MILE = 1609.344;
+
+// A circle as a GeoJSON polygon of 64 points (flat-earth offsets, fine below ~100 miles).
+function circle(lon, lat, metres) {
+  const dy = metres / 111320, dx = dy / Math.cos(lat * Math.PI / 180);
+  const ring = Array.from({ length: 65 }, (_, i) => {
+    const a = (i % 64) / 64 * 2 * Math.PI;
+    return [lon + dx * Math.cos(a), lat + dy * Math.sin(a)];
+  });
+  return { type: 'Polygon', coordinates: [ring] };
+}
+
+// The pin and radius in a grid state ("near=lon,lat,metres&near_label=…"), or null.
+function nearIn(params) {
+  const q = new URLSearchParams(params);
+  if (!q.get('near')) return null;
+  const [lon, lat, metres] = q.get('near').split(',').map(Number);
+  return { lon, lat, metres, label: q.get('near_label') || '' };
+}
+
 function ltMap(config) {
   let map = null;                 // outside Alpine's reactivity: MapLibre mutates it
   let popup = null;
   let draw = null;                // Terra Draw, made on the first drawing
+  let marker = null;              // the searched place's pin
   return {
     config, loading: true, error: '', note: '', legend: [],
     params: config.params, data: null, mode: '', shaped: new URLSearchParams(config.params).has('shape'),
+    query: '', places: [], pin: null, radius: 5,      // place search: typed text, matches, the pin
 
     init() {
       this.$refs.canvas.style.height = this.$el.dataset.height + 'px';
+      const near = nearIn(config.params);
+      if (near) {
+        this.pin = { lon: near.lon, lat: near.lat, label: near.label };
+        this.radius = Math.max(1, Math.round(near.metres / MILE));
+        this.query = near.label;
+      }
       this.onGrid = e => {
         if (config.grid && e.detail.key === config.grid) {
           this.params = [e.detail.params, config.fixed].filter(Boolean).join('&');
           this.shaped = new URLSearchParams(this.params).has('shape');
           if (!this.shaped && draw) draw.clear();          // cleared from the grid's chip
           if (!this.shaped && map && map.getLayer('lt-shape')) { map.removeLayer('lt-shape'); map.removeSource('lt-shape'); }
+          if (this.pin && !nearIn(this.params)) this.forgetPin();      // cleared from the grid's chip
           this.fetchData();
         }
       };
@@ -149,7 +178,7 @@ function ltMap(config) {
     async redraw(rebuild) {
       if (!this.data) return;
       const maplibre = await load(!!config.basemap);
-      if (map && rebuild) { if (draw) { draw.stop(); draw = null; } map.remove(); map = null; }
+      if (map && rebuild) { if (draw) { draw.stop(); draw = null; } marker = null; map.remove(); map = null; }
       if (!map) {
         map = new maplibre.Map({ container: this.$refs.canvas, style: style(config.basemap), bounds: US,
                                  attributionControl: config.basemap ? { compact: true } : false });
@@ -159,8 +188,61 @@ function ltMap(config) {
         if (!config.basemap) await this.outlines();
         this.fitted = false;
       }
+      const first = !this.fitted;
       await this.fill(maplibre);
       this.showShape();
+      this.showPin(maplibre, first);           // a pin from the address: open on it
+    },
+
+    // ── Place search: a pin and a radius narrow the linked grid ─────────────
+    async findPlaces() {
+      const q = this.query.trim();
+      if (q.length < 2 || (this.pin && q === this.pin.label)) { this.places = []; return; }
+      const res = await fetch(`${config.endpoint.replace(/\/data$/, '/places')}?q=${encodeURIComponent(q)}`,
+                              { headers: { Accept: 'application/json' } });
+      this.places = res.ok ? (await res.json()).places : [];
+    },
+    async pickPlace(p) {
+      this.pin = { lon: p.lon, lat: p.lat, label: p.label };
+      this.query = p.label;
+      this.places = [];
+      this.applyNear();
+      this.showPin(await load(!!config.basemap), true);
+    },
+    applyNear() {
+      if (!this.pin) return;
+      const near = { ...this.pin, metres: this.radius * MILE };
+      window.dispatchEvent(new CustomEvent('mapnear', { detail: { key: config.grid, near } }));
+      if (map) this.showPin(null, true);
+    },
+    clearNear() {
+      this.forgetPin();
+      window.dispatchEvent(new CustomEvent('mapnear', { detail: { key: config.grid, near: null } }));
+    },
+    forgetPin() {
+      this.pin = null;
+      this.query = '';
+      if (marker) { marker.remove(); marker = null; }
+      if (map && map.getLayer('lt-near')) { map.removeLayer('lt-near'); map.removeLayer('lt-near-line'); map.removeSource('lt-near'); }
+    },
+    showPin(maplibre, fly) {
+      if (!map || !this.pin) return;
+      const { lon, lat } = this.pin;
+      const area = circle(lon, lat, this.radius * MILE);
+      if (map.getSource('lt-near')) map.getSource('lt-near').setData(area);
+      else {
+        map.addSource('lt-near', { type: 'geojson', data: area });
+        map.addLayer({ id: 'lt-near', type: 'fill', source: 'lt-near', paint: { 'fill-color': token('--accent'), 'fill-opacity': 0.08 } });
+        map.addLayer({ id: 'lt-near-line', type: 'line', source: 'lt-near', paint: { 'line-color': token('--accent'), 'line-width': 2 } });
+      }
+      if (!marker && maplibre) marker = new maplibre.Marker({ color: token('--accent') }).setLngLat([lon, lat]).addTo(map);
+      else if (marker) marker.setLngLat([lon, lat]);
+      if (fly) {
+        const ring = area.coordinates[0];
+        const xs = ring.map(c => c[0]), ys = ring.map(c => c[1]);
+        map.fitBounds([[Math.min(...xs), Math.min(...ys)], [Math.max(...xs), Math.max(...ys)]], { padding: 40, duration: 600 });
+      }
+      this.fitted = true;
     },
 
     // ── Drawing a shape to filter the linked grid ───────────────────────────

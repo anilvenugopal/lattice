@@ -29,4 +29,4 @@ Inline SVG icons (Lucide-style strokes, 24px grid). Use `{{ icon("name") }}` in 
 
 The core set:
 
-`activity`, `alert`, `archive`, `arrow-down`, `arrow-up`, `assign`, `bookmark`, `check`, `chevron-down`, `chevron-left`, `chevron-right`, `clock`, `columns`, `download`, `edit`, `external`, `flag`, `home`, `inbox`, `info`, `key`, `keyboard`, `layout`, `link`, `lock`, `logout`, `mail`, `mail-open`, `monitor`, `moon`, `more`, `panel-right`, `paperclip`, `play`, `plus`, `queue`, `refresh`, `retry`, `search`, `settings`, `shield`, `star`, `stop`, `sun`, `trash`, `user`, `users`, `x`.
+`activity`, `alert`, `archive`, `arrow-down`, `arrow-up`, `assign`, `bookmark`, `check`, `chevron-down`, `chevron-left`, `chevron-right`, `clock`, `columns`, `download`, `edit`, `external`, `flag`, `home`, `inbox`, `info`, `key`, `keyboard`, `layout`, `link`, `lock`, `logout`, `mail`, `mail-open`, `monitor`, `moon`, `more`, `panel-right`, `paperclip`, `pin`, `play`, `plus`, `queue`, `refresh`, `retry`, `search`, `settings`, `shield`, `star`, `stop`, `sun`, `trash`, `user`, `users`, `x`.

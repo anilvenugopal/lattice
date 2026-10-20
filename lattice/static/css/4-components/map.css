@@ -12,3 +12,7 @@
 .map .maplibregl-ctrl-attrib { font-size: var(--fs-xs); }
 .map__draw { display: inline-flex; gap: var(--sp-1); }
 .map__draw .btn.is-on { color: var(--text-on-accent); background: var(--accent); border-color: var(--accent); }
+.map__search { position: relative; }
+.map__search .input { width: 220px; }
+.map__search .menu__item { display: flex; align-items: center; gap: var(--sp-2); width: 100%; }
+.map__radius { display: inline-flex; align-items: center; gap: var(--sp-1); }

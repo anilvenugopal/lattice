@@ -1,6 +1,7 @@
 """Map endpoint, shared by every registered MapSpec.
 
   GET /_map/{key}/data?<grid state>   the map's layers (JSON)
+  GET /_map/{key}/places?q=…          places for the search box (MapSpec.search)
 """
 
 from __future__ import annotations
@@ -28,6 +29,17 @@ def register(spec: MapSpec) -> MapSpec:
 
 def can_see(spec: MapSpec, user) -> bool:
     return user.can(spec.permission) and user.can(spec.source.permission)
+
+
+@router.get("/{key}/places")
+def map_places(key: str, q: str = "", db: Db = Depends(get_db), user=Depends(current_user)):
+    spec = REGISTRY.get(key)
+    if spec is None or spec.search is None:
+        raise HTTPException(404)
+    if not can_see(spec, user):
+        raise HTTPException(403)
+    return {"places": [{"label": p["label"], "lon": float(p["lon"]), "lat": float(p["lat"])}
+                       for p in spec.search(db, user, q.strip()[:100])[:10]]}
 
 
 @router.get("/{key}/data")

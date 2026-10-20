@@ -145,7 +145,8 @@ column it selects is a row key: `Column`, `search`, `Filter`, `View`, `when`,
   Ctrl+J all run through it, so a row the query does not return cannot be
   reached any other way.
 - **`spatial=("lon", "lat")` allows a drawn shape** as a filter, from a linked
-  [map](maps.md#draw-to-search). Needs PostGIS.
+  [map](maps.md#draw-to-search), and a radius around a point (`near=lon,lat,metres`,
+  from [place search](maps.md#find-a-place-and-search-around-it)). Needs PostGIS.
 - **`params` binds fixed values.** `params={"kind": "demo.policy"}` runs the
   query with `:kind` bound, so one query can serve several grids (the
   [document store](json-forms.md#the-document-store) does this). Users cannot

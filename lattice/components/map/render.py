@@ -37,4 +37,5 @@ def build_map(request: Request, spec: MapSpec, *, linked: bool = True,
         "fixed": urlencode(pinned),
         "basemap": basemap_url(),
         "draw": linked and spec.source.spatial is not None,   # shapes drawn here filter the grid
+        "search": linked and spec.source.spatial is not None and spec.search is not None,
     }}

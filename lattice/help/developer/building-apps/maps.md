@@ -76,6 +76,45 @@ LOCATIONS_GRID = GridSpec(key="showcase.locations", …, spatial=("lon", "lat"))
 Keeping a drawn shape (as a named area, say) is the app's job: the map sends it
 to the grid; an app action can store it with geoengine.
 
+## Find a place and search around it
+
+Give the map a `search` function and it shows a search box: users type a town,
+county or zip code, pick one, and the map drops a pin with a radius (1 to 50
+miles). The linked grid narrows to rows within that distance, shown as
+**Within 5 mi of Lake Charles, LA ×**.
+
+```python
+import refdata
+
+def find(db, user, text):          # -> [{"label", "lon", "lat"}, …]
+    return refdata.search_places(db.conn, text)
+
+MAP = MapSpec("showcase.locations_map", "Insured value", GRID, search=find, layers=[…])
+```
+
+- **The places come from the app**, not Lattice: the showcase uses
+  [refdata](#reference-data-refdata), but any function returning labels and
+  coordinates works (an app's own sites, a geocoder).
+- **The pin is a filter** in the address: `near=lon,lat,metres` and
+  `near_label`, so a link reopens it and a saved view keeps it. Any page can link
+  to it: a claim's page links to `/showcase/locations?near={lon},{lat},8047&near_label={claim_number}`.
+- **In the database:** a PostGIS distance on the grid's `spatial` columns
+  (`ST_DWithin` on geography, so metres are metres). Radius up to 500 km.
+
+## Reference data: refdata
+
+`refdata` (`packages/refdata`) loads public reference data into its own schema,
+`ref`, and offers lookups. It knows nothing of Lattice or geoengine. Today it holds
+US towns, counties and zip codes from the Census gazetteer (69,346 places, bundled,
+about 1 MB). An app installs it with the migration hook, so `lattice migrate`
+creates the schema and loads the data:
+
+```python
+APP = AppManifest(…, libraries=[Library("refdata", [refdata.SCHEMA], refdata.migrate)])
+```
+
+Its contract is `packages/refdata/docs/public_contract.md`.
+
 ## Spatial work: geoengine
 
 The map only draws. Matching points to areas, distances, H3 cells and location

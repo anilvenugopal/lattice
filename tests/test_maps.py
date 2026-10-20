@@ -98,3 +98,16 @@ def test_a_missing_column_is_a_clear_error(as_user, events):
 def test_map_rules_stop_the_host(spec, message):
     with pytest.raises(AppError, match=message):
         create_app(apps=[AppManifest(key="atlas", label="Atlas", grids=[GRID], maps=[spec])])
+
+
+def test_place_search_comes_from_the_maps_search_function(as_user, events):
+    from lattice.components.map import router as map_router
+
+    def find(db, user, text):
+        return [{"label": f"{text} town", "lon": -95, "lat": 29.5, "kind": "place"}]
+    map_router.register(MapSpec("atlas.searchable", "S", GRID, layers=[Hexagons("h3_7")], search=find))
+    c = as_user("admin")
+    assert c.get("/_map/atlas.searchable/places?q=Katy").json() == {
+        "places": [{"label": "Katy town", "lon": -95.0, "lat": 29.5}]}
+    assert c.get("/_map/atlas.map/places?q=Katy").status_code == 404        # no search function
+    assert as_user("editor").get("/_map/atlas.searchable/places?q=Katy").status_code == 403
