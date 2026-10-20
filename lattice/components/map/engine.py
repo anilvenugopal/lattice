@@ -65,6 +65,7 @@ def data(spec: MapSpec, db: Db, user, gq: grid_engine.GridQuery) -> dict:
                 out["values"] = {k.zfill(width): v for k, v in out["values"].items()
                                  if _FIPS.match(k)}
         elif isinstance(layer, Areas):
-            out |= {"kind": "areas", "tone": layer.tone, "geojson": layer.load(db, user)}
+            out |= {"kind": "areas", "tone": layer.tone,
+                    "geojson": layer.load(db, user, gq.fixed)}
         layers.append(out)
     return {"layers": layers, "format": spec.format}

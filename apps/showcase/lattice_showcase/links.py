@@ -46,7 +46,19 @@ def resolve_spec(db: Db, user, doc_id: str) -> Resolved | None:
     return Resolved(doc["title"], f"/showcase/specs/{doc['id']}", subtitle="Spec")
 
 
-REFERENCES = [ReferenceKind("showcase.item", "Item", resolve_item, icon="queue"),
+def resolve_event(db: Db, user, event_id: str) -> Resolved | None:
+    if not event_id.isdigit():
+        return None
+    row = db.first(QUERIES.events.by_id, id=int(event_id))
+    if row is None:
+        return None
+    from lattice_showcase.events import STAGE_TONES, STAGES
+    return Resolved(f"{row['code']} · {row['name']}", f"/showcase/events/{row['id']}",
+                    badge=dict(STAGES)[row["status"]], tone=STAGE_TONES[row["status"]])
+
+
+REFERENCES = [ReferenceKind("showcase.event", "Event", resolve_event, icon="showcase:storm"),
+              ReferenceKind("showcase.item", "Item", resolve_item, icon="queue"),
               ReferenceKind("showcase.spec", "Spec", resolve_spec, icon="showcase:form")]
 
 

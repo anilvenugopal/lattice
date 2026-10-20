@@ -64,7 +64,9 @@ class Areas:
 
     key: str                        # unique in the map
     title: str
-    load: Callable[[Any, Any], dict]  # (db, user) -> GeoJSON FeatureCollection
+    # (db, user, fixed) -> GeoJSON FeatureCollection. `fixed` is the map's fixed filters
+    # ({"event_id": ["4"]}), so a page's map can draw that record's shapes.
+    load: Callable[[Any, Any, dict], dict]
     tone: Tone = "danger"           # outline and fill colour
 
 

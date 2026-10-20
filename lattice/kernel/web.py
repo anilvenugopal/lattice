@@ -54,6 +54,9 @@ def time_tag(value, mode: str = "auto") -> Markup:
     """
     if not value:
         return Markup('<span class="muted">—</span>')
+    if isinstance(value, date) and not isinstance(value, datetime):
+        # A calendar day has no time of day: shown as stored, never moved by a time zone.
+        return Markup(f'<time datetime="{value.isoformat()}" data-fmt="day">{value.isoformat()}</time>')
     if isinstance(value, str):
         value = datetime.fromisoformat(value)
     fallback = value.strftime("%Y-%m-%d") if mode == "date" else value.strftime("%Y-%m-%d %H:%M")

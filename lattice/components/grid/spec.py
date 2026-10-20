@@ -91,6 +91,9 @@ class ActionContext:
     ids: list[Any]                  # eligible ids, already scoped by GridSpec.query
     rows: list[dict]                # the eligible rows as the grid query returns them
     values: dict[str, str]          # Field inputs
+    # The grid's state when the action ran: search, filters, view, fixed filters and a drawn
+    # shape (query.shape), e.g. for a toolbar action that saves what the user narrowed to.
+    query: Any = None
 
     @property
     def count(self) -> int:

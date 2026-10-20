@@ -54,6 +54,11 @@ Object.assign(window.app, (function () {
   function formatTimes(root) {
     const pref = document.documentElement.dataset.time || 'relative';
     (root || document).querySelectorAll('time[data-fmt]').forEach(el => {
+      if (el.dataset.fmt === 'day') {             // a calendar day: no time zone to apply
+        const [y, m, day] = el.getAttribute('datetime').split('-').map(Number);
+        el.textContent = dateFmt.format(new Date(y, m - 1, day));
+        return;
+      }
       const d = new Date(el.getAttribute('datetime'));
       if (isNaN(d)) return;
       let mode = el.dataset.fmt;

@@ -27,3 +27,7 @@
 [data-app="showcase"] .showcase-card__text { flex: 1; font-size: var(--fs-md); color: var(--text-2); }
 [data-app="showcase"] .showcase-card__built { font-size: var(--fs-sm); color: var(--text-3); }
 }
+
+@layer components {
+[data-app="showcase"] .showcase-pad { padding: var(--sp-4); }
+}

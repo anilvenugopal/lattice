@@ -60,6 +60,7 @@ class Node:
     can_add: bool = True            # array: below maxItems
     can_remove: bool = True         # array: above minItems
     readonly: bool = False
+    hidden: bool = False            # not drawn: a variant's discriminator (the choice sets it)
 
 
 @dataclass
@@ -124,6 +125,10 @@ def build(schema: Any, value: Any, ctx: Context, name: str = ROOT, key: str = ""
         node.variant = min(node.variant, len(branches) - 1)
         node.children = [build(branches[node.variant], value, ctx, name, key, ui_path, required,
                                node.label)]
+        prop = _discriminator(s)
+        for child in node.children[0].children:
+            if child.name == child_name(name, prop):
+                child.hidden = True
     elif kind in ("enum", "const"):
         choices = s["enum"] if kind == "enum" else [s["const"]]
         labels = hints.get("labels", {})

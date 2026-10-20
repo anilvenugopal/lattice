@@ -78,7 +78,8 @@ hx-swap="innerHTML" hx-trigger="{{ trigger }}"
 
 {# One node of the form tree (lattice/components/forms/nodes.py Node), drawn by kind. #}
 {% macro node(key, n, depth, bare=false) -%}
-{% if n.kind == "object" %}
+{% if n.hidden %}
+{% elif n.kind == "object" %}
   {% if depth and not bare %}<fieldset class="jf__group"><legend class="jf__legend">{{ n.label }}</legend>
     {% if n.help %}<p class="field__hint">{{ n.help }}</p>{% endif %}{% endif %}
   {% if n.value %}<input type="hidden" name="{{ n.name }}/__present" value="1">{% endif %}

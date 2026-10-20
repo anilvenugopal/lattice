@@ -47,7 +47,7 @@ Drawn bottom to top. The legend in the map's header turns each on and off.
 | `Points(lon, lat, color, label)` | A dot per row. `color` names a column: its `Column` tones colour the dots (a status, a quality tier), else a fixed palette. `label` is the popup text, formatted with the row | Longitude and latitude (WGS 84) |
 | `Hexagons(cell, value)` | A measure per H3 cell, shaded faint to strong | An H3 cell id per row, such as geoengine's `h3_7` |
 | `Regions(key, value, map)` | A measure per US state (`us-states`) or county (`us-counties`), shaded | The FIPS code: 2 digits for a state, 5 for a county |
-| `Areas(key, title, load, tone)` | Shapes from a function, not the grid: a fire perimeter, a forecast cone | — `load(db, user)` returns a GeoJSON FeatureCollection |
+| `Areas(key, title, load, tone)` | Shapes from a function, not the grid: a fire perimeter, a forecast cone | — `load(db, user, fixed)` returns a GeoJSON FeatureCollection; `fixed` holds the map's fixed filters, such as the event being shown |
 
 `value` takes the chart measures: `Count()` (default), `Sum`, `Avg`, `Min`,
 `Max`. `Points` draws at most `limit` dots (20,000), and says so when it cuts.

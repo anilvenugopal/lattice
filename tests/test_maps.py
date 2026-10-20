@@ -35,7 +35,7 @@ MAP = MapSpec("atlas.map", "Events", GRID, layers=[
     Regions("county_fips", Sum("weight", "Weight"), map="us-counties"),
     Hexagons("h3_7"),
     Points("lon", "lat", color="action", label="#{id}", limit=2),
-    Areas("cone", "Cone", load=lambda db, user: CONE)])
+    Areas("cone", "Cone", load=lambda db, user, fixed: CONE)])
 router = APIRouter()
 
 
@@ -92,8 +92,8 @@ def test_a_missing_column_is_a_clear_error(as_user, events):
 @pytest.mark.parametrize("spec, message", [
     (MapSpec("other.m", "M", GRID, layers=[Hexagons("h3_7")]), "must start with 'atlas.'"),
     (MapSpec("atlas.m", "M", GRID), "has no layers"),
-    (MapSpec("atlas.m", "M", GRID, layers=[Areas("a", "A", load=lambda d, u: {}),
-                                            Areas("a", "B", load=lambda d, u: {})]), "share a key"),
+    (MapSpec("atlas.m", "M", GRID, layers=[Areas("a", "A", load=lambda d, u, f: {}),
+                                            Areas("a", "B", load=lambda d, u, f: {})]), "share a key"),
 ])
 def test_map_rules_stop_the_host(spec, message):
     with pytest.raises(AppError, match=message):

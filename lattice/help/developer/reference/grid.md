@@ -146,6 +146,7 @@ What an action handler receives.
 | `ids` | `list[Any]` | required | eligible ids, already scoped by GridSpec.query |
 | `rows` | `list[dict]` | required | the eligible rows as the grid query returns them |
 | `values` | `dict[str, str]` | required | Field inputs |
+| `query` | `Any` | `None` | The grid's state when the action ran: search, filters, view, fixed filters and a drawn shape (query.shape), e.g. for a toolbar action that saves what the user narrowed to. |
 
 ## ActionResult
 

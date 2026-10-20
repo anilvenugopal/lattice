@@ -24,7 +24,7 @@ def test_filter_by_one_provider(as_user, items):
 
 def test_empty_query_lists_pages_and_commands(as_user, items):
     html = as_user("viewer").get("/_search").text
-    assert 'href="/showcase/items"' in html and 'data-command="theme-dark"' in html
+    assert 'href="/showcase/events"' in html and 'data-command="theme-dark"' in html
     assert "/admin/users" not in html
 
 

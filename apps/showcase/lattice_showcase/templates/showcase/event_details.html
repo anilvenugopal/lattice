@@ -1,0 +1,3 @@
+{# Event page panel: the peril's own fields, from the event form. #}
+{% from "components/macros.html" import prop_list %}
+{% if values["items"] %}{{ prop_list(values["items"], columns=2) }}{% else %}<p class="u-muted">No details recorded.</p>{% endif %}

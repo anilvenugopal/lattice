@@ -168,6 +168,7 @@ def test_fields_follow_the_schema(as_user):
     assert 'name="data/payment/__variant"' in html                          # discriminated union
     assert 'name="data/payment/terms_days"' in html                         # the invoice branch
     assert 'name="data/payment/number"' not in html
+    assert 'name="data/payment/method"' not in html                         # set by the choice
     assert "Other fields (1)" in html and "legacy_id" in html
 
 
