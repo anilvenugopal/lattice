@@ -8,3 +8,4 @@ __pycache__/
 .cache/
 lattice/static/maps/basemap/
 var/
+.env.m365

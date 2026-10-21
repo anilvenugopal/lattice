@@ -67,5 +67,30 @@ The showcase's claim page does this in its **Claim file** panel
 **The shares** are the host's: `LATTICE_FOLDER_STORES` (JSON, label to path) and
 `create_app(folder_stores={"Claims share": "/mnt/claims"})`. A path outside a
 share is refused, hidden folders are not listed, and browsing needs
-`lattice.folders.browse` (editors by default). Only mounted folders are built;
-S3 and SharePoint stores will offer the same browsing.
+`lattice.folders.browse` (editors by default).
+
+## SharePoint libraries
+
+A host can offer a SharePoint document library to the folder picker, or keep
+attachment files in one, with **m365graph**'s `DriveStore`. Lattice does not
+import it: a store is any object with the methods Lattice's local store has
+(`list`, `exists`, `make_folder` for folders; `put`, `open`, `delete` for files).
+
+```python
+from m365graph import DriveStore, GraphClient
+
+graph = GraphClient.from_env(".env.m365")          # an app registration's credentials
+claims = DriveStore.for_site(graph, "contoso.sharepoint.com:/sites/claims", "Documents",
+                             root="Claim files")
+app = create_app(apps=[…], folder_stores={"Claims library": claims},
+                 attachment_store=claims)          # optional: attachments in SharePoint too
+```
+
+The app registration needs `Sites.Read.All` to browse, and write access to the
+site (`Sites.ReadWrite.All`, or `Sites.Selected` granted on that site) to create
+folders or store attachments. Lattice keeps its own size limit whatever the
+store; a store that does not answer shows "did not answer" in the picker.
+
+The showcase host does this when `SHOWCASE_SHAREPOINT_SITE` is set (with
+`SHOWCASE_SHAREPOINT_LIBRARY`, `SHOWCASE_SHAREPOINT_ROOT` and the credentials
+in `M365_ENV_FILE`, default `.env.m365`).

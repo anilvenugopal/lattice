@@ -13,6 +13,7 @@ import contextlib
 import re
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Any
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
@@ -273,7 +274,8 @@ def _reset_registries() -> None:
 def create_app(apps: list[AppManifest], host_dir: Path | None = None,
                icons_override: dict[str, str] | None = None,
                slot_templates: dict[str, str] | None = None,
-               folder_stores: dict[str, str | Path] | None = None) -> FastAPI:
+               folder_stores: dict[str, str | Path | Any] | None = None,
+               attachment_store: Any = None) -> FastAPI:
     """Build the web application for a host from its list of app manifests.
 
     host_dir: the host's folder. Optional `templates/` replaces the core pages in
@@ -281,12 +283,16 @@ def create_app(apps: list[AppManifest], host_dir: Path | None = None,
     served at /static/host/, and its `theme.css` (brand tokens only) loads after core CSS.
     icons_override: replacements for core icons, by name.
     slot_templates: slot name -> template under host/ in the host's templates.
-    folder_stores: label -> path of mounted shares the folder picker browses, added to
+    folder_stores: label -> what the folder picker browses: a mounted folder's path, or a
+    store object such as m365graph's DriveStore for a SharePoint library; added to
     LATTICE_FOLDER_STORES (ADR 0017).
+    attachment_store: where attachment files go instead of LATTICE_FILES_DIR (a store with put,
+    open and delete, such as a DriveStore).
     """
     _reset_registries()
     try:
         files.register_folder_stores({**settings.folder_stores, **(folder_stores or {})})
+        files.set_attachments_store(attachment_store)
     except ValueError as exc:
         raise AppError(str(exc)) from exc
     if host_dir:
