@@ -6,8 +6,10 @@
 
     files.FOLDER_STORES["claims-share"].list("2026/CLM-26-004871")
 
-Only a local or mounted folder is built; S3 and SharePoint stores will implement the same
-methods. A path is always relative to the store's root, and one that leaves it is refused.
+A store is anything with these methods (FileStore below): LocalStore here, or another
+package's, such as m365graph's DriveStore for a SharePoint library, which a host passes to
+create_app(folder_stores=…, attachment_store=…). A path is always relative to the store's root,
+and one that leaves it is refused with a ValueError.
 """
 
 from __future__ import annotations
@@ -19,7 +21,7 @@ import uuid
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import BinaryIO
+from typing import BinaryIO, Protocol, runtime_checkable
 
 from lattice.kernel.config import settings
 
@@ -36,6 +38,21 @@ class BadPath(ValueError):
 class Folder:
     name: str
     path: str                       # relative to the store's root, "/"-separated
+
+
+@runtime_checkable
+class FileStore(Protocol):
+    """What Lattice needs of a store. Folder stores use the first four; the attachment store
+    uses put, open and delete. Bad paths raise ValueError; a missing file FileNotFoundError."""
+
+    label: str
+
+    def list(self, path: str = "") -> list: ...          # objects with .name and .path
+    def exists(self, path: str) -> bool: ...
+    def make_folder(self, path: str, name: str): ...
+    def put(self, key: str, chunks: Iterable[bytes], max_bytes: int) -> tuple[int, str]: ...
+    def open(self, key: str) -> BinaryIO: ...
+    def delete(self, key: str) -> None: ...
 
 
 class LocalStore:
@@ -102,16 +119,27 @@ class LocalStore:
             return False
 
 
-_ATTACHMENTS: LocalStore | None = None
-# Mounted shares people may browse with the folder picker, by key.
-FOLDER_STORES: dict[str, LocalStore] = {}
+_ATTACHMENTS: FileStore | None = None
+_HOST_ATTACHMENTS: FileStore | None = None          # create_app(attachment_store=…)
+# Shares people may browse with the folder picker, by key: mounted folders or other stores.
+FOLDER_STORES: dict[str, FileStore] = {}
 
 
-def attachments_store() -> LocalStore:
+def attachments_store() -> FileStore:
+    """The host's attachment store, else a local one in LATTICE_FILES_DIR."""
     global _ATTACHMENTS
-    if _ATTACHMENTS is None or _ATTACHMENTS.root != Path(settings.files_dir).resolve():
+    if _HOST_ATTACHMENTS is not None:
+        return _HOST_ATTACHMENTS
+    if not isinstance(_ATTACHMENTS, LocalStore) or _ATTACHMENTS.root != Path(settings.files_dir).resolve():
         _ATTACHMENTS = LocalStore(settings.files_dir, "Attachments")
     return _ATTACHMENTS
+
+
+def set_attachments_store(store: FileStore | None) -> None:
+    global _HOST_ATTACHMENTS
+    if store is not None and not all(hasattr(store, m) for m in ("put", "open", "delete")):
+        raise ValueError("An attachment store needs put, open and delete")
+    _HOST_ATTACHMENTS = store
 
 
 def new_key() -> str:
@@ -124,14 +152,16 @@ def slug(label: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", label.lower()).strip("-") or "share"
 
 
-def split(value: str) -> tuple[LocalStore, str]:
+def split(value: str) -> tuple[FileStore, str]:
     """A folder picker value, "{store}:{path}", as its store and path. Raises BadPath."""
     key, _, path = (value or "").partition(":")
     store = FOLDER_STORES.get(key)
     if store is None:
         raise BadPath(f"No folder store {key!r}")
-    store._path(path)                                       # refuses a path outside it
-    return store, path.strip("/")
+    parts = [p for p in path.replace("\\", "/").split("/") if p and p != "."]
+    if ".." in parts:
+        raise BadPath(f"{path!r} leaves {store.label}")
+    return store, "/".join(parts)
 
 
 def check_folder(value: str) -> str:
@@ -139,7 +169,7 @@ def check_folder(value: str) -> str:
     store, path = split(value)
     if not store.exists(path):
         raise BadPath(f"{path or '/'} is not a folder in {store.label}")
-    return f"{slug(store.label)}:{path}"
+    return f"{value.partition(':')[0]}:{path}"
 
 
 def folder_label(value: str) -> str:
@@ -151,10 +181,17 @@ def folder_label(value: str) -> str:
     return " / ".join([store.label, *[p for p in path.split("/") if p]])
 
 
-def register_folder_stores(stores: dict[str, str | Path]) -> None:
-    """Label -> path, from LATTICE_FOLDER_STORES and create_app(folder_stores=…)."""
+def register_folder_stores(stores: dict[str, str | Path | FileStore]) -> None:
+    """Label -> a mounted folder's path, or a store object (a SharePoint library), from
+    LATTICE_FOLDER_STORES and create_app(folder_stores=…)."""
     FOLDER_STORES.clear()
-    for label, path in stores.items():
-        if not Path(path).is_dir():
-            raise ValueError(f"Folder store {label!r}: {path} is not a folder")
-        FOLDER_STORES[slug(label)] = LocalStore(path, label)
+    for label, target in stores.items():
+        if isinstance(target, str | Path):
+            if not Path(target).is_dir():
+                raise ValueError(f"Folder store {label!r}: {target} is not a folder")
+            FOLDER_STORES[slug(label)] = LocalStore(target, label)
+        elif all(hasattr(target, m) for m in ("list", "exists", "make_folder")):
+            target.label = label
+            FOLDER_STORES[slug(label)] = target
+        else:
+            raise ValueError(f"Folder store {label!r} needs list, exists and make_folder")

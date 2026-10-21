@@ -1,7 +1,7 @@
 # 0017. Attachments on any record, file stores, and a folder picker for mounted shares
 
-Status: Accepted (20 October 2026). Local file storage and mounted shares built; S3 and
-SharePoint stores later.
+Status: Accepted (20 October 2026). Local storage, mounted shares and SharePoint libraries
+(through m365graph) built; S3 later.
 
 ## Context
 
@@ -59,3 +59,14 @@ editor).
 - Deleting a record does not delete its attachments; the owning app removes them if it
   must (`attachments.remove_all(db, urn)`).
 - Backups must include `LATTICE_FILES_DIR` as well as the database.
+
+## SharePoint, as built (20 October 2026)
+
+- **m365graph**, its own repository (a Graph client package shared with the mail engine),
+  provides `DriveStore`: one SharePoint library, under a root folder, with the methods of
+  Lattice's local store. Neither package imports the other; a host passes the object to
+  `create_app(folder_stores=…, attachment_store=…)`.
+- Lattice enforces its own attachment size limit whatever the store, and turns a store that
+  does not answer into a clear error in the picker.
+- Checked read-only against a real tenant: browsing a site's library, and checking and
+  labelling a chosen folder.

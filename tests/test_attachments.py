@@ -145,3 +145,64 @@ def test_a_chosen_folder_is_checked_and_reads_well(share):
     for bad in ("claims-share:CAT-2610/Nope", "nowhere:x", "claims-share:../.."):
         with pytest.raises(files.BadPath):
             files.check_folder(bad)
+
+
+# ── Other stores: what a host passes as folder_stores= or attachment_store= ──
+
+class MemoryStore:
+    """A store in memory, with the methods m365graph's DriveStore has."""
+
+    def __init__(self):
+        self.label, self.folders, self.files = "Memory", {"", "Claims"}, {}
+
+    def list(self, path=""):
+        if path not in self.folders:
+            raise ValueError(f"{path} is not a folder")
+        return [files.Folder(f.rsplit("/", 1)[-1], f) for f in sorted(self.folders)
+                if f and f.rpartition("/")[0] == path]
+
+    def exists(self, path):
+        return path in self.folders
+
+    def make_folder(self, path, name):
+        self.folders.add(f"{path}/{name}".strip("/"))
+        return files.Folder(name, f"{path}/{name}".strip("/"))
+
+    def put(self, key, chunks, max_bytes):
+        import hashlib
+        data = b"".join(chunks)
+        self.files[key] = data
+        return len(data), hashlib.sha256(data).hexdigest()
+
+    def open(self, key):
+        import io
+        if key not in self.files:
+            raise FileNotFoundError(key)
+        return io.BytesIO(self.files[key])
+
+    def delete(self, key):
+        self.files.pop(key, None)
+
+
+def test_a_host_store_serves_the_picker_and_attachments(as_user, db, monkeypatch):
+    memory = MemoryStore()
+    files.register_folder_stores({"Claims library": memory})
+    files.set_attachments_store(memory)
+    try:
+        c = as_user("editor")
+        assert [f["name"] for f in c.get("/attachments/folders/claims-library").json()["folders"]] == ["Claims"]
+        c.post("/attachments/folders/claims-library/new", headers={"X-CSRF-Token": csrf(c)},
+               json={"path": "Claims", "name": "CLM-1"})
+        assert files.check_folder("claims-library:Claims/CLM-1") == "claims-library:Claims/CLM-1"
+        assert files.folder_label("claims-library:Claims/CLM-1") == "Claims library / Claims / CLM-1"
+        with pytest.raises(files.BadPath):
+            files.check_folder("claims-library:../x")
+        upload(c, ("estimate.txt", b"12,400"))
+        [row] = on(db)
+        assert memory.files[row["store_key"]] == b"12,400"
+        assert as_user("viewer").get(f"/attachments/{row['id']}").content == b"12,400"
+        monkeypatch.setattr(settings, "attachment_max_mb", 0)              # Lattice's own limit
+        upload(as_user("editor"), ("big.txt", b"x"))
+        assert len(on(db)) == 1
+    finally:
+        files.set_attachments_store(None)

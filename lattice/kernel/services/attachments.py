@@ -46,8 +46,16 @@ def add(db: Db, user_id: int, subject: str, name: str, chunks: Iterable[bytes]) 
         raise Refused(f"{name}: files of type .{extension or '?'} are not accepted here")
     key = files.new_key()
     limit = settings.attachment_max_mb * 1024 * 1024
+
+    def counted():                      # Lattice's own limit, whatever the store does
+        seen = 0
+        for chunk in chunks:
+            seen += len(chunk)
+            if seen > limit:
+                raise files.TooLarge
+            yield chunk
     try:
-        size, digest = files.attachments_store().put(key, chunks, max_bytes=limit)
+        size, digest = files.attachments_store().put(key, counted(), max_bytes=limit)
     except files.TooLarge:
         raise Refused(f"{name} is larger than {settings.attachment_max_mb} MB") from None
     content_type = mimetypes.guess_type(name)[0] or "application/octet-stream"

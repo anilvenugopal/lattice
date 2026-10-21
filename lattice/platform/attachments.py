@@ -101,7 +101,7 @@ async def add(request: Request, db: Db = Depends(get_db), user=Depends(current_u
 
 # ── The folder picker: browsing mounted shares (ADR 0017) ───────────────────
 
-def _store(key: str) -> files.LocalStore:
+def _store(key: str) -> files.FileStore:
     store = files.FOLDER_STORES.get(key)
     if store is None:
         raise HTTPException(404, detail="No such folder store.")
@@ -119,8 +119,10 @@ def folders(store_key: str, path: str = ""):
     store = _store(store_key)
     try:
         inside = store.list(path)
-    except files.BadPath as exc:
+    except ValueError as exc:                # a bad path: the store's own error
         raise HTTPException(400, detail=str(exc)) from None
+    except Exception as exc:                 # the store did not answer (SharePoint, a share)
+        raise HTTPException(502, detail=f"{store.label} did not answer: {exc}") from None
     parts = [p for p in path.strip("/").split("/") if p]
     crumbs = [{"name": store.label, "path": ""}] + [
         {"name": part, "path": "/".join(parts[:i + 1])} for i, part in enumerate(parts)]
@@ -134,8 +136,10 @@ async def new_folder(store_key: str, request: Request, user=Depends(current_user
     store = _store(store_key)
     try:
         made = store.make_folder(str(body.get("path", "")), str(body.get("name", "")))
-    except files.BadPath as exc:
+    except ValueError as exc:
         raise HTTPException(400, detail=str(exc)) from None
+    except Exception as exc:
+        raise HTTPException(502, detail=f"{store.label} did not answer: {exc}") from None
     return {"name": made.name, "path": made.path}
 
 
@@ -150,7 +154,7 @@ def download(attachment_id: int, inline: bool = False, db: Db = Depends(get_db),
     shown = inline and row["content_type"] in attachments.INLINE
     try:
         handle = files.attachments_store().open(row["store_key"])
-    except (FileNotFoundError, files.BadPath):
+    except (FileNotFoundError, ValueError):
         raise HTTPException(404, detail="The file is missing from the store.") from None
 
     def stream():
