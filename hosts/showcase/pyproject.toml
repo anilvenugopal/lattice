@@ -7,12 +7,13 @@ name = "lattice-showcase-host"
 version = "0.1.0"
 description = "A Lattice host that runs the showcase app."
 requires-python = ">=3.14"
-dependencies = ["lattice", "lattice-showcase", "lattice-comments"]
+dependencies = ["lattice", "lattice-showcase", "lattice-comments", "m365graph"]
 
 [tool.uv.sources]
 lattice = { workspace = true }
 lattice-showcase = { workspace = true }
 lattice-comments = { workspace = true }
+m365graph = { git = "https://github.com/anilvenugopal/m365graph", tag = "v0.1.0" }
 
 [tool.hatch.build.targets.wheel]
 packages = ["showcase_host"]

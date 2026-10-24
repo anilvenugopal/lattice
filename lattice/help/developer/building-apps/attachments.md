@@ -79,7 +79,7 @@ import it: a store is any object with the methods Lattice's local store has
 ```python
 from m365graph import DriveStore, GraphClient
 
-graph = GraphClient.from_env(".env.m365")          # an app registration's credentials
+graph = GraphClient(tenant_id, client_id, client_secret)   # an app registration
 claims = DriveStore.for_site(graph, "contoso.sharepoint.com:/sites/claims", "Documents",
                              root="Claim files")
 app = create_app(apps=[…], folder_stores={"Claims library": claims},
@@ -91,6 +91,11 @@ site (`Sites.ReadWrite.All`, or `Sites.Selected` granted on that site) to create
 folders or store attachments. Lattice keeps its own size limit whatever the
 store; a store that does not answer shows "did not answer" in the picker.
 
-The showcase host does this when `SHOWCASE_SHAREPOINT_SITE` is set (with
-`SHOWCASE_SHAREPOINT_LIBRARY`, `SHOWCASE_SHAREPOINT_ROOT` and the credentials
-in `M365_ENV_FILE`, default `.env.m365`).
+The showcase host does this when `SHOWCASE_SHAREPOINT_SITE` is set in `.env`,
+with `SHOWCASE_SHAREPOINT_LIBRARY`, `SHOWCASE_SHAREPOINT_ROOT` (the folder the
+picker starts at, and cannot go above) and the app registration in
+`SHOWCASE_M365_TENANT_ID`, `_CLIENT_ID` and `_CLIENT_SECRET`
+(`hosts/showcase/showcase_host/settings.py`; `.env.example` lists them). The
+credentials are the host's, not Lattice's: Lattice itself never signs in to
+Microsoft. m365graph is a dependency of the showcase host, installed from its
+GitHub tag by `uv sync`.
