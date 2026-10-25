@@ -6,6 +6,8 @@
 .page-header__title { display: flex; align-items: center; gap: 10px; font-size: var(--fs-xl); line-height: 1.3; }
 .page-header__sub { margin: 2px 0 0; font-size: var(--fs-md); color: var(--text-2); }
 .page-header__actions { display: flex; flex-shrink: 0; gap: var(--sp-2); }
+.record__back { display: inline-flex; align-items: center; gap: var(--sp-1); margin-bottom: var(--sp-2); font-size: var(--fs-md); color: var(--text-2); }
+.record__back:hover { color: var(--text); }
 
 .card { background: var(--surface-panel); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
 .card__head { display: flex; align-items: baseline; gap: var(--sp-2); padding: var(--sp-3) var(--sp-4); border-bottom: 1px solid var(--border-faint); }

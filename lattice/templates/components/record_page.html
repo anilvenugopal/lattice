@@ -12,19 +12,35 @@
 {% block main %}
 {% set status_col = spec.column(page.status) if page.status else none %}
 <div class="page stack-lg record" id="record" x-data='recordPage({{ config | tojson }})'>
+  {# Links then actions: the first three are buttons, the rest go in the More menu. #}
+  {% set shown = 3 %}
+  {% set shown_actions = [shown - links | length, 0] | max %}
+  {% macro link_item(link, href, cls) -%}
+    <a class="{{ cls }}" href="{{ href }}">{% if link.icon %}{{ icon(link.icon, 14) }}{% endif %}{{ link.label }}</a>
+  {%- endmacro %}
+  {% macro action_item(a, cls, click="") -%}
+    <button type="button" class="{{ cls }}" @click="{{ click }}run({{ a.key | js }})" data-action="{{ a.key }}">
+      {% if a.icon %}{{ icon(a.icon, 14) }}{% endif %}{{ a.label }}</button>
+  {%- endmacro %}
+  <div>
+  <a class="record__back" href="{{ config.back }}">{{ icon('chevron-left', 14) }}Back to list</a>
   {% call page_header(title, subtitle,
                       label_for(status_col, record[page.status]) if status_col else "",
                       tone_for(status_col, record[page.status]) if status_col else "neutral") %}
-    <a class="btn btn--ghost" href="{{ config.back }}">{{ icon('chevron-left', 14) }}Back to list</a>
     {% if follow %}{% with subject = follow.subject, following = follow.following %}{% include "account/follow_button.html" %}{% endwith %}{% endif %}
-    {% for link, href in links %}
-    <a class="btn btn--{{ link.tone }}" href="{{ href }}">{% if link.icon %}{{ icon(link.icon, 14) }}{% endif %}{{ link.label }}</a>
-    {% endfor %}
-    {% for a in actions %}
-    <button type="button" class="btn btn--{{ a.tone }}" @click="run({{ a.key | js }})" data-action="{{ a.key }}">
-      {% if a.icon %}{{ icon(a.icon, 14) }}{% endif %}{{ a.label }}</button>
-    {% endfor %}
+    {% for link, href in links[:shown] %}{{ link_item(link, href, "btn btn--" ~ link.tone) }}{% endfor %}
+    {% for a in actions[:shown_actions] %}{{ action_item(a, "btn btn--" ~ a.tone) }}{% endfor %}
+    {% if links | length + actions | length > shown %}
+    <div class="menu-wrap" x-data="{ open: false }" @click.outside="open = false" @keydown.escape.stop="open = false">
+      <button type="button" class="btn" @click="open = !open" aria-haspopup="menu">{{ icon('more', 14) }}More</button>
+      <div class="menu menu--right" x-show="open" x-cloak role="menu">
+        {% for link, href in links[shown:] %}{{ link_item(link, href, "menu__item") }}{% endfor %}
+        {% for a in actions[shown_actions:] %}{{ action_item(a, "menu__item", "open = false; ") }}{% endfor %}
+      </div>
+    </div>
+    {% endif %}
   {% endcall %}
+  </div>
 
   {% set main_panels = panels | selectattr("panel.place", "equalto", "main") | list %}
   {% set side_panels = panels | selectattr("panel.place", "equalto", "side") | list %}

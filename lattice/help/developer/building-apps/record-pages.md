@@ -17,6 +17,8 @@ grid and reuses it:
 - **Header buttons** are the grid's row actions that apply to this row. They
   run through the grid's action endpoint, with the same dialogs, permissions
   and audit events as in the list. After one runs, the page updates in place.
+  The page's links come first. The first three buttons show in the header and the
+  rest go under **More**. **Back to list** sits above the title.
 - **Activity** is the audit history of the grid's actions on this row.
 
 ```python

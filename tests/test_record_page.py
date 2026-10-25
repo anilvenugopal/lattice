@@ -34,6 +34,15 @@ def person(user_id: int, request: Request, db: Db = Depends(get_db)):
     return render_record_page(request, db, PAGE, user_id)
 
 
+CROWDED = RecordPage(grid=USERS, nav_key="people.person", title="{display_name}",
+                     links=[Link(f"Link {n}", f"/people/{{id}}/{n}") for n in range(1, 5)])
+
+
+@router.get("/{user_id}/crowded")
+def crowded(user_id: int, request: Request, db: Db = Depends(get_db)):
+    return render_record_page(request, db, CROWDED, user_id)
+
+
 @pytest.fixture
 def host_apps():
     return [AppManifest(key="people", label="People", routers=[router],
@@ -52,6 +61,14 @@ def test_shows_header_properties_panels_and_actions(as_user, users):
     assert 'data-action="activate"' not in html                  # does not apply
     assert 'data-action="open"' not in html                      # opens the row_href: left out
     assert "Activity" in html
+
+
+def test_header_shows_three_buttons_and_the_rest_under_more(as_user, users):
+    html = as_user("admin").get(f"/people/{users['viewer'].id}/crowded").text
+    header, menu = html.split(">More<", 1)
+    assert all(f">Link {n}<" in header for n in (1, 2, 3)) and ">Link 4<" not in header
+    assert 'class="menu__item" href="/people/' in menu and ">Link 4<" in menu
+    assert 'data-action="deactivate"' in menu                    # actions follow the links
 
 
 def test_the_grids_permission_guards_the_page(as_user, users):
